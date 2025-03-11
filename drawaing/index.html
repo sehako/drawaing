@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>그림 그리기 게임</title>
+    <!-- 스타일시트 직접 추가 -->
+    <link rel="stylesheet" href="/src/App.css">
+    <link rel="stylesheet" href="/src/styles/Game.css">
+    <link rel="stylesheet" href="/src/styles/Home.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: 'Noto Sans KR', sans-serif;
+      }
+      body {
+        width: 100%;
+        height: 100vh;
+        overflow-x: hidden;
+      }
+      #root {
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <!-- App.tsx를 직접 진입점으로 사용 -->
+    <script type="module" src="/src/App.tsx"></script>
+  </body>
+</html>
