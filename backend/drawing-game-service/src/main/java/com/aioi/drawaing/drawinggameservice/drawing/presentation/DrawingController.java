@@ -22,5 +22,4 @@ public class DrawingController {
 
         simpMessagingTemplate.convertAndSend("/topic/1", message);
     }
-
 }

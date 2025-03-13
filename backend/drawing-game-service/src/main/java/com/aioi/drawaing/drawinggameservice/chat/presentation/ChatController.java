@@ -1,0 +1,32 @@
+package com.aioi.drawaing.drawinggameservice.chat.presentation;
+
+import com.aioi.drawaing.drawinggameservice.chat.application.ChatService;
+import com.aioi.drawaing.drawinggameservice.chat.application.dto.ChatMessageDto;
+import com.aioi.drawaing.drawinggameservice.chat.domain.ChatMessage;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.handler.annotation.DestinationVariable;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.messaging.handler.annotation.SendTo;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.stereotype.Controller;
+
+@Slf4j
+@Controller
+@RequiredArgsConstructor
+public class ChatController {
+
+    private final ChatService chatService;
+    //private final SimpMessagingTemplate simpMessagingTemplate;
+
+    @MessageMapping("/chat/{roomId}")
+    @SendTo("/topic/chat/{roomId}")
+    public ChatMessage handleChatMessage(@DestinationVariable String roomId, @Payload ChatMessage message) {
+        // MongoDB에 메시지 저장
+        ChatMessage savedMessage = chatService.saveMessage(ChatMessageDto.of(message));
+        log.info("savedMessage = {}", savedMessage.toString());
+        return message;
+    }
+}

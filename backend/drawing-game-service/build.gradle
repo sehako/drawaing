@@ -29,6 +29,8 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.boot:spring-boot-starter-websocket'
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.3' //swagger
+	implementation 'org.springframework.boot:spring-boot-starter-data-mongodb' // mongodb
+	implementation 'com.fasterxml.jackson.core:jackson-databind' // json
 	compileOnly 'org.projectlombok:lombok'
 	runtimeOnly 'com.h2database:h2'
 	annotationProcessor 'org.projectlombok:lombok'
