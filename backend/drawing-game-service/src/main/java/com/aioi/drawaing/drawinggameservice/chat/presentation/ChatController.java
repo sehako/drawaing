@@ -19,14 +19,15 @@ import org.springframework.stereotype.Controller;
 public class ChatController {
 
     private final ChatService chatService;
-    //private final SimpMessagingTemplate simpMessagingTemplate;
+    private final SimpMessagingTemplate simpMessagingTemplate;
 
     @MessageMapping("/chat/{roomId}")
-    @SendTo("/topic/chat/{roomId}")
-    public ChatMessage handleChatMessage(@DestinationVariable String roomId, @Payload ChatMessage message) {
+    public void handleChatMessage(@DestinationVariable String roomId, @Payload ChatMessage message) {
         // MongoDB에 메시지 저장
         ChatMessage savedMessage = chatService.saveMessage(ChatMessageDto.of(message));
         log.info("savedMessage = {}", savedMessage.toString());
-        return message;
+
+        // 저장된 메시지를 클라이언트에게 브로드캐스트
+        simpMessagingTemplate.convertAndSend("/topic/chat/" + roomId, savedMessage);
     }
 }
