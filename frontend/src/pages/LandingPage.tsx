@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import Modal from '../components/common/Modal';
+import LoginModal from '../components/landing/LoginModal';
+import SignupModal from '../components/landing/SignUPModal';
 
 const LandingPage: React.FC = () => {
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -25,10 +26,16 @@ const LandingPage: React.FC = () => {
     setShowSignupModal(false);
   };
 
+  // 소셜 로그인 핸들러
+  const handleSocialLogin = (provider: string) => {
+    alert(`${provider} 로그인을 시도합니다.`);
+    // 소셜 로그인 구현 코드 추가
+  };
+
   return (
     <div className="relative w-full h-screen overflow-hidden">
       {/* 배경 이미지 - 닭장 배경 */}
-      <div className="absolute inset-0 w-full h-full">
+      <div className="absolute inset-0 w-full h-full z-0">
         <img 
           className="w-full h-full object-cover"
           src="/images/chicken-background.jpg" 
@@ -41,36 +48,36 @@ const LandingPage: React.FC = () => {
         {/* 로고 영역 */}
         <div className="w-full max-w-4xl flex flex-col items-center mb-12 px-4">
           {/* DRAWAING 로고 이미지 */}
-          <div className="relative mb-6">
+          <div className="relative mb-6 z-10">
             <img 
               src="/images/drawaing-logo.png" 
               alt="DRAWAING" 
-              className="w-full max-w-2xl mx-auto drop-shadow-[5px_5px_0_rgba(0,0,0,0.5)]"
+              className="w-full max-w-full mx-auto drop-shadow-[5px_5px_0_rgba(0,0,0,0.5)]"
             />
           </div>
           
           {/* 캐릭터들 배치 */}
           <div className="relative w-full">
-            <div className="absolute -top-32 -left-16">
-              <img src="/images/angry-chicken.png" alt="화난 닭" className="w-32 h-32" />
+            <div className="absolute -top-32 -left-40 z-0">
+              <img src="/images/angry-chicken.png" alt="화난 닭" className="w-72 h-72" />
             </div>
             
-            <div className="absolute -top-36 left-1/2 -translate-x-1/2">
-              <img src="/images/buff-chicken.png" alt="근육 닭" className="w-40 h-40" />
+            <div className="absolute -top-80 left-1/2 -translate-x-1/2 z-0">
+              <img src="/images/buff-chicken.png" alt="근육 닭" className="w-80 h-80" />
             </div>
             
-            <div className="absolute -top-32 -right-16">
-              <img src="/images/cute-chicken.png" alt="귀여운 닭" className="w-32 h-32" />
+            <div className="absolute -top-32 -right-40 z-0">
+              <img src="/images/cute-chicken.png" alt="귀여운 닭" className="w-72 h-72" />
             </div>
             
-            <div className="absolute top-12 left-1/2 -translate-x-1/2">
-              <img src="/images/cool-chicken.png" alt="쿨한 닭" className="w-40 h-40" />
+            <div className="absolute top-10 left-1/2 -translate-x-1/2 z-0">
+              <img src="/images/cool-chicken.png" alt="쿨한 닭" className="w-80 h-100" />
             </div>
           </div>
         </div>
         
         {/* 버튼 영역 */}
-        <div className="flex flex-col md:flex-row justify-center items-center gap-8 mt-16">
+        <div className="flex flex-col md:flex-row justify-center items-center gap-8 mt-16 z-10">
           {/* 로그인 버튼 - 픽셀 스타일 */}
           <button 
             onClick={handleLoginClick}
@@ -87,117 +94,23 @@ const LandingPage: React.FC = () => {
             <span className="text-3xl font-bold text-black font-['Press_Start_2P'] tracking-tight">게스트</span>
           </button>
         </div>
-        
-        
       </div>
 
-      {/* 로그인 모달 */}
+      {/* 모달 컴포넌트 */}
       {showLoginModal && (
-        <Modal onClose={closeModal}>
-          <div className="p-6 bg-yellow-300">
-            <h2 className="text-2xl font-bold mb-4 font-['Press_Start_2P'] ">로그인</h2>
-            
-            <div className="mb-4">
-              <label className="block text-gray-700 mb-2">아이디</label>
-              <input 
-                type="text" 
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff7a00]"
-                placeholder="아이디를 입력하세요"
-              />
-            </div>
-            
-            <div className="mb-6">
-              <label className="block text-gray-700 mb-2">비밀번호</label>
-              <input 
-                type="password" 
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff7a00]"
-                placeholder="비밀번호를 입력하세요"
-              />
-            </div>
-            
-            <div className="flex justify-between items-center mb-4">
-              <button 
-                onClick={closeModal}
-                className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md border-2 border-black shadow-[2px_2px_0_0_rgba(0,0,0,1)] hover:shadow-[3px_3px_0_0_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:-translate-x-0.5 active:shadow-[1px_1px_0_0_rgba(0,0,0,1)] active:translate-x-0 active:translate-y-0 transition-all duration-200"
-              >
-                취소
-              </button>
-              <button 
-                className="px-4 py-2 bg-[#ff7a00] text-white rounded-md border-2 border-black shadow-[2px_2px_0_0_rgba(0,0,0,1)] hover:shadow-[3px_3px_0_0_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:-translate-x-0.5 active:shadow-[1px_1px_0_0_rgba(0,0,0,1)] active:translate-x-0 active:translate-y-0 transition-all duration-200"
-                onClick={() => {
-                  alert('로그인 되었습니다!');
-                  closeModal();
-                }}
-              >
-                로그인
-              </button>
-            </div>
-            
-            {/* 회원가입 버튼 추가 */}
-            <div className="flex justify-center mt-4">
-              <button 
-                onClick={handleSignupClick}
-                className="text-blue-600 hover:text-blue-800 underline font-medium"
-              >
-                회원가입 하기
-              </button>
-            </div>
-          </div>
-        </Modal>
+        <LoginModal 
+          closeModal={closeModal}
+          handleSignupClick={handleSignupClick}
+          handleSocialLogin={handleSocialLogin}
+        />
       )}
 
-      {/* 회원가입 모달 */}
       {showSignupModal && (
-        <Modal onClose={closeModal}>
-          <div className="p-6 bg-green-200">
-            <h2 className="text-2xl font-bold mb-4 font-['Press_Start_2P'] ">회원가입</h2>
-            
-            <div className="mb-4">
-              <label className="block text-gray-700 mb-2">아이디</label>
-              <input 
-                type="text" 
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff7a00]"
-                placeholder="아이디를 입력하세요"
-              />
-            </div>
-            
-            <div className="mb-4">
-              <label className="block text-gray-700 mb-2">비밀번호</label>
-              <input 
-                type="password" 
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff7a00]"
-                placeholder="비밀번호를 입력하세요"
-              />
-            </div>
-            
-            <div className="mb-6">
-              <label className="block text-gray-700 mb-2">비밀번호 확인</label>
-              <input 
-                type="password" 
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff7a00]"
-                placeholder="비밀번호를 다시 입력하세요"
-              />
-            </div>
-            
-            <div className="flex justify-between items-center">
-              <button 
-                onClick={handleLoginClick}
-                className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md border-2 border-black shadow-[2px_2px_0_0_rgba(0,0,0,1)] hover:shadow-[3px_3px_0_0_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:-translate-x-0.5 active:shadow-[1px_1px_0_0_rgba(0,0,0,1)] active:translate-x-0 active:translate-y-0 transition-all duration-200"
-              >
-                로그인으로 돌아가기
-              </button>
-              <button 
-                className="px-4 py-2 bg-[#2ecc71] text-white rounded-md border-2 border-black shadow-[2px_2px_0_0_rgba(0,0,0,1)] hover:shadow-[3px_3px_0_0_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:-translate-x-0.5 active:shadow-[1px_1px_0_0_rgba(0,0,0,1)] active:translate-x-0 active:translate-y-0 transition-all duration-200"
-                onClick={() => {
-                  alert('회원가입이 완료되었습니다!');
-                  closeModal();
-                }}
-              >
-                가입하기
-              </button>
-            </div>
-          </div>
-        </Modal>
+        <SignupModal 
+          closeModal={closeModal}
+          handleLoginClick={handleLoginClick}
+          handleSocialLogin={handleSocialLogin}
+        />
       )}
     </div>
   );

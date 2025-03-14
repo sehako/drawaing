@@ -19,7 +19,7 @@ const Modal: React.FC<ModalProps> = ({ children, onClose }) => {
       onClick={handleBackdropClick}
     >
       <div 
-        className="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-auto"
+        className="bg-yellow-200 rounded-xl max-w-md w-full max-h-[90vh] overflow-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-end p-2">
