@@ -90,7 +90,7 @@ const SignupModal: React.FC<SignupModalProps> = ({ closeModal, handleLoginClick,
               className={`px-3 py-1 rounded-md border-2 border-black shadow-[2px_2px_0_0_rgba(0,0,0,1)] transition-all duration-200 hover:-translate-y-0.5 hover:-translate-x-0.5 ${
                 !nickname || nickname.length < 2 
                   ? 'bg-gray-400 cursor-not-allowed' 
-                  : 'bg-yellow-700 text-white hover:shadow-[3px_3px_0_0_rgba(0,0,0,1)]'
+                  : 'bg-[#ff7a00] text-white hover:shadow-[3px_3px_0_0_rgba(0,0,0,1)]'
               }`}
             >
               중복확인
@@ -122,7 +122,7 @@ const SignupModal: React.FC<SignupModalProps> = ({ closeModal, handleLoginClick,
               className={`px-3 py-1 rounded-md border-2 border-black shadow-[2px_2px_0_0_rgba(0,0,0,1)] transition-all duration-200 hover:-translate-y-0.5 hover:-translate-x-0.5 ${
                 !email || !email.includes('@') 
                   ? 'bg-gray-400 cursor-not-allowed' 
-                  : 'bg-yellow-700 text-white hover:shadow-[3px_3px_0_0_rgba(0,0,0,1)]'
+                  : 'bg-[#ff7a00] text-white hover:shadow-[3px_3px_0_0_rgba(0,0,0,1)]'
               }`}
             >
               인증하기
@@ -142,7 +142,7 @@ const SignupModal: React.FC<SignupModalProps> = ({ closeModal, handleLoginClick,
               />
               <button 
                 onClick={verifyEmailCode}
-                className="px-3 py-1 bg-yellow-700 text-white rounded-md border-2 border-black shadow-[2px_2px_0_0_rgba(0,0,0,1)] hover:shadow-[3px_3px_0_0_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:-translate-x-0.5 transition-all duration-200"
+                className="px-3 py-1 bg-[#ff7a00] text-white rounded-md border-2 border-black shadow-[2px_2px_0_0_rgba(0,0,0,1)] hover:shadow-[3px_3px_0_0_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:-translate-x-0.5 transition-all duration-200"
               >
                 확인하기
               </button>
