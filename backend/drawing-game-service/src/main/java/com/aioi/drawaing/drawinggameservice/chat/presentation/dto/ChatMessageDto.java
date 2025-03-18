@@ -6,7 +6,7 @@ import lombok.Builder;
 
 @Builder
 public record ChatMessageDto(
-        String memberId,  // 보내는 사람 ID
+        String senderId,  // 보내는 사람 ID
         String roomId,    // 방 번호
         String emoji,     // 이모티콘
         String message,   // 채팅 내용
@@ -14,7 +14,7 @@ public record ChatMessageDto(
 ) {
     public static ChatMessageDto of(ChatMessage chatMessage) {
         return ChatMessageDto.builder()
-                .memberId(chatMessage.getMemberId())
+                .senderId(chatMessage.getSenderId())
                 .roomId(chatMessage.getRoomId())
                 .emoji(chatMessage.getEmoji())
                 .message(chatMessage.getMessage())
