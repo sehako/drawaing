@@ -1,15 +1,13 @@
 package com.aioi.drawaing.drawinggameservice.chat.presentation;
 
 import com.aioi.drawaing.drawinggameservice.chat.application.ChatService;
-import com.aioi.drawaing.drawinggameservice.chat.application.dto.ChatMessageDto;
+import com.aioi.drawaing.drawinggameservice.chat.presentation.dto.ChatMessageDto;
 import com.aioi.drawaing.drawinggameservice.chat.domain.ChatMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
-import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 

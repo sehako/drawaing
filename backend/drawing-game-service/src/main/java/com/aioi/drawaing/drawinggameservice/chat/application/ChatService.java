@@ -1,9 +1,8 @@
 package com.aioi.drawaing.drawinggameservice.chat.application;
 
-import com.aioi.drawaing.drawinggameservice.chat.application.dto.ChatMessageDto;
+import com.aioi.drawaing.drawinggameservice.chat.presentation.dto.ChatMessageDto;
 import com.aioi.drawaing.drawinggameservice.chat.domain.ChatMessage;
 import com.aioi.drawaing.drawinggameservice.chat.infrastructure.repository.ChatRepository;
-import java.time.LocalDateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

@@ -1,4 +1,4 @@
-package com.aioi.drawaing.drawinggameservice.chat.application.dto;
+package com.aioi.drawaing.drawinggameservice.chat.presentation.dto;
 
 import com.aioi.drawaing.drawinggameservice.chat.domain.ChatMessage;
 import java.time.LocalDateTime;
