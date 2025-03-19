@@ -47,14 +47,18 @@ const LandingPage: React.FC = () => {
       <div className="relative z-10 flex flex-col items-center justify-center h-full">
         {/* 로고 영역 */}
         <div className="w-full max-w-4xl flex flex-col items-center mb-12 px-4">
-          {/* DRAWAING 로고 이미지 */}
-          <div className="relative mb-6 z-10">
-            <img 
-              src="/images/drawaing-logo.png" 
-              alt="DRAWAING" 
-              className="w-full max-w-full mx-auto drop-shadow-[5px_5px_0_rgba(0,0,0,0.5)]"
-            />
-          </div>
+          {/* DRAWAING 텍스트 로고 */}
+  <div className="relative mb-6 z-10">
+    <h1 className="text-6xl sm:text-5xl md:text-6xl lg:text-7xl font-bold font-['Press_Start_2P'] tracking-wider">
+      DRAW<span className="text-red-600">AI</span>NG
+    </h1>
+    {/* 로고 그림자 효과 */}
+    <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold font-['Press_Start_2P'] tracking-wider text-black opacity-20 absolute -bottom-2 -right-2 z-[-1]">
+      DRAW<span className="text-red-600">AI</span>NG
+    </h1>
+    {/* 추가 픽셀 그림자 효과 */}
+    <div className="absolute -bottom-4 -right-4 w-full h-full bg-black opacity-10 z-[-2]"></div>
+  </div>
           
           {/* 캐릭터들 배치 */}
           <div className="relative w-full">
