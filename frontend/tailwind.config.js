@@ -9,6 +9,7 @@ export default {
       fontFamily: {
         'inter': ['Inter', 'sans-serif'],
         'pixel': ['"Press Start 2P"', 'cursive'],
+        'GlossySheenRegular-L35oy' : ['GlossySheenRegular-L35oy'],
       },
       keyframes: {
         fadeIn: {

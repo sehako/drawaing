@@ -38,7 +38,7 @@ const LandingPage: React.FC = () => {
       <div className="absolute inset-0 w-full h-full z-0">
         <img 
           className="w-full h-full object-cover"
-          src="/images/chicken-background.jpg" 
+          src="/images/2727.jpg" 
           alt="닭장 배경"
         />
       </div>
@@ -46,19 +46,69 @@ const LandingPage: React.FC = () => {
       {/* 컨텐츠 컨테이너 */}
       <div className="relative z-10 flex flex-col items-center justify-center h-full">
         {/* 로고 영역 */}
-        <div className="w-full max-w-4xl flex flex-col items-center mb-12 px-4">
-          {/* DRAWAING 텍스트 로고 */}
-  <div className="relative mb-6 z-10">
-    <h1 className="text-6xl sm:text-5xl md:text-6xl lg:text-7xl font-bold font-['Press_Start_2P'] tracking-wider">
-      DRAW<span className="text-red-600">AI</span>NG
-    </h1>
-    {/* 로고 그림자 효과 */}
-    <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold font-['Press_Start_2P'] tracking-wider text-black opacity-20 absolute -bottom-2 -right-2 z-[-1]">
-      DRAW<span className="text-red-600">AI</span>NG
-    </h1>
-    {/* 추가 픽셀 그림자 효과 */}
-    <div className="absolute -bottom-4 -right-4 w-full h-full bg-black opacity-10 z-[-2]"></div>
-  </div>
+        <div className="flex flex-col items-center px-4">
+          {/* DRAWAING 텍스트 로고 - 그라데이션 및 입체감 추가 */}
+{/* DRAWAING 픽셀 아트 스타일 로고 */}
+<div className="relative mb-6 z-10">
+  <h1 className="text-[100px] md:text-[150px] lg:text-[200px] xl:text-[250px] font-bold font-['GlossySheenRegular-L35oy'] tracking-wider text-center">
+    {/* 텍스트 블록별 스타일링 */}
+    <span className="relative inline-block">
+      {/* D - 주황색 */}
+      <span className="relative z-10 inline-block px-1 bg-gradient-to-b from-yellow-300 to-orange-500 text-transparent bg-clip-text">D</span>
+      {/* 검은색 테두리 효과 */}
+      <span className="absolute inset-0 z-0 px-1 text-black transform translate-x-[6px] translate-y-[6px]">D</span>
+    </span>
+    
+    <span className="relative inline-block">
+      {/* R - 주황색 */}
+      <span className="relative z-10 inline-block px-1 bg-gradient-to-b from-yellow-300 to-orange-500 text-transparent bg-clip-text">R</span>
+      {/* 검은색 테두리 효과 */}
+      <span className="absolute inset-0 z-0 px-1 text-black transform translate-x-[6px] translate-y-[6px]">R</span>
+    </span>
+    
+    <span className="relative inline-block">
+      {/* A - 주황색 */}
+      <span className="relative z-10 inline-block px-1 bg-gradient-to-b from-yellow-300 to-orange-500 text-transparent bg-clip-text">A</span>
+      {/* 검은색 테두리 효과 */}
+      <span className="absolute inset-0 z-0 px-1 text-black transform translate-x-[6px] translate-y-[6px]">A</span>
+    </span>
+    
+    <span className="relative inline-block">
+      {/* W - 주황색 */}
+      <span className="relative z-10 inline-block px-1 bg-gradient-to-b from-yellow-300 to-orange-500 text-transparent bg-clip-text">W</span>
+      {/* 검은색 테두리 효과 */}
+      <span className="absolute inset-0 z-0 px-1 text-black transform translate-x-[6px] translate-y-[6px]">W</span>
+    </span>
+    
+    <span className="relative inline-block">
+      {/* A - 빨간색 */}
+      <span className="relative z-10 inline-block px-1 bg-gradient-to-b from-red-400 to-red-700 text-transparent bg-clip-text">A</span>
+      {/* 검은색 테두리 효과 */}
+      <span className="absolute inset-0 z-0 px-1 text-black transform translate-x-[6px] translate-y-[6px]">A</span>
+    </span>
+    
+    <span className="relative inline-block">
+      {/* I - 빨간색 */}
+      <span className="relative z-10 inline-block px-1 bg-gradient-to-b from-red-400 to-red-700 text-transparent bg-clip-text">I</span>
+      {/* 검은색 테두리 효과 */}
+      <span className="absolute inset-0 z-0 px-1 text-black transform translate-x-[6px] translate-y-[6px]">I</span>
+    </span>
+    
+    <span className="relative inline-block">
+      {/* N - 주황색 */}
+      <span className="relative z-10 inline-block px-1 bg-gradient-to-b from-yellow-300 to-orange-500 text-transparent bg-clip-text">N</span>
+      {/* 검은색 테두리 효과 */}
+      <span className="absolute inset-0 z-0 px-1 text-black transform translate-x-[6px] translate-y-[6px]">N</span>
+    </span>
+    
+    <span className="relative inline-block">
+      {/* G - 주황색 */}
+      <span className="relative z-10 inline-block px-1 bg-gradient-to-b from-yellow-300 to-orange-500 text-transparent bg-clip-text">G</span>
+      {/* 검은색 테두리 효과 */}
+      <span className="absolute inset-0 z-0 px-1 text-black transform translate-x-[6px] translate-y-[6px]">G</span>
+    </span>
+  </h1>
+</div>
           
           {/* 캐릭터들 배치 */}
           <div className="relative w-full">
