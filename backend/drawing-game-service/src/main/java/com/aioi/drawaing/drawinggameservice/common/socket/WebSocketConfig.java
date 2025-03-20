@@ -9,7 +9,6 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 @Configuration
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
-
     @Override
     public void registerStompEndpoints(StompEndpointRegistry stompEndpointRegistry) {
         stompEndpointRegistry.addEndpoint("/drawing")
@@ -21,5 +20,4 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         registry.enableSimpleBroker("/topic","/queue"); //subscription과 broadcasting, route message에 쓰인다.
         registry.setApplicationDestinationPrefixes("/app"); //message mapping에서 이것과 함께 쓰인다.
     }
-
 }
