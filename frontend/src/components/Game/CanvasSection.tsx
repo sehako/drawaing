@@ -434,7 +434,7 @@ const CanvasSection: React.FC<CanvasSectionProps> = ({
             {/* 컬러 피커 버튼 - 현재 선택된 색상으로 채워짐 */}
             <div className="relative">
               {/* 컬러 피커 팝업 - 버튼 위에 표시 */}
-              {isColorPickerOpen && !hasCurrentPlayerDrawn && (
+              {isColorPickerOpen && (
                 <div className="absolute z-50 bottom-full left-0 mb-2">
                   <ColorPicker 
                     isOpen={true}
@@ -446,13 +446,10 @@ const CanvasSection: React.FC<CanvasSectionProps> = ({
               )}
               
               <button 
-                onClick={() => !hasCurrentPlayerDrawn && setIsColorPickerOpen(!isColorPickerOpen)} 
-                className={`w-8 h-8 rounded-full border border-gray-400 overflow-hidden flex items-center justify-center ${
-                  hasCurrentPlayerDrawn ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
+                onClick={() => setIsColorPickerOpen(!isColorPickerOpen)} 
+                className="w-8 h-8 rounded-full border border-gray-400 overflow-hidden flex items-center justify-center"
                 style={{ backgroundColor: isEraser ? 'white' : currentColor }}
                 aria-label="색상 선택"
-                disabled={hasCurrentPlayerDrawn}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke={getContrastColor(currentColor)} strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
@@ -460,27 +457,18 @@ const CanvasSection: React.FC<CanvasSectionProps> = ({
               </button>
             </div>
 
-            {/* 자주 사용하는 컬러 바로가기 */}
+            {/* 자주 사용하는 컬러 바로가기 - 항상 활성화 */}
             <button 
-              onClick={() => !hasCurrentPlayerDrawn && handleColorChange('#FF5252')} 
-              className={`w-8 h-8 bg-red-500 rounded-full border border-gray-300 hover:opacity-90 ${
-                hasCurrentPlayerDrawn ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
-              disabled={hasCurrentPlayerDrawn}
+              onClick={() => handleColorChange('#FF5252')} 
+              className="w-8 h-8 bg-red-500 rounded-full border border-gray-300 hover:opacity-90"
             />
             <button 
-              onClick={() => !hasCurrentPlayerDrawn && handleColorChange('#000000')} 
-              className={`w-8 h-8 bg-black rounded-full border border-gray-300 hover:opacity-90 ${
-                hasCurrentPlayerDrawn ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
-              disabled={hasCurrentPlayerDrawn}
+              onClick={() => handleColorChange('#000000')} 
+              className="w-8 h-8 bg-black rounded-full border border-gray-300 hover:opacity-90"
             />
             <button 
-              onClick={() => !hasCurrentPlayerDrawn && handleColorChange('#2196F3')} 
-              className={`w-8 h-8 bg-blue-500 rounded-full border border-gray-300 hover:opacity-90 ${
-                hasCurrentPlayerDrawn ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
-              disabled={hasCurrentPlayerDrawn}
+              onClick={() => handleColorChange('#2196F3')} 
+              className="w-8 h-8 bg-blue-500 rounded-full border border-gray-300 hover:opacity-90"
             />
             
             {/* 내 그림만 지우기 버튼 - 그림을 그렸을 때만 활성화 */}
