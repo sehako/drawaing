@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import badguy from '../../assets/Game/badguy.jpg';
+import dambi from '../../assets/Game/dambi.png';
 import egg from '../../assets/Game/egg.png';
 import { PassConfirmModal, CorrectAnswerModal } from './GameModals';
 
@@ -78,14 +78,14 @@ const AISection: React.FC<AISectionProps> = ({
         {/* 첫 번째 이미지 컨테이너 */}
         <div className="flex-grow flex flex-col items-center justify-center bg-yellow-200 rounded-lg overflow-hidden m-2">
           <img 
-            src={badguy} 
-            alt="badguy" 
+            src={dambi} 
+            alt="dambi" 
             className="w-100% h-100% object-cover" 
           />
         </div>
         
         {/* 두 번째 이미지 컨테이너 */}
-        <div className="flex-grow flex flex-col items-center justify-center bg-yellow-200 rounded-lg overflow-hidden mb-2 relative mx-2 mr-4">
+        <div className="flex-grow flex flex-col items-center justify-center bg-yellow-200 rounded-lg overflow-hidden mb-2 relative mx-2">
           <div className="w-60% h-80% flex items-center justify-center">
             <img 
               src={egg} 
@@ -93,7 +93,7 @@ const AISection: React.FC<AISectionProps> = ({
               className="object-contain w-[200px] h-full" 
             />
           </div>
-          <div className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-yellow-200 text-black py-2 rounded-full text-lg font-bold mr-4">
+          <div className="absolute top-1/2 right-4 transform -translate-y-1/2 text-4xl bg-yellow-200 text-black py-2 rounded-full font-bold">
             X{eggCount}
           </div>
         </div>
