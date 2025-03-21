@@ -436,7 +436,7 @@ const CanvasSection: React.FC<CanvasSectionProps> = ({
           
           {/* 이미 그림을 그렸음을 알리는 오버레이 */}
           {hasCurrentPlayerDrawn && (
-            <div className="absolute top-2 left-1/2 transform -translate-x-1/2 bg-yellow-500 text-white px-4 py-1 rounded-full text-sm font-medium">
+            <div className="absolute top-2 left-1/2 transform -translate-x-1/2 bg-yellow-700 text-white px-4 py-1 rounded-full text-sm font-medium">
               이미 그림을 그렸습니다 (1회만 가능)
             </div>
           )}
