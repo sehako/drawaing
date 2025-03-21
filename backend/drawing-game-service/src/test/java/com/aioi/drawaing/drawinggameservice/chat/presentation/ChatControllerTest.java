@@ -61,7 +61,6 @@ public class ChatControllerTest {
                 .roomId(roomId)
                 .message("테스트 메시지 내용")
                 .build();
-
         // 구독 설정
         stompSession.subscribe("/topic/chat.message/" + roomId, new StompFrameHandler() {
             @Override
@@ -74,19 +73,15 @@ public class ChatControllerTest {
                 messages.offer((ChatMessage) payload);
             }
         });
-
-        // 메시지 전송
+        // when
         stompSession.send("/app/chat.message/" + roomId, testMessage);
-
-        // 결과 검증
+        // then
         ChatMessage receivedMessage = messages.poll(3, TimeUnit.SECONDS);
-
         // 수신 메시지 검증
         assertThat(receivedMessage).isNotNull();
         assertThat(receivedMessage.getMessage()).isEqualTo("테스트 메시지 내용");
         assertThat(receivedMessage.getSenderId()).isEqualTo("user123");
         assertThat(receivedMessage.getRoomId()).isEqualTo(roomId);
-
         // MongoDB 저장 검증
         ChatMessage savedMessage = chatService.findLatestMessageByRoomId(roomId);
         assertThat(savedMessage).isNotNull();
@@ -105,7 +100,6 @@ public class ChatControllerTest {
                 .roomId(roomId)
                 .emoji("😸")
                 .build();
-
         // 구독 설정
         stompSession.subscribe("/topic/chat.emoji/" + roomId, new StompFrameHandler() {
             @Override
@@ -118,19 +112,15 @@ public class ChatControllerTest {
                 emojis.offer((ChatEmoji) payload);
             }
         });
-
-        // 메시지 전송
+        // when
         stompSession.send("/app/chat.emoji/" + roomId, testEmoji);
-
-        // 결과 검증
+        // then
         ChatEmoji receivedEmoji = emojis.poll(3, TimeUnit.SECONDS);
-
         // 수신 메시지 검증
         assertThat(receivedEmoji).isNotNull();
         assertThat(receivedEmoji.getEmoji()).isEqualTo("😸");
         assertThat(receivedEmoji.getSenderId()).isEqualTo("user123");
         assertThat(receivedEmoji.getRoomId()).isEqualTo(roomId);
-
         // MongoDB 저장 검증
         ChatEmoji savedEmoji = chatService.findLatestEmojiByRoomId(roomId);
         assertThat(savedEmoji).isNotNull();
