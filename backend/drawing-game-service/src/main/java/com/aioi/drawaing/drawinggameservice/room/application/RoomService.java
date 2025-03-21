@@ -1,7 +1,7 @@
-package com.aioi.drawaing.drawinggameservice.gameroom.application;
+package com.aioi.drawaing.drawinggameservice.room.application;
 
-import com.aioi.drawaing.drawinggameservice.gameroom.domain.Room;
-import com.aioi.drawaing.drawinggameservice.gameroom.infrastructure.repository.RoomRepository;
+import com.aioi.drawaing.drawinggameservice.room.domain.Room;
+import com.aioi.drawaing.drawinggameservice.room.infrastructure.repository.RoomRepository;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -18,7 +18,7 @@ public class RoomService {
         Room room = Room.builder()
                 .title(title)
                 .hostId(hostId)
-                .playing(false)
+                .status("Ready")
                 .build();
         room.getParticipants().put(hostId, true);
         repository.save(room);

@@ -1,4 +1,4 @@
-package com.aioi.drawaing.drawinggameservice.gameroom.presentation.dto;
+package com.aioi.drawaing.drawinggameservice.room.presentation.dto;
 
 import lombok.Builder;
 
