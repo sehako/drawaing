@@ -27,9 +27,16 @@ public class DrawingController {
         simpMessagingTemplate.convertAndSend("/topic/session.draw/" + roomId + "/" + sessionId, drawInfo);
     }
 
+
+
     @MessageMapping("/send")
     public void send(@Payload String message) {
         drawingService.publishSessionTimer("1","1",10);
+    }
+
+    @MessageMapping("/draw")
+    public void draw(@Payload String message) {
+        drawingService.publishDrawingTimer("1","1",2);
     }
 
 //    @SendTo
