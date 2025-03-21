@@ -36,11 +36,22 @@ const Game: React.FC = () => {
   const [isEraser, setIsEraser] = useState<boolean>(false);
   const [lastPoint, setLastPoint] = useState<{ x: number; y: number } | null>(null);
 
+  const [eggCount, setEggCount] = useState(10);
+
+
   const [aiAnswer, setAiAnswer] = useState<string>('');
   const [aiImages] = useState<string[]>([
     '/ai/fox.png',
     '/ai/eggs.png'
   ]);
+
+  const handlePlayerCorrectAnswer = () => {
+    setEggCount(prev => prev + 1);
+  };
+  
+  const handleAICorrectAnswer = () => {
+    setEggCount(prev => Math.max(0, prev - 1)); // 0 미만으로 내려가지 않도록 방지
+  };
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -132,7 +143,8 @@ const handleNextPlayer = () => {
     if (guess.trim().toLowerCase() === quizWord.toLowerCase()) {
       setCorrectAnimation(true);
       setShowCorrectAnswer(true);
-      
+      handlePlayerCorrectAnswer();
+
       setTimeout(() => {
         setCorrectAnimation(false);
         setShowCorrectAnswer(false);
@@ -289,6 +301,10 @@ const handleNextPlayer = () => {
           setGuess={setGuess}
           handleGuessSubmit={handleGuessSubmit}
           handlePass={handlePass}
+          eggCount={eggCount}
+          onAICorrectAnswer={handleAICorrectAnswer}
+          quizWord={quizWord} // quizWord 추가
+
         />
       </div>
     </div>
