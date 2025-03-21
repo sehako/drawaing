@@ -44,6 +44,7 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-websocket'
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.3' //swagger
 	implementation 'org.springframework.boot:spring-boot-starter-data-mongodb' // mongodb
+
 	implementation 'com.fasterxml.jackson.core:jackson-databind' // json
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
@@ -52,6 +53,8 @@ dependencies {
 		implementation 'org.springframework.cloud:spring-cloud-starter-bus-amqp'
 		implementation 'org.springframework.cloud:spring-cloud-starter-config'
 	}
+
+	//implementation 'com.fasterxml.jackson.core:jackson-databind' // (spring-boot-starter-web 포함)
 
 	compileOnly 'org.projectlombok:lombok'
 	runtimeOnly 'com.h2database:h2'
