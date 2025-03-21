@@ -1,4 +1,4 @@
-package com.aioi.drawaing.drawinggameservice.gameroom.domain;
+package com.aioi.drawaing.drawinggameservice.room.domain;
 
 import jakarta.persistence.Id;
 import java.util.LinkedHashMap;
@@ -15,7 +15,7 @@ public class Room {
     private String id;
     private String hostId;
     private String title;
-    private Boolean playing;
+    private String status;
     @Builder.Default
     private Map<String, Boolean> participants = new LinkedHashMap<>();
 
