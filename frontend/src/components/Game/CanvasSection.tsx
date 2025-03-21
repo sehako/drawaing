@@ -1,5 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ColorPicker from './ColorPicker';
+import chick from '../../assets/Common/chick.gif'
+import CustomModal from '../common/CustomModal';
+import { CanvasCorrectModal } from './GameModals';
 
 interface CanvasSectionProps {
   canvasRef: React.MutableRefObject<HTMLCanvasElement | null>;
@@ -66,7 +69,8 @@ const CanvasSection: React.FC<CanvasSectionProps> = ({
   
   // 컬러 피커 상태 관리
   const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
-  
+  const [isCorrectModalOpen, setIsCorrectModalOpen] = useState(false);
+
   // 마우스 커서 관련 상태
   const [cursorPosition, setCursorPosition] = useState<{ x: number, y: number } | null>(null);
   
@@ -162,10 +166,10 @@ const CanvasSection: React.FC<CanvasSectionProps> = ({
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     // 이미 그림을 그렸거나 완료 상태라면 그리기 불가능
     if (hasCurrentPlayerDrawn || hasCompleted) return;
-
+  
     const canvas = canvasRef.current;
     if (!canvas || !context) return;
-
+  
     // 캔버스의 CSS 크기와 실제 캔버스 크기의 비율 계산
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
@@ -174,10 +178,10 @@ const CanvasSection: React.FC<CanvasSectionProps> = ({
     // 정확한 좌표 계산 (커서 끝점 조정: -1, -1 픽셀 오프셋)
     const x = (e.clientX - rect.left - 1) * scaleX;
     const y = (e.clientY - rect.top - 1) * scaleY;
-
+  
     setLastPoint({ x, y });
     setIsDrawing(true);
-
+  
     context.beginPath();
     context.arc(x, y, isEraser ? 10 : 2, 0, Math.PI * 2);
     context.fillStyle = isEraser ? 'white' : currentColor;
@@ -221,6 +225,11 @@ const CanvasSection: React.FC<CanvasSectionProps> = ({
       
       // 그림이 완료되면 현재 그림 저장
       saveCurrentDrawing();
+      
+      // 현재 플레이어가 그림을 그렸음을 표시 (추가된 부분)
+      const newHasDrawnInRound = [...hasDrawnInRound];
+      newHasDrawnInRound[activeDrawerIndex] = true;
+      setHasDrawnInRound(newHasDrawnInRound);
     }
   };
 
@@ -282,6 +291,11 @@ const CanvasSection: React.FC<CanvasSectionProps> = ({
     }
   }, [currentRound, activeDrawerIndex]);
 
+  useEffect(() => {
+    if (showCorrectAnswer) {
+      setIsCorrectModalOpen(true);
+    }
+  }, [showCorrectAnswer]);
 
   // 컴포넌트 마운트/업데이트 시 커서 캔버스 설정
   useEffect(() => {
@@ -422,7 +436,7 @@ const CanvasSection: React.FC<CanvasSectionProps> = ({
           
           {/* 이미 그림을 그렸음을 알리는 오버레이 */}
           {hasCurrentPlayerDrawn && (
-            <div className="absolute top-2 left-1/2 transform -translate-x-1/2 bg-yellow-500 text-white px-4 py-1 rounded-full text-sm font-medium">
+            <div className="absolute top-2 left-1/2 transform -translate-x-1/2 bg-yellow-700 text-white px-4 py-1 rounded-full text-sm font-medium">
               이미 그림을 그렸습니다 (1회만 가능)
             </div>
           )}
@@ -457,7 +471,7 @@ const CanvasSection: React.FC<CanvasSectionProps> = ({
               </button>
             </div>
 
-            {/* 자주 사용하는 컬러 바로가기 - 항상 활성화 */}
+            {/* 자주 사용하는 컬러 바로가기 */}
             <button 
               onClick={() => handleColorChange('#FF5252')} 
               className="w-8 h-8 bg-red-500 rounded-full border border-gray-300 hover:opacity-90"
@@ -482,6 +496,7 @@ const CanvasSection: React.FC<CanvasSectionProps> = ({
               내 그림만 지우기
             </button>
           </div>
+
           
           {/* 다음 플레이어 버튼 */}
           <button
@@ -506,6 +521,35 @@ const CanvasSection: React.FC<CanvasSectionProps> = ({
           />
         </form>
       </div>
+
+      <CustomModal
+      isOpen={isCorrectModalOpen}
+      onClose={() => {
+        setIsCorrectModalOpen(false);
+      }}
+      title="정답입니다!"
+      media={{
+        type: 'gif',
+        src: chick,
+        alt: '축하 GIF'
+      }}
+      actionButtons={{
+        confirmText: "계속하기",
+        onConfirm: () => {
+          setIsCorrectModalOpen(false);
+          handleNextPlayer();
+        }
+      }}
+    >
+      <div className="text-center">
+        <p className="mb-4 text-gray-700">
+          정답은 "{quizWord}"입니다!
+        </p>
+        <p className="text-green-600 font-bold">
+          축하합니다! 정답을 맞추셨습니다.
+        </p>
+      </div>
+    </CustomModal>
     </div>
   );
 };
