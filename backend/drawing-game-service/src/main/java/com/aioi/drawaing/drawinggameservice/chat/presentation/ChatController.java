@@ -1,8 +1,10 @@
 package com.aioi.drawaing.drawinggameservice.chat.presentation;
 
 import com.aioi.drawaing.drawinggameservice.chat.application.ChatService;
-import com.aioi.drawaing.drawinggameservice.chat.presentation.dto.ChatMessageDto;
+import com.aioi.drawaing.drawinggameservice.chat.domain.ChatEmoji;
 import com.aioi.drawaing.drawinggameservice.chat.domain.ChatMessage;
+import com.aioi.drawaing.drawinggameservice.chat.presentation.dto.ChatEmojiDto;
+import com.aioi.drawaing.drawinggameservice.chat.presentation.dto.ChatMessageDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
@@ -19,13 +21,16 @@ public class ChatController {
     private final ChatService chatService;
     private final SimpMessagingTemplate simpMessagingTemplate;
 
-    @MessageMapping("/chat/{roomId}")
+    @MessageMapping("/chat.message/{roomId}")
     public void handleChatMessage(@DestinationVariable String roomId, @Payload ChatMessage message) {
-        // MongoDB에 메시지 저장
         ChatMessage savedMessage = chatService.saveMessage(ChatMessageDto.of(message));
         log.info("savedMessage = {}", savedMessage.toString());
-
-        // 저장된 메시지를 클라이언트에게 브로드캐스트
-        simpMessagingTemplate.convertAndSend("/topic/chat/" + roomId, savedMessage);
+        simpMessagingTemplate.convertAndSend("/topic/chat.message/" + roomId, savedMessage);
+    }
+    @MessageMapping("/chat.emoji/{roomId}")
+    public void handleChatEmoji(@DestinationVariable String roomId, @Payload ChatEmoji message) {
+        ChatEmoji savedEmoji = chatService.saveEmoji(ChatEmojiDto.of(message));
+        log.info("savedEmoji = {}", savedEmoji.toString());
+        simpMessagingTemplate.convertAndSend("/topic/chat.emoji/" + roomId, savedEmoji);
     }
 }
