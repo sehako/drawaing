@@ -1,6 +1,6 @@
 package com.aioi.drawaing.drawinggameservice.drawing.application;
 
-import com.aioi.drawaing.drawinggameservice.drawing.application.dto.SessionTimer;
+import com.aioi.drawaing.drawinggameservice.drawing.application.dto.Timer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 public class DrawMessagePublisher {
     private final SimpMessagingTemplate simpMessagingTemplate;
 
-    void publishSessionTimer(String topic, SessionTimer message) {
+    void publishTimer(String topic, Timer message) {
         simpMessagingTemplate.convertAndSend(topic, message);
     }
 }

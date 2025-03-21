@@ -1,6 +1,6 @@
 package com.aioi.drawaing.drawinggameservice.drawing.application;
 
-import com.aioi.drawaing.drawinggameservice.drawing.application.dto.SessionTimer;
+import com.aioi.drawaing.drawinggameservice.drawing.application.dto.Timer;
 import com.aioi.drawaing.drawinggameservice.drawing.domain.TimeType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -21,20 +21,43 @@ public class DrawingService {
     private final ScheduledExecutorService schedule;
 
     public void publishSessionTimer(String roomId, String sessionId, int startTime) {
-        String key = getKey(TimeType.SESSION, sessionId);
+        String sessionKey = getKey(TimeType.SESSION, sessionId);
+        String drawKey = getKey(TimeType.DRAWING, sessionId);
+
+        remainTime.put(sessionKey, new AtomicInteger(startTime));
+
+        ScheduledFuture<?> scheduledFuture = schedule.scheduleAtFixedRate(()->{
+            int time = remainTime.get(sessionKey).decrementAndGet();
+            if(remainTime.get(sessionKey).intValue()<=0){
+                remainTime.remove(sessionKey);
+                stopTimer(sessionKey);
+                stopTimer(drawKey);
+            }
+            drawMessagePublisher.publishTimer("/topic/session.total-timer/"+roomId+"/"+sessionId, new Timer(time));
+
+        }, 0,1,TimeUnit.SECONDS);
+
+        scheduledFutures.put(sessionKey, scheduledFuture);
+    }
+
+    public void publishDrawingTimer(String roomId, String sessionId, int startTime) {
+        String key = getKey(TimeType.DRAWING, sessionId);
         remainTime.put(key, new AtomicInteger(startTime));
 
         ScheduledFuture<?> scheduledFuture = schedule.scheduleAtFixedRate(()->{
             int time = remainTime.get(key).decrementAndGet();
             if(remainTime.get(key).intValue()<=0){
-                remainTime.remove(key);
-                stopTimer(key);
+                remainTime.put(key, new AtomicInteger(startTime));
             }
-            drawMessagePublisher.publishSessionTimer("/topic/session.total-timer/"+roomId+"/"+sessionId, new SessionTimer(time));
+            drawMessagePublisher.publishTimer("/topic/session.draw-timer/"+roomId+"/"+sessionId, new Timer(time));
 
         }, 0,1,TimeUnit.SECONDS);
 
         scheduledFutures.put(key, scheduledFuture);
+    }
+
+    public void resetDrawingTimer(String key, int startTime) {
+        remainTime.put(key, new AtomicInteger(startTime));
     }
 
     private String getKey(TimeType timeType, String sessionId) {
