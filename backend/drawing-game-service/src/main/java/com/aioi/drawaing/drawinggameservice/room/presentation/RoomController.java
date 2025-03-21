@@ -1,7 +1,7 @@
-package com.aioi.drawaing.drawinggameservice.gameroom.presentation;
+package com.aioi.drawaing.drawinggameservice.room.presentation;
 
-import com.aioi.drawaing.drawinggameservice.gameroom.application.RoomService;
-import com.aioi.drawaing.drawinggameservice.gameroom.presentation.dto.RoomRequest;
+import com.aioi.drawaing.drawinggameservice.room.application.RoomService;
+import com.aioi.drawaing.drawinggameservice.room.presentation.dto.RoomRequest;
 import java.util.Map;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
