@@ -1,18 +1,18 @@
 package com.aioi.drawaing.drawinggameservice.drawing.application;
 
 import com.aioi.drawaing.drawinggameservice.drawing.application.dto.Timer;
+import com.aioi.drawaing.drawinggameservice.drawing.domain.Keyword;
 import com.aioi.drawaing.drawinggameservice.drawing.domain.TimeType;
+import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.KeywordRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -21,14 +21,21 @@ public class DrawingService {
     private final Map<String, AtomicInteger> remainTime=new ConcurrentHashMap<>();; //type(session, draw)+sessionId
     private final Map<String, ScheduledFuture<?>> scheduledFutures=new ConcurrentHashMap<>(); //type(session, draw)+sessionId
     private final ScheduledExecutorService schedule;
+    private final KeywordRepository keywordRepository;
 
     //세션 시작
 
 
     //게임 제시어 뽑기
     public List<String> extractWords(int count) {
-        List<String> words=new ArrayList<>();
-        return words;
+        List<Keyword> keywords = keywordRepository.findAll();
+        return ThreadLocalRandom.current()
+                .ints(0, keywords.size())
+                .distinct()
+                .limit(count)
+                .mapToObj(keywords::get)
+                .map(Keyword::getKeyword)
+                .collect(Collectors.toList());
     }
 
     //세션 시작할 때, 게임 제시어 주기

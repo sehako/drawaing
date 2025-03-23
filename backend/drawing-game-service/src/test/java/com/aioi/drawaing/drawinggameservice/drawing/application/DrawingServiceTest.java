@@ -55,7 +55,9 @@ public class DrawingServiceTest {
         List<String> words = drawingService.extractWords(count);
 
         //then
-        Assertions.assertThat(words).hasSize(count);
+        Assertions.assertThat(words)
+                .describedAs("words: %s", words)
+                .hasSize(count);
     }
 
     @Test
@@ -66,11 +68,11 @@ public class DrawingServiceTest {
 
         //when
         List<String> words1 = drawingService.extractWords(count);
-        List<String> wordCopy = new ArrayList<>(words1);
         List<String> words2 = drawingService.extractWords(count);
 
         //then
-        Assertions.assertThat(words1).isNotEqualTo(wordCopy);
-        Assertions.assertThat(words1).isNotEqualTo(words2);
+        Assertions.assertThat(words1)
+                .describedAs("words1: %s, words2: %s", words1, words2)
+                .isNotEqualTo(words2);
     }
 }
