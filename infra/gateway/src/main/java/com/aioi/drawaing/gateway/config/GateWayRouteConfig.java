@@ -18,7 +18,14 @@ public class GateWayRouteConfig {
                         .filters(f -> f
                                 .rewritePath("/game/(?<segment>.*)", "/$\\{segment}")
                         )
-                        .uri("lb:ws://DRAWING-GAME-SERVICE")
+                        .uri("lb:ws://GAME-SERVICE")
+                )
+                .route("game-test", r -> r
+                        .path("/game-test/**")
+                        .filters(f -> f
+                                .rewritePath("/game-test/(?<segment>.*)", "/$\\{segment}")
+                        )
+                        .uri("lb:ws://TEST-SERVICE")
                 )
                 .route("auth", r -> r
                         .path("/auth/**")
