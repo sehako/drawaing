@@ -5,6 +5,8 @@ import com.aioi.drawaing.drawinggameservice.drawing.domain.TimeType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
@@ -19,6 +21,18 @@ public class DrawingService {
     private final Map<String, AtomicInteger> remainTime=new ConcurrentHashMap<>();; //type(session, draw)+sessionId
     private final Map<String, ScheduledFuture<?>> scheduledFutures=new ConcurrentHashMap<>(); //type(session, draw)+sessionId
     private final ScheduledExecutorService schedule;
+
+    //세션 시작
+
+
+    //게임 제시어 뽑기
+    public List<String> extractWords(int count) {
+        List<String> words=new ArrayList<>();
+        return words;
+    }
+
+    //세션 시작할 때, 게임 제시어 주기
+
 
     public void publishSessionTimer(String roomId, String sessionId, int startTime) {
         String sessionKey = getKey(TimeType.SESSION, sessionId);
@@ -67,4 +81,6 @@ public class DrawingService {
     private void stopTimer(String key){
         scheduledFutures.get(key).cancel(true);
     }
+
+
 }
