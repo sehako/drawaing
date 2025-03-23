@@ -5,6 +5,7 @@ import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -24,7 +25,7 @@ public class Session {
     private int drawIdx;
     private int roundCount;
     @Builder.Default
-    private Map<String, Participant> participants = new ConcurrentHashMap<>();
+    private Map<Integer, Participant> participants = new ConcurrentHashMap<>();
 
     public static Session createSession(String roomId, List<String> keywords){
         return Session.builder()
@@ -33,11 +34,15 @@ public class Session {
                 .build();
     }
 
-    public void addParticipant(String userId, Participant participant){
+    public void addParticipant(int userId, Participant participant){
         this.participants.put(userId, participant);
     }
 
-    public void deleteParticipant(String userId, Participant participant){
+    public List<Integer> getParticipants(){
+        return new ArrayList<>(this.participants.keySet());
+    }
+
+    public void deleteParticipant(int userId, Participant participant){
         this.participants.remove(userId);
     }
 

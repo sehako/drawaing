@@ -1,15 +1,20 @@
 package com.aioi.drawaing.drawinggameservice.drawing.application;
 
+import com.aioi.drawaing.drawinggameservice.drawing.application.dto.RoundInfo;
 import com.aioi.drawaing.drawinggameservice.drawing.application.dto.Timer;
-import com.aioi.drawaing.drawinggameservice.drawing.domain.Keyword;
-import com.aioi.drawaing.drawinggameservice.drawing.domain.TimeType;
+import com.aioi.drawaing.drawinggameservice.drawing.domain.*;
 import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.KeywordRepository;
+import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.RoomSesseionRepository;
+import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.SessionRepository;
+import com.aioi.drawaing.drawinggameservice.drawing.presentation.dto.AddParticipantInfo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -22,9 +27,30 @@ public class DrawingService {
     private final Map<String, ScheduledFuture<?>> scheduledFutures=new ConcurrentHashMap<>(); //type(session, draw)+sessionId
     private final ScheduledExecutorService schedule;
     private final KeywordRepository keywordRepository;
+    private final RoomSesseionRepository roomSesseionRepository;
+    private final SessionRepository sessionRepository;
+
+    private static final int DEFAULT_WORD_COUNT = 30;
+    private static final int DEFAULT_SESSION_TIMER = 60;
+    private static final int DEFAULT_DRAW_TIMER = 3;
 
     //세션 시작
+    //세션 시작할 때, 게임 제시어 주기
+    //세션 시작할 때, 타이머 시작 + 전달
+    //세션 시작할 때, 게임 어떻게 할건지 의논 필요
+    @Transactional
+    public void startSession(String roomId, String sessionId, AddParticipantInfo addParticipantInfo) {
+        List<String> words = extractWords(DEFAULT_WORD_COUNT);
+        Session session = findSession(roomId, words);
+        addParticipant(session, addParticipantInfo);
+        startTimers(roomId, sessionId);
+        drawMessagePublisher.publishRoundInfo("/topic/session.info/"+roomId+"/"+sessionId, new RoundInfo(words, session.getParticipants()));
+    }
 
+    private void startTimers(String roomId, String sessionId) {
+        publishSessionTimer(roomId, sessionId, DEFAULT_SESSION_TIMER);
+        publishDrawingTimer(roomId, sessionId, DEFAULT_DRAW_TIMER);
+    }
 
     //게임 제시어 뽑기
     public List<String> extractWords(int count) {
@@ -38,9 +64,8 @@ public class DrawingService {
                 .collect(Collectors.toList());
     }
 
-    //세션 시작할 때, 게임 제시어 주기
 
-
+    //sessionId 빼는거 고려 중..
     public void publishSessionTimer(String roomId, String sessionId, int startTime) {
         String sessionKey = getKey(TimeType.SESSION, sessionId);
         String drawKey = getKey(TimeType.DRAWING, sessionId);
@@ -81,6 +106,25 @@ public class DrawingService {
         remainTime.put(key, new AtomicInteger(startTime));
     }
 
+    private void addParticipant(Session session, AddParticipantInfo addParticipantInfo) {
+        session.addParticipant(addParticipantInfo.id(), Participant.createParticipant(addParticipantInfo.nickname(), addParticipantInfo.characterUrl()));
+    }
+
+    private Session findSession(String roomId, List<String> words) {
+        RoomSession roomSession = getOrCreateRoomSession(roomId, words);
+        return sessionRepository.findById(roomSession.getSessionId()).orElse(null);
+    }
+
+
+    private RoomSession getOrCreateRoomSession(String roomId, List<String> words) {
+        return roomSesseionRepository.findByRoomId(roomId)
+                .orElseGet(()->{
+                    Session session = Session.createSession(roomId, words);
+                    sessionRepository.save(session);
+                    return roomSesseionRepository.save(RoomSession.buildRoomSession(roomId, session.getId()));
+                });
+    }
+
     private String getKey(TimeType timeType, String sessionId) {
         return timeType.name()+":"+sessionId;
     }
@@ -88,6 +132,7 @@ public class DrawingService {
     private void stopTimer(String key){
         scheduledFutures.get(key).cancel(true);
     }
+
 
 
 }

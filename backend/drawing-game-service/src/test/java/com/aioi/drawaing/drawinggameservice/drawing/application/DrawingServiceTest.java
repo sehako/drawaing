@@ -75,4 +75,5 @@ public class DrawingServiceTest {
                 .describedAs("words1: %s, words2: %s", words1, words2)
                 .isNotEqualTo(words2);
     }
+
 }
