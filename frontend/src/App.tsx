@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { MusicProvider } from './contexts/MusicContext';
+import { AuthProvider } from './contexts/AuthContext'; // AuthProvider 임포트 추가
 
 import LandingPage from './pages/LandingPage';
 // import LobbyPage from './pages/LobbyPage';
@@ -13,8 +14,9 @@ import Bgm from './components/Music/Bgm.tsx';
 const App: React.FC = () => {
   return (
     <BrowserRouter>
-      <MusicProvider>
-        <Bgm />
+      <AuthProvider> {/* AuthProvider 추가 */}
+        <MusicProvider>
+          <Bgm />
           <Routes>
             <Route path="/" element={<LandingPage />} />
             {/* <Route path="/lobby" element={<LobbyPage />} /> */}
@@ -24,6 +26,7 @@ const App: React.FC = () => {
             <Route path="/game/:roomId" element={<Game />} />
           </Routes>
         </MusicProvider>
+      </AuthProvider>
     </BrowserRouter>
   );
 };
