@@ -15,9 +15,19 @@ public class Room {
     private String id;
     private String hostId;
     private String title;
+    private String sessionId;
     private String status;
     @Builder.Default
     private Map<String, Boolean> participants = new LinkedHashMap<>();
+
+    public static Room createRoom(String hostId, String title, String sessionId) {
+        return Room.builder()
+                .title(title)
+                .hostId(hostId)
+                .sessionId(sessionId)
+                .status(RoomStatus.READY.name())
+                .build();
+    }
 
     // 방장 갱신 로직 (순차적 선택)
     public void updateHostIfNeeded() {
