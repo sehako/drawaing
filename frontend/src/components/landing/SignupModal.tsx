@@ -308,8 +308,13 @@ const SignupModal: React.FC<SignupModalProps> = ({ closeModal, handleLoginClick,
                 인증하기
               </button>
             </div>
+            
+            {/* 이메일 인증 상태 메시지 */}
+            {isEmailVerified && (
+              <p className="text-green-600 text-sm mt-1">✓ 이메일이 성공적으로 인증되었습니다</p>
+            )}
           </div>
-          
+
           {/* 이메일 인증 코드 입력 */}
           {isEmailVerificationSent && !isEmailVerified && (
             <div className="mb-4">
@@ -335,12 +340,6 @@ const SignupModal: React.FC<SignupModalProps> = ({ closeModal, handleLoginClick,
                   확인하기
                 </button>
               </div>
-            </div>
-          )}
-          
-          {isEmailVerified && (
-            <div className="mb-4">
-              <p className="text-green-600 text-sm">✓ 이메일이 성공적으로 인증되었습니다</p>
             </div>
           )}
           
