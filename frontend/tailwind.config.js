@@ -9,7 +9,7 @@ export default {
       fontFamily: {
         'inter': ['Inter', 'sans-serif'],
         'pixel': ['"Press Start 2P"', 'cursive'],
-        'GlossySheenRegular-L35oy' : ['GlossySheenRegular-L35oy'],
+        'logo': ['GlossySheenRegular-L35oy', 'sans-serif'],  // 로고용 폰트로 이름 변경
       },
       keyframes: {
         fadeIn: {
