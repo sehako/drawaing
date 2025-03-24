@@ -2,12 +2,12 @@ import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LoginModal from '../components/landing/LoginModal';
 import SignupModal from '../components/landing/SignupModal';
-import { AuthContext } from '../contexts/AuthContext';
+import { AuthContext , useAuth } from '../contexts/AuthContext';
 
 const LandingPage: React.FC = () => {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSignupModal, setShowSignupModal] = useState(false);
-  const { loginAsGuest } = useContext(AuthContext);
+  const { loginAsGuest } = useAuth();
   const navigate = useNavigate();
 
   const handleLoginClick = () => {

@@ -1,5 +1,5 @@
 import React, { useState, useContext } from 'react';
-import { AuthContext } from '../../contexts/AuthContext';
+import { AuthContext, useAuth } from '../../contexts/AuthContext';
 
 interface LoginModalProps {
   closeModal: () => void;
@@ -14,7 +14,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ closeModal, handleSignupClick, 
   const [isLoading, setIsLoading] = useState(false);
   
   // AuthContext에서 login 함수 가져오기
-  const { login } = useContext(AuthContext);
+  const { login } = useAuth();
 
   // 폼 제출 핸들러
   const handleSubmit = async (e: React.FormEvent) => {
