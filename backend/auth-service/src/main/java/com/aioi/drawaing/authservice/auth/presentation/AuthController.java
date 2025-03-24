@@ -1,9 +1,9 @@
-package com.aioi.drawaing.authservice.auth.controller;
+package com.aioi.drawaing.authservice.auth.presentation;
 
-import com.aioi.drawaing.authservice.auth.dto.EmailRequest;
-import com.aioi.drawaing.authservice.auth.dto.EmailVerificationRequest;
+import com.aioi.drawaing.authservice.auth.presentation.dto.EmailRequest;
+import com.aioi.drawaing.authservice.auth.presentation.dto.EmailVerificationRequest;
 import com.aioi.drawaing.authservice.auth.exception.DuplicateResourceException;
-import com.aioi.drawaing.authservice.auth.service.AuthService;
+import com.aioi.drawaing.authservice.auth.application.AuthService;
 import com.aioi.drawaing.authservice.common.response.ApiResponseEntity;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
