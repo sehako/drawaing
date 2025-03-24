@@ -1,6 +1,7 @@
 package com.aioi.drawaing.drawinggameservice.drawing.domain;
 
 
+import com.aioi.drawaing.drawinggameservice.room.application.dto.AddRoomParticipantInfo;
 import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -25,20 +26,28 @@ public class Session {
     private int drawIdx;
     private int roundCount;
     @Builder.Default
-    private Map<Integer, Participant> participants = new ConcurrentHashMap<>();
+    private Map<Long, Participant> participants = new ConcurrentHashMap<>();
 
-    public static Session createSession(String roomId, List<String> keywords){
-        return Session.builder()
+//    public static Session createSession(String roomId, List<String> keywords){
+//        return Session.builder()
+//                .roomId(roomId)
+//                .words(keywords)
+//                .build();
+//    }
+
+    public static Session createSession(String roomId, AddRoomParticipantInfo addRoomParticipantInfo){
+        Session session = Session.builder()
                 .roomId(roomId)
-                .words(keywords)
                 .build();
+        session.participants.put(addRoomParticipantInfo.userId(), Participant.createParticipant(addRoomParticipantInfo.nickname(), addRoomParticipantInfo.characterUrl()));
+        return session;
     }
 
-    public void addParticipant(int userId, Participant participant){
+    public void addParticipant(Long userId, Participant participant){
         this.participants.put(userId, participant);
     }
 
-    public List<Integer> getParticipants(){
+    public List<Long> getParticipants(){
         return new ArrayList<>(this.participants.keySet());
     }
 

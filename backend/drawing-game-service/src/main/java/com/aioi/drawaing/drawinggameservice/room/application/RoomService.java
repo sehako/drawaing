@@ -1,6 +1,9 @@
 package com.aioi.drawaing.drawinggameservice.room.application;
 
 import com.aioi.drawaing.drawinggameservice.drawing.application.DrawingService;
+import com.aioi.drawaing.drawinggameservice.drawing.domain.Session;
+import com.aioi.drawaing.drawinggameservice.room.application.dto.CreateRoomResponse;
+import com.aioi.drawaing.drawinggameservice.room.application.dto.AddRoomParticipantInfo;
 import com.aioi.drawaing.drawinggameservice.room.domain.Room;
 import com.aioi.drawaing.drawinggameservice.room.infrastructure.repository.RoomRepository;
 import com.aioi.drawaing.drawinggameservice.room.presentation.dto.CreateRoomRequest;
@@ -15,9 +18,13 @@ public class RoomService {
     private final DrawingService drawingService;
 
     //Transaction 처리 생각
-    public String createRoom(String memberId, CreateRoomRequest createRoomRequest) {
-//        drawingService.startSession();
-        Room room = Room.createRoom(memberId, createRoomRequest.title(), "123123123");
-        return roomRepository.save(room).getId();
+    public CreateRoomResponse createRoom(AddRoomParticipantInfo addRoomParticipantInfo, CreateRoomRequest createRoomRequest) {
+        Room room = Room.createRoom(addRoomParticipantInfo, createRoomRequest.title());
+        roomRepository.save(room);
+
+        Session session = drawingService.createSession(room.getId(), addRoomParticipantInfo);
+
+        room.updateSessionId(session.getId());
+        return new CreateRoomResponse("CREATE_ROOM", roomRepository.save(room).getId());
     }
 }
