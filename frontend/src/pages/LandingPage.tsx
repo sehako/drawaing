@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import LoginModal from '../components/landing/LoginModal';
-import SignupModal from '../components/landing/SignUPModal';
+import SignupModal from '../components/landing/SignupModal';
 
 const LandingPage: React.FC = () => {
   const [showLoginModal, setShowLoginModal] = useState(false);
