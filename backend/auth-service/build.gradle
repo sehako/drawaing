@@ -33,7 +33,7 @@ dependencies {
 	if (project.hasProperty("profile") && project.profile == "prod") {
 		implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
 		implementation 'org.springframework.cloud:spring-cloud-starter-bus-amqp'
-		implementation 'org.spr ingframework.cloud:spring-cloud-starter-config'
+		implementation 'org.springframework.cloud:spring-cloud-starter-config'
 	}
 
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
