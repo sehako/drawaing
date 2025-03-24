@@ -14,7 +14,7 @@ type AuthContextType = {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (credentials: { email: string; password: string }) => Promise<any>;
-  signup?: (userData: { username: string; email: string; password: string }) => Promise<void>;
+  signup: (userData: { username: string; email: string; password: string }) => Promise<void>; // ?를 제거
   logout: () => void;
   loginAsGuest: () => Promise<any>;
 };
@@ -79,24 +79,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // 회원가입 함수 (필요하다면 구현)
-  const signup = async (userData: { username: string; email: string; password: string }) => {
-    setIsLoading(true);
-    try {
-      const response = await authService.signup(userData);
-      const { token, user: newUser } = response;
-      
-      // 토큰 저장
-      localStorage.setItem('token', token);
-      
-      setUser(newUser);
-      setIsAuthenticated(true);
-    } catch (error) {
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // AuthContext.tsx 파일에서 signup 함수 내부 코드를 다음과 같이 수정
+
+// 회원가입 함수
+const signup = async (userData: { username: string; email: string; password: string }) => {
+  setIsLoading(true);
+  try {
+    // signup 대신 register 함수 호출
+    const response = await authService.register(userData);
+    const { token, user: newUser } = response;
+    
+    // 토큰 저장
+    localStorage.setItem('token', token);
+    
+    setUser(newUser);
+    setIsAuthenticated(true);
+  } catch (error) {
+    throw error;
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   // 로그아웃 함수
   const logout = async () => {
