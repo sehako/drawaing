@@ -1,8 +1,6 @@
-// src/contexts/AuthContext.jsx
-import React, { createContext, useState, useEffect } from 'react';
+// src/contexts/AuthContext.tsx
+import React, { createContext, useState, useEffect, useContext } from 'react';
 import { authService } from '../services/authService';
-
-
 
 type User = {
   id: string;
@@ -13,15 +11,18 @@ type User = {
 
 type AuthContextType = {
   user: User | null;
-  login: (credentials: { email: string; password: string }) => Promise<void>;
-  signup: (userData: { username: string; email: string; password: string }) => Promise<void>;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  login: (credentials: { email: string; password: string }) => Promise<any>;
+  signup?: (userData: { username: string; email: string; password: string }) => Promise<void>;
   logout: () => void;
-  loginAsGuest: () => Promise<void>;
+  loginAsGuest: () => Promise<any>;
 };
 
 // 인증 컨텍스트 생성
 export const AuthContext = createContext<AuthContextType | null>(null);
-// 2. 인증 컨텍스트를 사용하기 위한 커스텀 훅 생성
+
+// 인증 컨텍스트를 사용하기 위한 커스텀 훅 생성
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -29,6 +30,7 @@ export const useAuth = (): AuthContextType => {
   }
   return context;
 };
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -67,13 +69,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // 토큰 저장
       localStorage.setItem('token', token);
       
-      setUser({
-        id: "user-id",
-        username: "username",
-        email: "email",
-      });
+      setUser(userData);
       setIsAuthenticated(true);
       return userData;
+    } catch (error) {
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 회원가입 함수 (필요하다면 구현)
+  const signup = async (userData: { username: string; email: string; password: string }) => {
+    setIsLoading(true);
+    try {
+      const response = await authService.signup(userData);
+      const { token, user: newUser } = response;
+      
+      // 토큰 저장
+      localStorage.setItem('token', token);
+      
+      setUser(newUser);
+      setIsAuthenticated(true);
     } catch (error) {
       throw error;
     } finally {
@@ -103,27 +120,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isGuest: true
     };
     
-    setUser({
-      id: "guest-id",
-      username: "guest",
-      isGuest: true,
-    });
+    setUser(guestUser);
     setIsAuthenticated(true);
     return guestUser;
   };
 
   // 제공하는 컨텍스트 값
-  const contextValue = {
+  const contextValue: AuthContextType = {
     user,
     isAuthenticated,
     isLoading,
     login,
+    signup,
     logout,
     loginAsGuest
   };
   
   return (
-    <AuthContext.Provider value={{ user, login, signup, logout, loginAsGuest }}>
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );
