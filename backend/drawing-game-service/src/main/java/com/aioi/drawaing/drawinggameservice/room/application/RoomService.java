@@ -2,7 +2,6 @@ package com.aioi.drawaing.drawinggameservice.room.application;
 
 import com.aioi.drawaing.drawinggameservice.room.domain.Room;
 import com.aioi.drawaing.drawinggameservice.room.infrastructure.repository.RoomRepository;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -48,11 +47,12 @@ public class RoomService {
         if (!allReady) {
             throw new RuntimeException("모든 참여자가 준비되지 않았습니다.");
         }
-        // 게임 시작 로직
-        messagingTemplate.convertAndSend(
-                "/topic/room/" + roomId + "/start",
-                Map.of("status", "GAME_STARTED")
-        );
+//        // 게임 시작 로직
+//        messagingTemplate.convertAndSend(
+//                "/topic/room/" + roomId + "/start",
+//                Map.of("status", "GAME_STARTED")
+//        );
+        // 세션 시작 메소드 호출 필요
     }
 
     public void toggleReadyStatus(String roomId, String memberId) {
