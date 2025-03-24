@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useMusic } from '../contexts/MusicContext'; // MusicContext의 useMusic 훅 임포트
 
 // 타입 정의
 interface Player {
@@ -19,6 +20,42 @@ const GameWaitingRoom: React.FC = () => {
   const [chatMessages, setChatMessages] = useState<string[]>([]);
   const [chatInput, setChatInput] = useState<string>('');
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  
+  // MusicContext 가져오기
+  const { setPlaying, currentTrack } = useMusic();
+  
+  // 현재 경로에 따라 음악이 자동으로 변경되도록 MusicContext를 수정해야 합니다
+  // 다음은 이 컴포넌트에서 Music3.mp3를 임시로 재생하는 코드입니다
+  useEffect(() => {
+    const audioElement = new Audio('/Music/Music3.mp3');
+    audioElement.loop = true;
+    audioElement.volume = 0.3; // 볼륨 설정
+    
+    // 기존 음악 일시 중지
+    if (currentTrack) {
+      setPlaying(false);
+    }
+    
+    // Music3 재생
+    audioElement.play()
+      .then(() => {
+        console.log('Music3.mp3 재생 시작');
+      })
+      .catch(error => {
+        console.error('Music3.mp3 재생 실패:', error);
+      });
+    
+    // 컴포넌트 언마운트 시 정리
+    return () => {
+      audioElement.pause();
+      audioElement.currentTime = 0;
+      
+      // 다시 원래 음악으로 돌아갈 수 있도록 설정
+      if (currentTrack) {
+        setPlaying(true);
+      }
+    };
+  }, []);
   
   // 예시 데이터로 초기화 (실제로는 API에서 가져올 것입니다)
   useEffect(() => {
@@ -85,13 +122,13 @@ const GameWaitingRoom: React.FC = () => {
     }
     
     alert('게임을 시작합니다!');
-    // navigate('/game/play');
+    navigate('/game');
   };
   
   // 방 나가기
   const leaveRoom = () => {
     if (confirm('정말로 방을 나가시겠습니까?')) {
-      navigate('/lobby');
+      navigate('/');
     }
   };
   
@@ -113,7 +150,7 @@ const GameWaitingRoom: React.FC = () => {
     }
   });
 
-return (
+  return (
     <div className="relative w-full h-screen overflow-hidden bg-amber-50">
       {/* 배경 이미지 */}
       <div className="absolute inset-0 w-full h-full z-0">
