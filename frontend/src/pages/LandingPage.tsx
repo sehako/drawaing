@@ -17,7 +17,7 @@ const LandingPage: React.FC = () => {
 
   const handleGuestClick = () => {
     try {
-      // 게스트 로그인 처리
+      // 게스트 로그인
       loginAsGuest();
       
       // 게임 페이지로 이동
