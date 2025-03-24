@@ -3,6 +3,7 @@ import PlayerSection from '../components/Game/PlayerSection';
 import CanvasSection from '../components/Game/CanvasSection';
 import AISection from '../components/Game/AIsection';
 import word from '../assets/Game/word.png';
+import axios from 'axios';
 
 interface Player {
   id: number;
@@ -44,6 +45,8 @@ const Game: React.FC = () => {
     '/ai/fox.png',
     '/ai/eggs.png'
   ]);
+
+  const [predictions, setPredictions] = useState<{ class: string; probability: number }[]>([]); // 예측 정보 상태
 
   const handlePlayerCorrectAnswer = () => {
     setEggCount(prev => prev + 1);
@@ -211,6 +214,27 @@ const handleNextPlayer = () => {
     return realIndex;
   };
 
+  // 자식 컴포넌트에 연결할 fastapi - 이미지 전송하고 예측값 받아오기기
+  const handleCanvasSubmit = async (blob: Blob) => {
+    const formData = new FormData();
+    formData.append("file", blob, "drawing.png");
+  
+    try {
+      // 서버로 이미지 업로드 및 예측 요청
+      const response = await axios.post("http://localhost:8000/predict", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+  
+      // 예측 결과 상태 업데이트
+      setPredictions(response.data.predictions); // 예측 데이터를 상태로 업데이트
+      //console.log("게임세션: ",response.data.predictions)
+      return response.data.predictions;
+    } catch (error) {
+      console.error("예측 요청 실패:", error);
+      throw error;  // 에러 발생 시 예외 처리
+    }
+  };
+
   const currentDrawerIndex = calculateCurrentDrawerPlayerIndex();
   const currentDrawer = players[currentDrawerIndex];
 
@@ -289,6 +313,8 @@ const handleNextPlayer = () => {
           handleGuessSubmit={handleGuessSubmit}
           handlePass={handlePass}
           activeDrawerIndex={activeDrawerIndex}
+          handleCanvasSubmit={handleCanvasSubmit}
+          setPredictions={setPredictions}
         />
       </div>
 
@@ -304,6 +330,7 @@ const handleNextPlayer = () => {
           eggCount={eggCount}
           onAICorrectAnswer={handleAICorrectAnswer}
           quizWord={quizWord} // quizWord 추가
+          predictions={predictions}
 
         />
       </div>

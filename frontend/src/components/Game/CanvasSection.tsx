@@ -3,6 +3,8 @@ import ColorPicker from './ColorPicker';
 import chick from '../../assets/Common/chick.gif'
 import CustomModal from '../common/CustomModal';
 import { CanvasCorrectModal } from './GameModals';
+import axios from 'axios';
+
 
 interface CanvasSectionProps {
   canvasRef: React.MutableRefObject<HTMLCanvasElement | null>;
@@ -29,6 +31,8 @@ interface CanvasSectionProps {
   handleGuessSubmit: (e: React.FormEvent) => void;
   handlePass: () => void;
   activeDrawerIndex: number;
+  handleCanvasSubmit: (blob: Blob) => Promise<any>;
+  setPredictions: React.Dispatch<React.SetStateAction<any[]>>;
 }
 
 // 그림 데이터 저장을 위한 인터페이스
@@ -61,7 +65,9 @@ const CanvasSection: React.FC<CanvasSectionProps> = ({
   setGuess,
   handleGuessSubmit,
   handlePass,
-  activeDrawerIndex
+  activeDrawerIndex,
+  handleCanvasSubmit, 
+  setPredictions 
 }) => {
   
   const totalTime = 20; // 각 플레이어에게 20초 부여
@@ -89,16 +95,16 @@ const CanvasSection: React.FC<CanvasSectionProps> = ({
   // 현재 플레이어가 이미 그림을 그렸는지 확인
   const hasCurrentPlayerDrawn = hasDrawnInRound[activeDrawerIndex];
   
-  // 현재 플레이어 그림 저장 함수
-  const saveCurrentDrawing = () => {
+  
+  const saveCurrentDrawing = async () => {
     if (!canvasRef.current || !context) return;
-    
-    // 현재 캔버스의 이미지 데이터 가져오기
+  
+    // 🎨 현재 캔버스의 이미지 데이터 저장 (FastAPI 요청 이후 실행)
     const imageData = context.getImageData(0, 0, canvasRef.current.width, canvasRef.current.height);
-    
-    // 이미 해당 플레이어의 그림이 있는지 확인
+
+    // 기존 플레이어의 그림이 있는지 확인
     const existingIndex = drawingHistory.findIndex(item => item.drawerIndex === activeDrawerIndex);
-    
+
     if (existingIndex >= 0) {
       // 기존 그림 업데이트
       const updatedHistory = [...drawingHistory];
@@ -108,11 +114,25 @@ const CanvasSection: React.FC<CanvasSectionProps> = ({
       // 새 그림 추가
       setDrawingHistory([...drawingHistory, { drawerIndex: activeDrawerIndex, imageData }]);
     }
-    
+
     // 현재 플레이어가 그림을 그렸음을 표시
     const newHasDrawnInRound = [...hasDrawnInRound];
     newHasDrawnInRound[activeDrawerIndex] = true;
     setHasDrawnInRound(newHasDrawnInRound);
+
+    // 🎯 캔버스 데이터를 Blob으로 변환 후 FastAPI로 전송
+    canvasRef.current.toBlob(async (blob) => {
+      if (!blob) return;
+      
+      try {
+        const predictions = await handleCanvasSubmit(blob);
+        setPredictions(predictions); // 예측값을 state로 저장
+        console.log("캔버스세션: ",predictions)
+      } catch (error) {
+        console.error("예측값 받아오기 실패:", error);
+      }
+    }, "image/png");
+    
   };
   
   // 캔버스에 모든 그림 그리기
@@ -553,6 +573,7 @@ const CanvasSection: React.FC<CanvasSectionProps> = ({
     </div>
   );
 };
+
 
 // 텍스트 대비 색상 계산 함수 (어두운 배경에는 흰색, 밝은 배경에는 검은색)
 function getContrastColor(hexOrRgb: string): string {
