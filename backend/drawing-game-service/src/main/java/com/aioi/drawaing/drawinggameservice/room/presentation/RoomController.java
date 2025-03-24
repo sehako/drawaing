@@ -45,7 +45,7 @@ public class RoomController {
                          @Payload RoomRequest request) {
         roomService.leaveRoom(roomId, request.memberId());
     }
-    // 필요한가?
+    // 프론트에 브로드캐스트로 예외 던져주는 코드
     @MessageExceptionHandler
     public void handleException(Exception e, SimpMessageHeaderAccessor headerAccessor) {
         messagingTemplate.convertAndSendToUser(
