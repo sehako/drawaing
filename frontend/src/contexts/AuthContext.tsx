@@ -2,11 +2,35 @@
 import React, { createContext, useState, useEffect } from 'react';
 import { authService } from '../services/authService';
 
-// 인증 컨텍스트 생성
-export const AuthContext = createContext();
 
-export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+
+type User = {
+  id: string;
+  username: string;
+  email?: string;
+  isGuest?: boolean;
+};
+
+type AuthContextType = {
+  user: User | null;
+  login: (credentials: { email: string; password: string }) => Promise<void>;
+  signup: (userData: { username: string; email: string; password: string }) => Promise<void>;
+  logout: () => void;
+  loginAsGuest: () => Promise<void>;
+};
+
+// 인증 컨텍스트 생성
+export const AuthContext = createContext<AuthContextType | null>(null);
+// 2. 인증 컨텍스트를 사용하기 위한 커스텀 훅 생성
+export const useAuth = (): AuthContextType => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth는 AuthProvider 내에서 사용되어야 합니다");
+  }
+  return context;
+};
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -34,7 +58,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   // 로그인 함수
-  const login = async (credentials) => {
+  const login = async (credentials: { email: string; password: string }) => {
     setIsLoading(true);
     try {
       const response = await authService.login(credentials);
@@ -43,7 +67,11 @@ export const AuthProvider = ({ children }) => {
       // 토큰 저장
       localStorage.setItem('token', token);
       
-      setUser(userData);
+      setUser({
+        id: "user-id",
+        username: "username",
+        email: "email",
+      });
       setIsAuthenticated(true);
       return userData;
     } catch (error) {
@@ -68,14 +96,18 @@ export const AuthProvider = ({ children }) => {
   };
 
   // 게스트 모드 함수
-  const loginAsGuest = () => {
+  const loginAsGuest = async () => {
     const guestUser = {
       id: 'guest-' + Math.random().toString(36).substr(2, 9),
       username: '게스트',
       isGuest: true
     };
     
-    setUser(guestUser);
+    setUser({
+      id: "guest-id",
+      username: "guest",
+      isGuest: true,
+    });
     setIsAuthenticated(true);
     return guestUser;
   };
@@ -89,9 +121,9 @@ export const AuthProvider = ({ children }) => {
     logout,
     loginAsGuest
   };
-
+  
   return (
-    <AuthContext.Provider value={contextValue}>
+    <AuthContext.Provider value={{ user, login, signup, logout, loginAsGuest }}>
       {children}
     </AuthContext.Provider>
   );
