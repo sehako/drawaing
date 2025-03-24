@@ -5,11 +5,18 @@ import chicken from '../../assets/Game/chicken.png';
 import kid from '../../assets/Game/kid.png';
 import max from '../../assets/Game/max.png';
 
+// 플레이어 접속 상태 맵 타입 정의 - 인덱스 시그니처 추가
+interface PlayerConnectionMap {
+  [name: string]: boolean;
+}
+
 interface PlayerSectionProps {
   currentRound: number; // 현재 라운드
   activeDrawerIndex: number; // 현재 그리고 있는 사람 인덱스
   guesserIndex: number; // 정답 맞추는 사람 인덱스
   roomId: string; // 방 ID
+  isConnected?: boolean; // 웹소켓 연결 상태
+  playerConnections?: PlayerConnectionMap; // 플레이어 접속 상태 맵
 }
 
 // 플레이어 정보 인터페이스
@@ -36,40 +43,47 @@ type RoundPositions = {
   [round: number]: PositionMap;
 }
 
-const PlayerSection: React.FC<PlayerSectionProps> = ({ currentRound = 1, activeDrawerIndex = 0 }) => {
-    // 고정된 플레이어 데이터 
+const PlayerSection: React.FC<PlayerSectionProps> = ({ 
+  currentRound = 1, 
+  activeDrawerIndex = 0, 
+  guesserIndex = 0, 
+  roomId = "1", 
+  isConnected = false,
+  playerConnections = {} 
+}) => {
+    // 고정된 플레이어 데이터 - 이름을 플레이어1~4로 변경
     const players: PlayerList = {
-        "김률아": { level: 12, avatar: baby },
-        "문상혁": { level: 50, avatar: max },
-        "차정문": { level: 25, avatar: angry },
-        "김예훈": { level: 16, avatar: chicken }
+        "플레이어1": { level: 12, avatar: baby },
+        "플레이어2": { level: 50, avatar: max },
+        "플레이어3": { level: 25, avatar: angry },
+        "플레이어4": { level: 16, avatar: chicken }
     };
     
-    // 라운드별 플레이어 배치 정의 (고정)
+    // 라운드별 플레이어 배치 정의 (고정) - 이름을 플레이어1~4로 변경
     const roundPositions: RoundPositions = {
         1: {
-            "정답자": "김률아",
-            "순서1": "문상혁",
-            "순서2": "차정문",
-            "순서3": "김예훈"
+            "정답자": "플레이어1",
+            "순서1": "플레이어2",
+            "순서2": "플레이어3",
+            "순서3": "플레이어4"
         },
         2: {
-            "정답자": "문상혁",
-            "순서1": "차정문",
-            "순서2": "김예훈",
-            "순서3": "김률아"
+            "정답자": "플레이어2",
+            "순서1": "플레이어3",
+            "순서2": "플레이어4",
+            "순서3": "플레이어1"
         },
         3: {
-            "정답자": "차정문",
-            "순서1": "김예훈",
-            "순서2": "김률아",
-            "순서3": "문상혁"
+            "정답자": "플레이어3",
+            "순서1": "플레이어4",
+            "순서2": "플레이어1",
+            "순서3": "플레이어2"
         },
         4: {
-            "정답자": "김예훈",
-            "순서1": "김률아",
-            "순서2": "문상혁",
-            "순서3": "차정문"
+            "정답자": "플레이어4",
+            "순서1": "플레이어1",
+            "순서2": "플레이어2",
+            "순서3": "플레이어3"
         }
     };
     
@@ -91,21 +105,45 @@ const PlayerSection: React.FC<PlayerSectionProps> = ({ currentRound = 1, activeD
         // 기본값 반환 (에러 방지)
         return { level: 0, avatar: baby };
     };
+
+    // 플레이어 접속 상태 가져오기
+    const getPlayerConnectionStatus = (playerName: string): boolean => {
+        // 타입스크립트에서 안전하게 접근하기 위해 in 연산자 사용
+        return playerName in playerConnections ? playerConnections[playerName] : false;
+    };
+
+    // 접속 상태 텍스트 표시
+    const getConnectionStatusText = (playerName: string): string => {
+        return getPlayerConnectionStatus(playerName) ? '(접속중)' : '(접속하지 않음)';
+    };
     
     return (
         <div className="h-[580px] w-[250px] flex flex-col pr-2 overflow-hidden">
-        {/* 정답자 */}
+            {/* 방 정보 표시 */}
+            <div className="w-full mb-2 p-2 bg-amber-50 text-amber-800 rounded-lg border border-amber-200 text-center">
+                <div className="font-bold">방 #{roomId}</div>
+                <div className={`mt-1 text-xs ${isConnected ? 'text-green-600' : 'text-red-600'}`}>
+                    {isConnected ? '실시간 접속 상태 확인 중' : '연결 중...'}
+                </div>
+            </div>
+            
+            {/* 정답자 */}
             <div className="h-[135px] flex border-4 border-purple-600 p-2 rounded-lg bg-[#FDE047] relative mb-3 mt-1 ml-1">
                 <div className="absolute -top-2 -left-2 bg-purple-600 text-white px-2 py-1 text-xs font-bold rounded-md shadow">
                     정답자
                 </div>
                 
-                <div className="w-[70%] h-full flex items-center justify-center">
+                <div className="w-[55%] h-full flex items-center justify-center">
                     <img src={getPlayerInfo(currentPositions["정답자"]).avatar} alt={currentPositions["정답자"]} className="object-contain h-full w-full" />
                 </div>
                 <div className="w-[45%] h-full flex flex-col justify-between items-center pl-2">
-                    <div className="text-gray-800 font-bold text-base mt-3">{currentPositions["정답자"]}</div>
-                    <div className="text-m text-gray-600">Lv.{getPlayerInfo(currentPositions["정답자"]).level}</div>
+                    <div className="text-gray-800 font-bold text-base mt-3">
+                        {currentPositions["정답자"]}
+                    </div>
+                    <div className="text-sm text-gray-600">Lv.{getPlayerInfo(currentPositions["정답자"]).level}</div>
+                    <div className={`text-xs font-medium ${getPlayerConnectionStatus(currentPositions["정답자"]) ? 'text-green-600' : 'text-red-600'}`}>
+                        {getConnectionStatusText(currentPositions["정답자"])}
+                    </div>
                     <div className="flex justify-center w-full mt-1 mb-2">
                         <button className="text-lg cursor-pointer bg-slate-100 mr-1">👍</button>
                         <button className="text-lg cursor-pointer bg-slate-100 ml-1">👎</button>    
@@ -127,8 +165,13 @@ const PlayerSection: React.FC<PlayerSectionProps> = ({ currentRound = 1, activeD
                     <img src={getPlayerInfo(currentPositions["순서1"]).avatar} alt={currentPositions["순서1"]} className="object-contain h-full w-full" />
                 </div>
                 <div className="w-[45%] h-full flex flex-col justify-between items-center pl-2">
-                    <div className="text-gray-800 font-bold text-base mt-3">{currentPositions["순서1"]}</div>
-                    <div className="text-m text-gray-600">Lv.{getPlayerInfo(currentPositions["순서1"]).level}</div>
+                    <div className="text-gray-800 font-bold text-base mt-3">
+                        {currentPositions["순서1"]}
+                    </div>
+                    <div className="text-sm text-gray-600">Lv.{getPlayerInfo(currentPositions["순서1"]).level}</div>
+                    <div className={`text-xs font-medium ${getPlayerConnectionStatus(currentPositions["순서1"]) ? 'text-green-600' : 'text-red-600'}`}>
+                        {getConnectionStatusText(currentPositions["순서1"])}
+                    </div>
                     <div className="flex justify-center w-full mt-1 mb-2">
                         <button className="text-lg cursor-pointer bg-slate-100 mr-1">👍</button>
                         <button className="text-lg cursor-pointer bg-slate-100 ml-1">👎</button>
@@ -150,8 +193,13 @@ const PlayerSection: React.FC<PlayerSectionProps> = ({ currentRound = 1, activeD
                     <img src={getPlayerInfo(currentPositions["순서2"]).avatar} alt={currentPositions["순서2"]} className="object-contain h-full w-full" />
                 </div>
                 <div className="w-[45%] h-full flex flex-col justify-between items-center pl-2">
-                    <div className="text-gray-800 font-bold text-base mt-3">{currentPositions["순서2"]}</div>
-                    <div className="text-m text-gray-600">Lv.{getPlayerInfo(currentPositions["순서2"]).level}</div>
+                    <div className="text-gray-800 font-bold text-base mt-3">
+                        {currentPositions["순서2"]}
+                    </div>
+                    <div className="text-sm text-gray-600">Lv.{getPlayerInfo(currentPositions["순서2"]).level}</div>
+                    <div className={`text-xs font-medium ${getPlayerConnectionStatus(currentPositions["순서2"]) ? 'text-green-600' : 'text-red-600'}`}>
+                        {getConnectionStatusText(currentPositions["순서2"])}
+                    </div>
                     <div className="flex justify-center w-full mt-1 mb-2">
                         <button className="text-lg cursor-pointer bg-slate-100 mr-1">👍</button>
                         <button className="text-lg cursor-pointer bg-slate-100 ml-1">👎</button>
@@ -173,8 +221,13 @@ const PlayerSection: React.FC<PlayerSectionProps> = ({ currentRound = 1, activeD
                     <img src={getPlayerInfo(currentPositions["순서3"]).avatar} alt={currentPositions["순서3"]} className="object-contain h-full w-full" />
                 </div>
                 <div className="w-[45%] h-full flex flex-col justify-between items-center pl-2">
-                    <div className="text-gray-800 font-bold text-base mt-3">{currentPositions["순서3"]}</div>
-                    <div className="text-m text-gray-600">Lv.{getPlayerInfo(currentPositions["순서3"]).level}</div>
+                    <div className="text-gray-800 font-bold text-base mt-3">
+                        {currentPositions["순서3"]}
+                    </div>
+                    <div className="text-sm text-gray-600">Lv.{getPlayerInfo(currentPositions["순서3"]).level}</div>
+                    <div className={`text-xs font-medium ${getPlayerConnectionStatus(currentPositions["순서3"]) ? 'text-green-600' : 'text-red-600'}`}>
+                        {getConnectionStatusText(currentPositions["순서3"])}
+                    </div>
                     <div className="flex justify-center w-full mt-1 mb-2">
                         <button className="text-lg cursor-pointer bg-slate-100 mr-1">👍</button>
                         <button className="text-lg cursor-pointer bg-slate-100 ml-1">👎</button>
