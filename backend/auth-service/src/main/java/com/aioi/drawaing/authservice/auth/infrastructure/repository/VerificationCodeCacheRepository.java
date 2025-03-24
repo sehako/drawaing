@@ -1,6 +1,6 @@
-package com.aioi.drawaing.authservice.auth.repository;
+package com.aioi.drawaing.authservice.auth.infrastructure.repository;
 
-import com.aioi.drawaing.authservice.auth.entity.VerificationCodeCache;
+import com.aioi.drawaing.authservice.auth.domain.VerificationCodeCache;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import org.springframework.data.repository.CrudRepository;

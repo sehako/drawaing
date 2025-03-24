@@ -34,11 +34,11 @@ public class Member extends BaseEntity implements UserDetails {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "email", nullable = false)
+    @Column(name = "email", nullable = false, length = 63)
     private String email;
 
     @Setter
-    @Column(name = "nickname", nullable = false)
+    @Column(name = "nickname", nullable = false, length = 20)
     private String nickname;
 
     @Setter
@@ -52,10 +52,6 @@ public class Member extends BaseEntity implements UserDetails {
     @Column(name = "role")
     @Enumerated(EnumType.STRING)
     private RoleType role;
-
-    // item_id 일대일 매핑
-    @Column(name = "character_id")
-    private Long characterId;
 
     @Setter
     @Column(name = "character_image")
