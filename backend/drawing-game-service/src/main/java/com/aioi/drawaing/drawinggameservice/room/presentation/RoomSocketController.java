@@ -1,6 +1,7 @@
 package com.aioi.drawaing.drawinggameservice.room.presentation;
 
 import com.aioi.drawaing.drawinggameservice.room.application.RoomSocketService;
+import com.aioi.drawaing.drawinggameservice.room.application.dto.AddRoomParticipantInfo;
 import com.aioi.drawaing.drawinggameservice.room.presentation.dto.RoomRequest;
 import java.util.Map;
 import java.util.Objects;
@@ -25,15 +26,15 @@ public class RoomSocketController {
                             @Payload RoomRequest request) {
         roomSocketService.toggleReadyStatus(roomId, request.memberId());
     }
-    @MessageMapping("/room.create/{roomId}")
-    public void createRoom(@DestinationVariable String roomId,
-                           @Payload RoomRequest request) {
-        roomSocketService.createRoom(roomId, request.memberId());
-    }
+//    @MessageMapping("/room.create/{roomId}")
+//    public void createRoom(@DestinationVariable String roomId,
+//                           @Payload RoomRequest request) {
+//        roomSocketService.createRoom(roomId, request.memberId());
+//    }
     @MessageMapping("/room.join/{roomId}")
     public void joinRoom(@DestinationVariable String roomId,
                            @Payload RoomRequest request) {
-        roomSocketService.joinRoom(roomId, request.memberId());
+        roomSocketService.joinRoom(roomId, new AddRoomParticipantInfo(234, "234", "urlrulrulrulrul123123"));
     }
     @MessageMapping("/room.start/{roomId}")
     public void startGame(@DestinationVariable String roomId,

@@ -1,5 +1,6 @@
 package com.aioi.drawaing.drawinggameservice.room.domain;
 
+import com.aioi.drawaing.drawinggameservice.room.application.dto.AddRoomParticipantInfo;
 import jakarta.persistence.Id;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -13,20 +14,33 @@ import org.springframework.data.mongodb.core.mapping.Document;
 public class Room {
     @Id
     private String id;
-    private String hostId;
+    private Long hostId;
     private String title;
     private String sessionId;
     private String status;
     @Builder.Default
-    private Map<String, Boolean> participants = new LinkedHashMap<>();
+    private Map<Long, RoomParticipant> participants = new LinkedHashMap<>();
 
-    public static Room createRoom(String hostId, String title, String sessionId) {
-        return Room.builder()
-                .title(title)
-                .hostId(hostId)
-                .sessionId(sessionId)
-                .status(RoomStatus.READY.name())
-                .build();
+    public static Room createRoom(AddRoomParticipantInfo addRoomParticipantInfo, String title) {
+        Room room = Room.builder()
+            .title(title)
+            .hostId(addRoomParticipantInfo.userId())
+            .status(RoomStatus.READY.name())
+            .build();
+        room.getParticipants().put(addRoomParticipantInfo.userId(), RoomParticipant.createRoomParticipant(addRoomParticipantInfo.nickname(), addRoomParticipantInfo.characterUrl()));
+        return room;
+    }
+
+    public void addParticipant(AddRoomParticipantInfo addRoomParticipantInfo) {
+        this.getParticipants().put(addRoomParticipantInfo.userId(), RoomParticipant.createRoomParticipant(addRoomParticipantInfo.nickname(), addRoomParticipantInfo.characterUrl()));
+    }
+
+    public void updateParticipantReady(long userId) {
+        this.getParticipants().get(userId).updateReady();
+    }
+
+    public void updateSessionId(String sessionId) {
+        this.sessionId = sessionId;
     }
 
     // 방장 갱신 로직 (순차적 선택)
@@ -37,7 +51,7 @@ public class Room {
         }
     }
 
-    public void updateHostId(String hostId) {
+    public void updateHostId(long hostId) {
         this.hostId = hostId;
     }
 
