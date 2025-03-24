@@ -1,6 +1,7 @@
 package com.aioi.drawaing.authservice.oauth.domain.entity;
 
 import com.aioi.drawaing.authservice.member.domain.Member;
+import jakarta.persistence.Column;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -27,6 +28,9 @@ public class UserPrincipal implements OAuth2User, UserDetails, OidcUser {
     private final String password;
     private final ProviderType providerType;
     private final RoleType roleType;
+    private final Integer level;
+    private final Integer exp;
+    private final Integer point;
     private final Collection<GrantedAuthority> authorities;
     private Map<String, Object> attributes;
 
@@ -92,6 +96,9 @@ public class UserPrincipal implements OAuth2User, UserDetails, OidcUser {
                 user.getPassword(),
                 user.getProviderType(),
                 RoleType.ROLE_USER,
+                user.getLevel(),
+                user.getExp(),
+                user.getPoint(),
                 Collections.singletonList(new SimpleGrantedAuthority(RoleType.ROLE_USER.name()))
         );
     }

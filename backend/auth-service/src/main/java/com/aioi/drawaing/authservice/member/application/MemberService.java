@@ -50,13 +50,7 @@ public class MemberService {
     public MemberResponse get(long memberId) {
         Member member = memberRepository.findMemberById(memberId).orElseThrow();
         log.info(member.getEmail());
-        return MemberResponse.builder()
-                .memberId(member.getId())
-                .nickname(member.getNickname())
-                .email(member.getEmail())
-                .profileImg(member.getProfileImg())
-                .providerType(member.getProviderType())
-                .build();
+        return MemberResponse.of(member);
     }
 
     public Long getMemberId() {
@@ -68,10 +62,12 @@ public class MemberService {
     public MemberResponse update(MemberRequest memberRequest, MultipartFile profileImage) {
         Member member = getMember();
 
+        // 캐릭터 이미지 로직 수정해야함
+
         if (profileImage != null && !profileImage.isEmpty()) {
-            s3ImageUploader.deleteImageFromS3(member.getProfileImg());
+            s3ImageUploader.deleteImageFromS3(member.getCharacterImage());
             String profileImg = s3ImageUploader.upload(profileImage);
-            member.setProfileImg(profileImg);
+            member.setCharacterImage(profileImg);
         }
 
         Member updated = memberRepository.saveAndFlush(member.toBuilder()
@@ -80,13 +76,7 @@ public class MemberService {
                         : passwordEncoder.encode(memberRequest.password()))
                 .build());
 
-        return MemberResponse.builder()
-                .memberId(updated.getId())
-                .nickname(updated.getNickname())
-                .email(updated.getEmail())
-                .profileImg(updated.getProfileImg())
-                .providerType(updated.getProviderType())
-                .build();
+        return MemberResponse.of(updated);
     }
 
     @Transactional
@@ -115,6 +105,7 @@ public class MemberService {
                 .password(passwordEncoder.encode(signUp.getPassword()))
                 .role(RoleType.ROLE_USER)
                 .providerType(ProviderType.LOCAL)
+                // 기본 캐릭터 이미지 넣어줄 예정
                 .build();
 
         memberRepository.save(member);

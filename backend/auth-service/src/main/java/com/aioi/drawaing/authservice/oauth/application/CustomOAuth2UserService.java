@@ -73,7 +73,10 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 .nickname(userInfo.getName())
                 .providerType(providerType)
                 .role(RoleType.ROLE_USER)
-                .profileImg(userInfo.getImageUrl())
+                .level(1)
+                .exp(0)
+                .point(0)
+                // 임시로 넣어둠, 고칠 예정
                 .build();
 
         return memberRepository.saveAndFlush(user);
@@ -83,6 +86,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         if (userInfo.getName() != null && !user.getUsername().equals(userInfo.getName())) {
             user.setNickname(userInfo.getName());
         }
-        user.setProfileImg(user.getProfileImg());
+        user.setCharacterImage(userInfo.getImageUrl());
     }
 }
