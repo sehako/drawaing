@@ -1,5 +1,5 @@
 import React, { useState, useContext, useEffect } from 'react';
-import { AuthContext } from '../../contexts/AuthContext'
+import { AuthContext, useAuth } from '../../contexts/AuthContext'
 import authService from '../../services/authService';
 
 interface SignupModalProps {
@@ -31,7 +31,7 @@ const SignupModal: React.FC<SignupModalProps> = ({ closeModal, handleLoginClick,
   const [isNicknameChecked, setIsNicknameChecked] = useState(false);
   const [passwordsMatch, setPasswordsMatch] = useState<boolean | null>(null);
   
-  const { login } = useContext(AuthContext);
+  const { login } = useAuth();
 
   // 비밀번호 입력시마다 요구사항 충족 여부 확인
   useEffect(() => {
