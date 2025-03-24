@@ -45,11 +45,6 @@ public class Member extends BaseEntity implements UserDetails {
     @Column(name = "password")
     private String password;
 
-    @Setter
-    @Column(name = "image_url")
-    private String imageUrl;
-
-
     @Column(name = "provider_type")
     @Enumerated(EnumType.STRING)
     private ProviderType providerType;
@@ -58,6 +53,22 @@ public class Member extends BaseEntity implements UserDetails {
     @Enumerated(EnumType.STRING)
     private RoleType role;
 
+    // item_id 일대일 매핑
+    @Column(name = "character_id")
+    private Long characterId;
+
+    @Setter
+    @Column(name = "character_image")
+    private String characterImage;
+
+    @Column(name = "level", columnDefinition = "integer default 1")
+    private Integer level;
+
+    @Column(name = "exp", columnDefinition = "integer default 0")
+    private Integer exp;
+
+    @Column(name = "point", columnDefinition = "integer default 0")
+    private Integer point;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
