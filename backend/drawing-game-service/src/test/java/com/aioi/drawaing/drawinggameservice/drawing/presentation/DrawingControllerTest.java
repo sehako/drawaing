@@ -82,6 +82,8 @@ public class DrawingControllerTest {
         assertThat(actualJson).isEqualTo(expectedJson);
     }
 
+
+
 //    @DisplayName("유저가 메세지를 보냈을 때 서버에 보내지는지 확인한다.")
 //    @Test
 //    public void 메세지_보내기_성공_유무() {
