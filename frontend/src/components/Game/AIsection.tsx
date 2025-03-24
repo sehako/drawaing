@@ -14,6 +14,8 @@ interface AISectionProps {
   onAICorrectAnswer: () => void;
   quizWord: string;
   predictions: { class: string; probability: number }[];  // 예측 데이터
+  canPass?: boolean; // PASS 가능 여부
+  passCount?: number; // 현재 PASS 횟수
 }
 
 const AISection: React.FC<AISectionProps> = ({
@@ -26,7 +28,9 @@ const AISection: React.FC<AISectionProps> = ({
   eggCount,
   quizWord,
   onAICorrectAnswer,
-  predictions
+  predictions,
+  canPass = false,
+  passCount = 0
 }) => {
   const [isPassModalOpen, setIsPassModalOpen] = useState(false);
   const [isCorrectModalOpen, setIsCorrectModalOpen] = useState(false);
@@ -105,11 +109,18 @@ const AISection: React.FC<AISectionProps> = ({
         
         {/* 버튼 영역 */}
         <div className="flex flex-col space-y-2 mx-2 mb-2">
-          <button 
+        <button 
             onClick={openPassModal}
-            className="h-[52px] w-full bg-orange-500 text-white font-medium hover:bg-orange-600 rounded-[10px]"
+            disabled={!canPass}
+            className={`h-[52px] w-full text-white font-medium rounded-[10px] 
+              ${canPass 
+                ? 'bg-orange-500 hover:bg-orange-600' 
+                : 'bg-orange-500 cursor-not-allowed'
+              }`}
           >
-            PASS
+            {canPass 
+              ? `PASS (${3 - passCount}회 남음)` 
+              : '패스 불가'}
           </button>
           <button 
             onClick={handleAISubmit}

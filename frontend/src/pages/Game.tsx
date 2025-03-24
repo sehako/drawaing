@@ -35,6 +35,9 @@ const Game: React.FC = () => {
   const roomId = params.roomId;
   const navigate = useNavigate();
   
+  const [passCount, setPassCount] = useState<number>(0);
+  const MAX_PASS_COUNT = 3;
+
   // roomId가 없으면 기본 방으로 리다이렉트
   useEffect(() => {
     if (!roomId) {
@@ -131,37 +134,43 @@ const Game: React.FC = () => {
         handlePlayerConnection(currentPlayer, true);
       };
 
-      ws.onmessage = (event) => {
-        try {
-          const message: WebSocketMessage = JSON.parse(event.data);
-          
-          // 메시지 타입에 따라 처리
-          switch (message.type) {
-            case "player_connected":
-              // 플레이어 접속 정보 업데이트
-              handlePlayerConnection(message.data.playerName, true);
-              break;
-            
-            case "player_disconnected":
-              // 플레이어 접속 종료 정보 업데이트
-              handlePlayerConnection(message.data.playerName, false);
-              break;
-            
-            case "room_players":
-              // 방의 모든 플레이어 정보 업데이트
-              updateRoomPlayers(message.data.players);
-              break;
-            
-            default:
-              console.log("알 수 없는 메시지 타입:", message.type);
-          }
-        } catch (error) {
-          console.error("메시지 처리 중 오류 발생:", error);
-        }
-      };
-
-      ws.onclose = () => {
-        console.log("웹소켓 연결 종료");
+ws.onmessage = (event) => {
+  try {
+    const message: WebSocketMessage = JSON.parse(event.data);
+    
+    console.log("받은 웹소켓 메시지:", message); // 받은 메시지 전체 로깅
+    
+    // 메시지 타입에 따라 처리
+    switch (message.type) {
+      case "player_connected":
+        console.log("플레이어 연결:", message.data.playerName);
+        handlePlayerConnection(message.data.playerName, true);
+        break;
+      
+      case "player_disconnected":
+        console.log("플레이어 연결 해제:", message.data.playerName);
+        handlePlayerConnection(message.data.playerName, false);
+        break;
+      
+      case "room_players":
+        console.log("방 플레이어들:", message.data.players);
+        updateRoomPlayers(message.data.players);
+        break;
+      
+      default:
+        console.log("알 수 없는 메시지 타입:", message.type);
+    }
+  } catch (error) {
+    console.error("메시지 처리 중 오류 발생:", error);
+  }
+};
+      ws.onclose = (event) => {
+        console.log("웹소켓 연결 종료 상세 정보:", {
+          code: event.code,
+          reason: event.reason,
+          wasClean: event.wasClean
+        });
+        
         setIsConnected(false);
         
         // 자신의 접속 상태 업데이트
@@ -377,22 +386,26 @@ const Game: React.FC = () => {
   };
 
   const handlePass = () => {
-    setCurrentRound(prev => prev + 1);
-    setGuesserIndex((guesserIndex + 1) % 4);
-    setActiveDrawerIndex(0);
-    
-    setTimeLeft(20);
-    
-    setHasCompleted(false);
-    setShowCorrectAnswer(false);
-    
-    if (context && canvasRef.current) {
-      context.fillStyle = 'white';
-      context.fillRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+    // 조건 수정: 순서3(activeDrawerIndex === 2)이고 전체 PASS 횟수가 3회 미만일 때
+    if (activeDrawerIndex === 2 && passCount < MAX_PASS_COUNT) {
+      setPassCount(prev => prev + 1);
+      setCurrentRound(prev => prev + 1);
+      setGuesserIndex((guesserIndex + 1) % 4);
+      setActiveDrawerIndex(0);
+      
+      setTimeLeft(20);
+      
+      setHasCompleted(false);
+      setShowCorrectAnswer(false);
+      
+      if (context && canvasRef.current) {
+        context.fillStyle = 'white';
+        context.fillRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+      }
+      
+      const newWords = ['사과', '자동차', '컴퓨터', '강아지'];
+      setQuizWord(newWords[Math.floor(Math.random() * newWords.length)]);
     }
-    
-    const newWords = ['사과', '자동차', '컴퓨터', '강아지'];
-    setQuizWord(newWords[Math.floor(Math.random() * newWords.length)]);
   };
 
   const calculateCurrentDrawerPlayerIndex = () => {
@@ -467,16 +480,16 @@ const Game: React.FC = () => {
       </div>
 
       {/* 방 정보 및 웹소켓 연결 상태 표시 */}
-      <div className="w-full max-w-7xl mb-4 p-2 rounded text-center bg-yellow-50 text-amber-800 border border-amber-200">
+      {/* <div className="w-full max-w-7xl mb-4 p-2 rounded text-center bg-yellow-50 text-amber-800 border border-amber-200">
         <div className="font-bold">게임방 #{roomId}</div>
         <div className={`mt-1 text-sm ${isConnected ? 'text-green-600' : 'text-red-600'}`}>
           {isConnected ? `실시간 연결 활성화: 당신은 ${currentPlayer}입니다` : '연결 끊김: 재연결 중...'}
         </div>
-      </div>
+      </div> */}
 
       <div className="flex w-full max-w-7xl">
         {/* 플레이어 컴포넌트 - 좌측 */}
-        <div className="w-1/5 mr-8">
+        <div className="w-1/5 mr-4">
           <PlayerSection 
             currentRound={currentRound}
             activeDrawerIndex={activeDrawerIndex}
@@ -532,6 +545,8 @@ const Game: React.FC = () => {
             onAICorrectAnswer={handleAICorrectAnswer}
             quizWord={quizWord}
             predictions={predictions}
+            canPass={activeDrawerIndex === 2 && passCount < MAX_PASS_COUNT}
+            passCount={passCount}
           />
         </div>
       </div>
