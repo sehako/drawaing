@@ -21,7 +21,7 @@ const App: React.FC = () => {
             <Route path="/waiting-room/:roomId" element={<GameWaitingRoom />} />
             {/* 나중에 다른 경로들을 추가할 예정 */}
             {/* <Route path="/game/play" element={<GamePage />} /> */}
-            <Route path="/game" element={<Game />} />
+            <Route path="/game/:roomId" element={<Game />} />
           </Routes>
         </MusicProvider>
     </BrowserRouter>
