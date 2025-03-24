@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import dambi from '../../assets/Game/dambi.png';
 import egg from '../../assets/Game/egg.png';
 import { PassConfirmModal, CorrectAnswerModal } from './GameModals';
@@ -30,6 +30,9 @@ const AISection: React.FC<AISectionProps> = ({
 }) => {
   const [isPassModalOpen, setIsPassModalOpen] = useState(false);
   const [isCorrectModalOpen, setIsCorrectModalOpen] = useState(false);
+  
+  // 이 autoCloseCounter 상태는 필요 없음 - 모달 컴포넌트 내부에서 처리됨
+  // const [autoCloseCounter, setAutoCloseCounter] = useState(5);
 
   const openPassModal = () => {
     // 정답 모달이 열려있으면 먼저
@@ -73,7 +76,7 @@ const AISection: React.FC<AISectionProps> = ({
     }
     handleGuessSubmit({ preventDefault: () => {} } as React.FormEvent);
   };
-
+  
   return (
     <div className="w-full h-full flex justify-center items-center">
       <div className="w-[250px] h-[580px] flex flex-col bg-yellow-100 rounded-lg border-2 border-yellow-300 shadow-sm">
