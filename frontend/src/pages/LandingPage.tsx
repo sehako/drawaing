@@ -1,10 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
 import LoginModal from '../components/landing/LoginModal';
 import SignupModal from '../components/landing/SignupModal';
+import { AuthContext } from '../contexts/AuthContext';
 
 const LandingPage: React.FC = () => {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSignupModal, setShowSignupModal] = useState(false);
+  const { loginAsGuest } = useContext(AuthContext);
+  const navigate = useNavigate();
 
   const handleLoginClick = () => {
     setShowLoginModal(true);
@@ -12,8 +16,16 @@ const LandingPage: React.FC = () => {
   };
 
   const handleGuestClick = () => {
-    alert('게스트로 게임에 입장합니다!');
-    // 나중에 여기에 경로 이동 코드 추가
+    try {
+      // 게스트 로그인 처리
+      loginAsGuest();
+      
+      // 게임 페이지로 이동
+      navigate('/game');
+    } catch (error) {
+      console.error('게스트 로그인 오류:', error);
+      alert('게스트 로그인에 실패했습니다. 다시 시도해주세요.');
+    }
   };
 
   const handleSignupClick = () => {
@@ -27,9 +39,18 @@ const LandingPage: React.FC = () => {
   };
 
   // 소셜 로그인 핸들러
-  const handleSocialLogin = (provider: string) => {
-    alert(`${provider} 로그인을 시도합니다.`);
-    // 소셜 로그인 구현 코드 추가
+  const handleSocialLogin = async (provider: string) => {
+    try {
+      // 여기에 소셜 로그인 API 호출 로직 추가
+      // 예: await authService.socialLogin(provider);
+      alert(`${provider} 로그인을 시도합니다.`);
+      
+      // 로그인 성공 시 페이지 이동
+      // navigate('/game');
+    } catch (error) {
+      console.error(`${provider} 로그인 오류:`, error);
+      alert(`${provider} 로그인에 실패했습니다. 다시 시도해주세요.`);
+    }
   };
 
   return (
