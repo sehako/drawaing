@@ -13,6 +13,7 @@ interface AISectionProps {
   eggCount: number;
   onAICorrectAnswer: () => void;
   quizWord: string;
+  predictions: { class: string; probability: number }[];  // 예측 데이터
 }
 
 const AISection: React.FC<AISectionProps> = ({
@@ -24,7 +25,8 @@ const AISection: React.FC<AISectionProps> = ({
   handlePass,
   eggCount,
   quizWord,
-  onAICorrectAnswer
+  onAICorrectAnswer,
+  predictions
 }) => {
   const [isPassModalOpen, setIsPassModalOpen] = useState(false);
   const [isCorrectModalOpen, setIsCorrectModalOpen] = useState(false);
