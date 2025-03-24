@@ -102,6 +102,74 @@ export const authService = {
     }
   },
 
+  // 닉네임 중복 확인
+  async checkNickname(username: string): Promise<{ available: boolean }> {
+    try {
+      const response = await fetch(`${API_URL}/auth/check-nickname?username=${encodeURIComponent(username)}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || '닉네임 중복 확인에 실패했습니다.');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('닉네임 중복 확인 오류:', error);
+      throw error;
+    }
+  },
+
+  // 이메일 인증 코드 전송
+  async sendVerificationEmail(email: string): Promise<{ success: boolean; message: string }> {
+    try {
+      const response = await fetch(`${API_URL}/auth/send-verification`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || '인증 코드 전송에 실패했습니다.');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('이메일 인증 코드 전송 오류:', error);
+      throw error;
+    }
+  },
+
+  // 이메일 인증 코드 확인
+  async verifyEmailCode(email: string, code: string): Promise<{ success: boolean; message: string }> {
+    try {
+      const response = await fetch(`${API_URL}/auth/verify-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, code }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || '이메일 인증에 실패했습니다.');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('이메일 인증 확인 오류:', error);
+      throw error;
+    }
+  },
+
   // 로그아웃
   async logout(): Promise<void> {
     try {

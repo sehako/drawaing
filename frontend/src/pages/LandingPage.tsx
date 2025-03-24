@@ -157,7 +157,7 @@ const LandingPage: React.FC = () => {
             onClick={handleLoginClick}
             className="w-64 h-20 bg-[#ffd62e] rounded-full flex items-center justify-center border-4 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] hover:shadow-[6px_6px_0_0_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 active:shadow-[2px_2px_0_0_rgba(0,0,0,1)] active:translate-x-0 active:translate-y-0 transition-all duration-200"
           >
-            <span className="text-3xl font-bold text-black font-pixel tracking-tight">로그인</span>
+            <span className="text-3xl font-bold text-black font-['Press_Start_2P'] tracking-tight">로그인</span>
           </button>
           
           {/* 게스트 버튼 - 픽셀 스타일 */}
@@ -165,7 +165,7 @@ const LandingPage: React.FC = () => {
             onClick={handleGuestClick}
             className="w-64 h-20 bg-[#888888] rounded-full flex items-center justify-center border-4 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] hover:shadow-[6px_6px_0_0_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 active:shadow-[2px_2px_0_0_rgba(0,0,0,1)] active:translate-x-0 active:translate-y-0 transition-all duration-200"
           >
-            <span className="text-3xl font-bold text-black font-pixel tracking-tight">게스트</span>
+            <span className="text-3xl font-bold text-black font-['Press_Start_2P'] tracking-tight">게스트</span>
           </button>
         </div>
       </div>
