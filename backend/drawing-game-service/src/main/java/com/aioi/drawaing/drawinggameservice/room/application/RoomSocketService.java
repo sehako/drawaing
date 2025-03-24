@@ -1,5 +1,6 @@
 package com.aioi.drawaing.drawinggameservice.room.application;
 
+import com.aioi.drawaing.drawinggameservice.drawing.application.DrawingService;
 import com.aioi.drawaing.drawinggameservice.room.application.dto.AddRoomParticipantInfo;
 import com.aioi.drawaing.drawinggameservice.room.domain.Room;
 import com.aioi.drawaing.drawinggameservice.room.domain.RoomParticipant;
@@ -8,15 +9,18 @@ import java.util.Map;
 import java.util.Objects;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RoomSocketService {
 
     private final RoomRepository repository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final DrawingService drawingService;
 
 //    public void createRoom(String title, Long hostId) {
 //        Room room = Room.builder()
@@ -45,18 +49,17 @@ public class RoomSocketService {
         Room room = getRoom(roomId);
 
         if (!memberId.equals(room.getHostId())) {
+            log.error("방장만 게임을 시작할 수 있습니다.");
             throw new RuntimeException("방장만 게임을 시작할 수 있습니다.");
         }
         // 모든 참여자가 준비되었는지 확인 (선택적)
         boolean allReady = room.getParticipants().values().stream().allMatch(RoomParticipant::isReady);
         if (!allReady) {
+            log.error("모든 참여자가 준비되지 않았습니다.");
             throw new RuntimeException("모든 참여자가 준비되지 않았습니다.");
         }
         // 게임 시작 로직
-        messagingTemplate.convertAndSend(
-                "/topic/room/" + roomId + "/start",
-                Map.of("status", "GAME_STARTED")
-        );
+        drawingService.startSession(roomId, room.getSessionId(), room.getAddRoomParticipantInfos());
     }
 
     public void toggleReadyStatus(String roomId, Long memberId) {

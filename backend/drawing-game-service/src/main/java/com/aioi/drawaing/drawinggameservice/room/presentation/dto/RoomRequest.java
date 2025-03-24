@@ -4,6 +4,8 @@ import lombok.Builder;
 
 @Builder
 public record RoomRequest(
-        long memberId
+        long memberId,
+        String nick,
+        String characterUrl
 ) {
 }

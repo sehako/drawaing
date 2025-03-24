@@ -22,7 +22,7 @@ public class RoomService {
         Room room = Room.createRoom(addRoomParticipantInfo, createRoomRequest.title());
         roomRepository.save(room);
 
-        Session session = drawingService.createSession(room.getId(), addRoomParticipantInfo);
+        Session session = drawingService.createSession(room.getId());
 
         room.updateSessionId(session.getId());
         return new CreateRoomResponse("CREATE_ROOM", roomRepository.save(room).getId());

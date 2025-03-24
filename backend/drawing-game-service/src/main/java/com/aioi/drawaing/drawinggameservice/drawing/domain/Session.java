@@ -28,19 +28,10 @@ public class Session {
     @Builder.Default
     private Map<Long, Participant> participants = new ConcurrentHashMap<>();
 
-//    public static Session createSession(String roomId, List<String> keywords){
-//        return Session.builder()
-//                .roomId(roomId)
-//                .words(keywords)
-//                .build();
-//    }
-
-    public static Session createSession(String roomId, AddRoomParticipantInfo addRoomParticipantInfo){
-        Session session = Session.builder()
+    public static Session createSession(String roomId){
+        return Session.builder()
                 .roomId(roomId)
                 .build();
-        session.participants.put(addRoomParticipantInfo.userId(), Participant.createParticipant(addRoomParticipantInfo.nickname(), addRoomParticipantInfo.characterUrl()));
-        return session;
     }
 
     public void addParticipant(Long userId, Participant participant){
@@ -55,4 +46,10 @@ public class Session {
         this.participants.remove(userId);
     }
 
+    public void updateSessionStartInfo(List<String> words, List<AddRoomParticipantInfo> addParticipantInfos) {
+        this.words = words;
+        addParticipantInfos.forEach(addParticipantInfo -> {
+            addParticipant(addParticipantInfo.userId(), Participant.createParticipant(addParticipantInfo.nickname(), addParticipantInfo.characterUrl()));
+        });
+    }
 }
