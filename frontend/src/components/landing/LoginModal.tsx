@@ -48,7 +48,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ closeModal, handleSignupClick, 
       <div className="absolute inset-0 bg-black opacity-50" onClick={closeModal}></div>
       <div className="relative z-10 bg-yellow-300 p-6 rounded-lg border-4 border-black max-w-md w-full">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold font-pixel">로그인</h2>
+          <h2 className="text-2xl font-bold font-['Press_Start_2P']">로그인</h2>
           <button 
             onClick={closeModal}
             className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center border-2 border-black shadow-[1px_1px_0_0_rgba(0,0,0,1)] hover:shadow-[2px_2px_0_0_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:-translate-x-0.5 active:translate-x-0 active:translate-y-0 transition-all duration-200"
