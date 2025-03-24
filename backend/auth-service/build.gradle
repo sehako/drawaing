@@ -14,6 +14,10 @@ java {
 	}
 }
 
+bootJar {
+    archiveFileName = 'auth-service.jar'
+}
+
 configurations {
 	compileOnly {
 		extendsFrom annotationProcessor
