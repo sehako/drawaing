@@ -1,5 +1,6 @@
 package com.aioi.drawaing.drawinggameservice.drawing.application;
 
+import com.aioi.drawaing.drawinggameservice.drawing.application.dto.RoundInfo;
 import com.aioi.drawaing.drawinggameservice.drawing.application.dto.Timer;
 import com.aioi.drawaing.drawinggameservice.drawing.domain.*;
 import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.KeywordRepository;
@@ -27,7 +28,7 @@ public class DrawingService {
     private final RoomSesseionRepository roomSesseionRepository;
     private final SessionRepository sessionRepository;
 
-    private static final int DEFAULT_WORD_COUNT = 30;
+    private static final int DEFAULT_WORD_COUNT = 3;
     private static final int DEFAULT_SESSION_TIMER = 60;
     private static final int DEFAULT_DRAW_TIMER = 3;
 
@@ -35,17 +36,18 @@ public class DrawingService {
     //세션 시작할 때, 게임 제시어 주기
     //세션 시작할 때, 타이머 시작 + 전달
     //세션 시작할 때, 게임 어떻게 할건지 의논 필요
-//    @Transactional
-//    public void startSession(String roomId, String sessionId, AddParticipantInfo addParticipantInfo) {
-//        List<String> words = extractWords(DEFAULT_WORD_COUNT);
-//        Session session = findSession(roomId, words);
-//        addParticipant(session, addParticipantInfo);
-//        startTimers(roomId, sessionId);
-//        drawMessagePublisher.publishRoundInfo("/topic/session.info/"+roomId+"/"+sessionId, new RoundInfo(words, session.getParticipants()));
-//    }
+    public void startSession(String roomId, String sessionId, List<AddRoomParticipantInfo> addParticipantInfos) {
+        List<String> words = extractWords(DEFAULT_WORD_COUNT);
+        System.out.println("startSession: "+sessionId);
+        Session session = findSession(sessionId);
 
-    public Session createSession(String roomId, AddRoomParticipantInfo addRoomParticipantInfo) {
-        Session session = Session.createSession(roomId, addRoomParticipantInfo);
+        session.updateSessionStartInfo(words, addParticipantInfos);
+        startTimers(roomId, sessionId);
+        drawMessagePublisher.publishRoundInfo("/topic/session.info/"+roomId+"/"+sessionId, new RoundInfo(words, session.getParticipants()));
+    }
+
+    public Session createSession(String roomId) {
+        Session session = Session.createSession(roomId);
         return sessionRepository.save(session);
     }
 
@@ -112,10 +114,9 @@ public class DrawingService {
         session.addParticipant(addSessionParticipantInfo.id(), Participant.createParticipant(addSessionParticipantInfo.nickname(), addSessionParticipantInfo.characterUrl()));
     }
 
-//    private Session findSession(String roomId, List<String> words) {
-//        RoomSession roomSession = getOrCreateRoomSession(roomId, words);
-//        return sessionRepository.findById(roomSession.getSessionId()).orElse(null);
-//    }
+    private Session findSession(String sessionId) {
+        return sessionRepository.findById(sessionId).orElseThrow(()->new RuntimeException("session id가 잘못됐습니다."));
+    }
 
 
 

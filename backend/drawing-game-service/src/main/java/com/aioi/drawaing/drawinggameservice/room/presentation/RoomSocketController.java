@@ -33,12 +33,14 @@ public class RoomSocketController {
 //    }
     @MessageMapping("/room.join/{roomId}")
     public void joinRoom(@DestinationVariable String roomId,
-                           @Payload RoomRequest request) {
-        roomSocketService.joinRoom(roomId, new AddRoomParticipantInfo(234, "234", "urlrulrulrulrul123123"));
+                           @Payload AddRoomParticipantInfo addRoomParticipantInfo) {
+        System.out.println("join: "+roomId);
+        roomSocketService.joinRoom(roomId, addRoomParticipantInfo);
     }
     @MessageMapping("/room.start/{roomId}")
     public void startGame(@DestinationVariable String roomId,
                            @Payload RoomRequest request) {
+        System.out.println("start: "+request.memberId());
         roomSocketService.startGame(roomId, request.memberId());
     }
     @MessageMapping("/room.leave/{roomId}")

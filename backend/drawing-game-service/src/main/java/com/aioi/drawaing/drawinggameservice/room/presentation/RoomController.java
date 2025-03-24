@@ -14,7 +14,7 @@ public class RoomController {
     private final RoomService roomService;
 
     @PostMapping
-    public CreateRoomResponse createRoom(CreateRoomRequest createRoomRequest) {
-        return roomService.createRoom(new AddRoomParticipantInfo(123, "aaaa","urlrulurl"),  createRoomRequest);
+    public CreateRoomResponse createRoom(AddRoomParticipantInfo addRoomParticipantInfo, CreateRoomRequest createRoomRequest) {
+        return roomService.createRoom(addRoomParticipantInfo,  createRoomRequest);
     }
 }

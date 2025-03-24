@@ -3,7 +3,10 @@ package com.aioi.drawaing.drawinggameservice.room.domain;
 import com.aioi.drawaing.drawinggameservice.room.application.dto.AddRoomParticipantInfo;
 import jakarta.persistence.Id;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+
 import lombok.Builder;
 import lombok.Getter;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -29,6 +32,12 @@ public class Room {
             .build();
         room.getParticipants().put(addRoomParticipantInfo.userId(), RoomParticipant.createRoomParticipant(addRoomParticipantInfo.nickname(), addRoomParticipantInfo.characterUrl()));
         return room;
+    }
+
+    public List<AddRoomParticipantInfo> getAddRoomParticipantInfos() {
+        return participants.entrySet().stream()
+                .map(entry -> new AddRoomParticipantInfo(entry.getKey(), entry.getValue().getNickname(), entry.getValue().getCharacterUrl()))
+                .collect(Collectors.toList());
     }
 
     public void addParticipant(AddRoomParticipantInfo addRoomParticipantInfo) {
