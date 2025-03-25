@@ -6,15 +6,13 @@ import com.aioi.drawaing.drawinggameservice.drawing.domain.*;
 import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.KeywordRepository;
 import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.RoomSesseionRepository;
 import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.SessionRepository;
-import com.aioi.drawaing.drawinggameservice.drawing.presentation.dto.AddParticipantInfo;
+import com.aioi.drawaing.drawinggameservice.drawing.presentation.dto.AddSessionParticipantInfo;
+import com.aioi.drawaing.drawinggameservice.room.application.dto.AddRoomParticipantInfo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -30,7 +28,7 @@ public class DrawingService {
     private final RoomSesseionRepository roomSesseionRepository;
     private final SessionRepository sessionRepository;
 
-    private static final int DEFAULT_WORD_COUNT = 30;
+    private static final int DEFAULT_WORD_COUNT = 3;
     private static final int DEFAULT_SESSION_TIMER = 60;
     private static final int DEFAULT_DRAW_TIMER = 3;
 
@@ -38,13 +36,19 @@ public class DrawingService {
     //세션 시작할 때, 게임 제시어 주기
     //세션 시작할 때, 타이머 시작 + 전달
     //세션 시작할 때, 게임 어떻게 할건지 의논 필요
-    @Transactional
-    public void startSession(String roomId, String sessionId, AddParticipantInfo addParticipantInfo) {
+    public void startSession(String roomId, String sessionId, List<AddRoomParticipantInfo> addParticipantInfos) {
         List<String> words = extractWords(DEFAULT_WORD_COUNT);
-        Session session = findSession(roomId, words);
-        addParticipant(session, addParticipantInfo);
+        System.out.println("startSession: "+sessionId);
+        Session session = findSession(sessionId);
+
+        session.updateSessionStartInfo(words, addParticipantInfos);
         startTimers(roomId, sessionId);
         drawMessagePublisher.publishRoundInfo("/topic/session.info/"+roomId+"/"+sessionId, new RoundInfo(words, session.getParticipants()));
+    }
+
+    public Session createSession(String roomId) {
+        Session session = Session.createSession(roomId);
+        return sessionRepository.save(session);
     }
 
     private void startTimers(String roomId, String sessionId) {
@@ -106,24 +110,24 @@ public class DrawingService {
         remainTime.put(key, new AtomicInteger(startTime));
     }
 
-    private void addParticipant(Session session, AddParticipantInfo addParticipantInfo) {
-        session.addParticipant(addParticipantInfo.id(), Participant.createParticipant(addParticipantInfo.nickname(), addParticipantInfo.characterUrl()));
+    private void addParticipant(Session session, AddSessionParticipantInfo addSessionParticipantInfo) {
+        session.addParticipant(addSessionParticipantInfo.id(), Participant.createParticipant(addSessionParticipantInfo.nickname(), addSessionParticipantInfo.characterUrl()));
     }
 
-    private Session findSession(String roomId, List<String> words) {
-        RoomSession roomSession = getOrCreateRoomSession(roomId, words);
-        return sessionRepository.findById(roomSession.getSessionId()).orElse(null);
+    private Session findSession(String sessionId) {
+        return sessionRepository.findById(sessionId).orElseThrow(()->new RuntimeException("session id가 잘못됐습니다."));
     }
 
 
-    private RoomSession getOrCreateRoomSession(String roomId, List<String> words) {
-        return roomSesseionRepository.findByRoomId(roomId)
-                .orElseGet(()->{
-                    Session session = Session.createSession(roomId, words);
-                    sessionRepository.save(session);
-                    return roomSesseionRepository.save(RoomSession.buildRoomSession(roomId, session.getId()));
-                });
-    }
+
+//    private RoomSession getOrCreateRoomSession(String roomId, List<String> words) {
+//        return roomSesseionRepository.findByRoomId(roomId)
+//                .orElseGet(()->{
+//                    Session session = Session.createSession(roomId, words);
+//                    sessionRepository.save(session);
+//                    return roomSesseionRepository.save(RoomSession.buildRoomSession(roomId, session.getId()));
+//                });
+//    }
 
     private String getKey(TimeType timeType, String sessionId) {
         return timeType.name()+":"+sessionId;
