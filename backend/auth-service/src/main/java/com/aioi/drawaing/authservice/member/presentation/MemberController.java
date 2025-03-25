@@ -1,5 +1,6 @@
 package com.aioi.drawaing.authservice.member.presentation;
 
+import com.aioi.drawaing.authservice.common.code.ErrorCode;
 import com.aioi.drawaing.authservice.common.response.ApiResponseEntity;
 import com.aioi.drawaing.authservice.member.application.MemberService;
 import com.aioi.drawaing.authservice.member.presentation.request.MemberReqDto;
@@ -35,51 +36,44 @@ public class MemberController {
 
     @Operation(summary = "회원 정보 조회")
     @GetMapping("/{member_id}")
-    public ResponseEntity<MemberResponse> get(@PathVariable("member_id") Long memberId) {
-        return ResponseEntity.ok().body(memberService.get(memberId));
+    public ResponseEntity<?> get(@PathVariable("member_id") Long memberId) {
+        return ApiResponseEntity.onSuccess(memberService.get(memberId));
     }
 
     @Operation(summary = "회원 정보 수정")
     @PatchMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<MemberResponse> update(@RequestBody MemberUpdateRequest memberUpdateRequest) {
-        return ResponseEntity.ok().body(memberService.update(memberUpdateRequest));
+    public ResponseEntity<?> update(@RequestBody MemberUpdateRequest memberUpdateRequest) {
+        return ApiResponseEntity.onSuccess(memberService.update(memberUpdateRequest));
     }
 
     @Operation(summary = "회원 탈퇴")
     @DeleteMapping
     public ResponseEntity<?> delete() {
         memberService.delete();
-        return ResponseEntity.ok().build();
+        return ApiResponseEntity.onSuccess("회원 탈퇴에 성공하였습니다.");
     }
 
     @Operation(summary = "로그인 되어있는 멤버ID 조회")
     @GetMapping("/id")
-    public ResponseEntity<Long> getUser() {
-        return ResponseEntity.ok().body(memberService.getMemberId());
+    public ResponseEntity<?> getUser() {
+        return ApiResponseEntity.onSuccess(memberService.getMemberId());
     }
 
 
-    @Operation(summary = "회원가입", responses = {
-            @ApiResponse(responseCode = "200", description = "회원가입 성공"),
-            @ApiResponse(responseCode = "400", description = "회원가입 실패"),
-    })
-
+    @Operation(summary = "회원가입")
     @PostMapping("/signup")
     public ResponseEntity<?> signUp(@RequestBody @Validated MemberReqDto.SignUp signUp
             , Errors errors) {
         // validation check
         if (errors.hasErrors()) {
             log.error("signUp 에러 : {}", errors.getAllErrors());
-            return ApiResponseEntity.badRequest("회원가입에 실패하였습니다.");
+            return ApiResponseEntity.onFailure(ErrorCode.VALIDATION_ERROR);
         }
         log.info("signUp : {}", signUp);
         return memberService.signUp(signUp);
     }
 
-    @Operation(summary = "로그인", responses = {
-            @ApiResponse(responseCode = "200", description = "로그인 성공"),
-            @ApiResponse(responseCode = "400", description = "로그인 실패"),
-    })
+    @Operation(summary = "로그인")
     @PostMapping("/login")
     public ResponseEntity<?> login(
             HttpServletResponse response,
@@ -89,15 +83,12 @@ public class MemberController {
         log.info(login.toString());
         if (errors.hasErrors()) {
             log.error("login 에러 : {}", errors.getAllErrors());
-            return ApiResponseEntity.badRequest("로그인에 실패하였습니다.");
+            return ApiResponseEntity.onFailure(ErrorCode.VALIDATION_ERROR);
         }
         return memberService.login(response, login);
     }
 
-    @Operation(summary = "로그아웃", responses = {
-            @ApiResponse(responseCode = "200", description = "로그아웃 성공"),
-            @ApiResponse(responseCode = "400", description = "로그아웃 실패"),
-    })
+    @Operation(summary = "로그아웃")
     @PostMapping("/logout")
     public ResponseEntity<?> logout(
             HttpServletRequest request,

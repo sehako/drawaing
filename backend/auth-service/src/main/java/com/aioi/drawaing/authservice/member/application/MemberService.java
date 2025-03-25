@@ -6,6 +6,7 @@ import static com.aioi.drawaing.authservice.oauth.infrastructure.repository.OAut
 import com.aioi.drawaing.authservice.auth.domain.VerificationCodeCache;
 import com.aioi.drawaing.authservice.auth.infrastructure.repository.VerificationCodeCacheRepository;
 import com.aioi.drawaing.authservice.common.code.ErrorCode;
+import com.aioi.drawaing.authservice.common.code.SuccessCode;
 import com.aioi.drawaing.authservice.common.jwt.JwtTokenProvider;
 import com.aioi.drawaing.authservice.common.jwt.TokenInfo;
 import com.aioi.drawaing.authservice.common.response.ApiResponseEntity;
@@ -113,7 +114,7 @@ public class MemberService {
 
         memberRepository.save(member);
 
-        return ApiResponseEntity.ok("회원가입에 성공하였습니다.");
+        return ApiResponseEntity.from(SuccessCode.SUCCESS_MEMBER_REGISTER, null);
     }
 
     @Transactional
@@ -122,7 +123,7 @@ public class MemberService {
             Member member = validateUser(login.getEmail(), login.getPassword());
 
             if (member.getProviderType() != ProviderType.LOCAL) {
-                return ApiResponseEntity.badRequest("소셜 로그인을 이용해주세요.");
+                return ApiResponseEntity.onFailure(ErrorCode.NOT_SUPPORT_PROVIDER);
             }
 
             // 토큰 생성
@@ -139,16 +140,16 @@ public class MemberService {
 
             MemberLoginResponse memberLoginResponse = MemberLoginResponse.of(member, tokenInfo.getAccessToken());
 
-            return ResponseEntity.ok(memberLoginResponse);
+            return ApiResponseEntity.onSuccess(memberLoginResponse);
         } catch (BadCredentialsException e) {
             log.error("Login failed: Invalid credentials - {}", e.getMessage());
-            return ApiResponseEntity.badRequest("비밀번호가 일치하지 않습니다.");
+            return ApiResponseEntity.onFailure(ErrorCode.INVALID_PASSWORD);
         } catch (RedisConnectionFailureException e) {
             log.error("Login failed: Redis connection error - {}", e.getMessage());
-            return ApiResponseEntity.badRequest("레디스 서버 연결에 실패하였습니다.");
+            return ApiResponseEntity.onFailure(ErrorCode.REDIS_CONNECTION_FAILURE);
         } catch (QueryTimeoutException e) {
             log.error("Login failed: Redis timeout error - {}", e.getMessage());
-            return ApiResponseEntity.badRequest("레디스 서버 연결에서 시간 초과가 발생하였습니다.");
+            return ApiResponseEntity.onFailure(ErrorCode.REDIS_TIMEOUT);
         }
     }
 
@@ -160,7 +161,7 @@ public class MemberService {
 
         // 2. Access Token 검증
         if (!jwtTokenProvider.validateToken(accessToken)) {
-            return ApiResponseEntity.badRequest("잘못된 요청입니다.");
+            return ApiResponseEntity.onFailure(ErrorCode.INVALID_TOKEN_REQUEST);
         }
 
         // 3. Access Token 에서 Member 정보를 가져옵니다.
@@ -178,7 +179,7 @@ public class MemberService {
         Long expiration = jwtTokenProvider.getExpiration(accessToken);
         redisTemplate.opsForValue().set(accessToken, "logout", expiration, TimeUnit.MILLISECONDS);
 
-        return ApiResponseEntity.ok("로그아웃 되었습니다.");
+        return ApiResponseEntity.from(SuccessCode.LOGOUT_SUCCESS,null);
     }
 
     private Member validateUser(String email, String password) {
