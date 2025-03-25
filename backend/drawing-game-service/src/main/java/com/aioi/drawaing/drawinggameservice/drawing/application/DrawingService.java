@@ -30,26 +30,22 @@ public class DrawingService {
     private final RoomSesseionRepository roomSesseionRepository;
     private final SessionRepository sessionRepository;
 
-    private static final int DEFAULT_WORD_COUNT = 30;
-    private static final int DEFAULT_SESSION_TIMER = 60;
-    private static final int DEFAULT_DRAW_TIMER = 3;
-
     //세션 시작
     //세션 시작할 때, 게임 제시어 주기
     //세션 시작할 때, 타이머 시작 + 전달
     //세션 시작할 때, 게임 어떻게 할건지 의논 필요
     @Transactional
-    public void startSession(String roomId, String sessionId, AddParticipantInfo addParticipantInfo) {
-        List<String> words = extractWords(DEFAULT_WORD_COUNT);
+    public void startSession(String roomId, String sessionId, AddParticipantInfo addParticipantInfo, int wordCnt, int sessionTimer, int drawTimer) {
+        List<String> words = extractWords(wordCnt);
         Session session = findSession(roomId, words);
         addParticipant(session, addParticipantInfo);
-        startTimers(roomId, sessionId);
+        startTimers(roomId, sessionId, sessionTimer, drawTimer);
         drawMessagePublisher.publishRoundInfo("/topic/session.info/"+roomId+"/"+sessionId, new RoundInfo(words, session.getParticipants()));
     }
 
-    private void startTimers(String roomId, String sessionId) {
-        publishSessionTimer(roomId, sessionId, DEFAULT_SESSION_TIMER);
-        publishDrawingTimer(roomId, sessionId, DEFAULT_DRAW_TIMER);
+    private void startTimers(String roomId, String sessionId, int sessionTimer, int drawTimer) {
+        publishSessionTimer(roomId, sessionId, sessionTimer);
+        publishDrawingTimer(roomId, sessionId, drawTimer);
     }
 
     //게임 제시어 뽑기
@@ -65,7 +61,6 @@ public class DrawingService {
     }
 
 
-    //sessionId 빼는거 고려 중..
     public void publishSessionTimer(String roomId, String sessionId, int startTime) {
         String sessionKey = getKey(TimeType.SESSION, sessionId);
         String drawKey = getKey(TimeType.DRAWING, sessionId);
@@ -102,8 +97,9 @@ public class DrawingService {
         scheduledFutures.put(key, scheduledFuture);
     }
 
-    public void resetDrawingTimer(String key, int startTime) {
-        remainTime.put(key, new AtomicInteger(startTime));
+    public void resetDrawingTimer(String sessionId, int drawTimer) {
+        String key = getKey(TimeType.DRAWING, sessionId);
+        remainTime.put(key, new AtomicInteger(drawTimer));
     }
 
     private void addParticipant(Session session, AddParticipantInfo addParticipantInfo) {
