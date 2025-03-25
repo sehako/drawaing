@@ -47,6 +47,7 @@ public enum ErrorCode {
     NOT_FOUND_MEMBER_PROFILE_FILE(NOT_FOUND, "요청한 이미지 파일을 찾을 수 없습니다."),
     NON_VALIDATED_PASSWORD(UNAUTHORIZED, "비밀번호가 유효하지 않습니다."),
     ALREADY_EXIST_EMAIL(CONFLICT, "이미 존재하는 Email 입니다."),
+    NOT_AUTHENTICATED_EMAIL(CONFLICT, "인증되지 않은 Email 입니다."),
     BLANK_EMAIL_INPUT(BAD_REQUEST, "Email 을 입력해주세요."),
     INVALID_EMAIL_PATTERN(BAD_REQUEST, "올바르지 않은 Email 형식입니다."),
     NOT_ACCEPT_TERMS(CONFLICT, "약관에 동의해주세요."),

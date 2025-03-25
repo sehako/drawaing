@@ -69,14 +69,14 @@ public class MemberController {
     })
 
     @PostMapping("/signup")
-    public ResponseEntity<?> signUp(@ModelAttribute MemberReqDto.SignUp signUp
+    public ResponseEntity<?> signUp(@RequestBody @Validated MemberReqDto.SignUp signUp
             , Errors errors) {
         // validation check
         if (errors.hasErrors()) {
             log.error("signUp 에러 : {}", errors.getAllErrors());
             return ApiResponseEntity.badRequest("회원가입에 실패하였습니다.");
         }
-
+        log.info("signUp : {}", signUp);
         return memberService.signUp(signUp);
     }
 

@@ -18,7 +18,7 @@ public class VerificationCodeCache implements Serializable {
 
     private String code;
 
-    private boolean verified;
+    private Boolean verified;
 
     private LocalDateTime createdAt;
 
