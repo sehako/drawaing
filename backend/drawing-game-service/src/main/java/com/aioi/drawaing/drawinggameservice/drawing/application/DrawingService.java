@@ -1,6 +1,7 @@
 package com.aioi.drawaing.drawinggameservice.drawing.application;
 
 import com.aioi.drawaing.drawinggameservice.drawing.application.dto.RoundInfo;
+import com.aioi.drawaing.drawinggameservice.drawing.application.dto.RoundResult;
 import com.aioi.drawaing.drawinggameservice.drawing.application.dto.Timer;
 import com.aioi.drawaing.drawinggameservice.drawing.domain.*;
 import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.KeywordRepository;
@@ -69,11 +70,11 @@ public class DrawingService {
                 .collect(Collectors.toList());
     }
 
-    public void increaseRound(String sessionId){
-        Session session = findSession(sessionId);
-        session.incrementRoundCount();
-        sessionRepository.save(session);
-    }
+//    public void increaseRound(String sessionId){
+//        Session session = findSession(sessionId);
+//        session.incrementRoundCount();
+//        sessionRepository.save(session);
+//    }
 
     public void publishSessionTimer(String roomId, String sessionId, int startTime) {
         String sessionKey = getKey(TimeType.SESSION, sessionId);
@@ -132,7 +133,7 @@ public class DrawingService {
         scheduledFutures.get(key).cancel(true);
     }
 
-    public void win(String sessionId, WinParticipantInfo winParticipantInfo) {
+    public void win(String roomId, String sessionId, WinParticipantInfo winParticipantInfo) {
         Session session = findSession(sessionId);
         int correctScore = plusCorrectScore(sessionId, winParticipantInfo.drawingOrder());
         int drawScore = plusDrawScore(winParticipantInfo.drawingOrder());
@@ -140,6 +141,14 @@ public class DrawingService {
         session.win(winParticipantInfo, correctScore, drawScore);
 //        System.out.println(session.getHumanWin());
         sessionRepository.save(session);
+        drawMessagePublisher.publishRoundResult("/topic/session.round-result/"+roomId+"/"+sessionId, new RoundResult(true, session.getRoundCount()));
+    }
+
+    public void lose(String roomId, String sessionId){
+        Session session = findSession(sessionId);
+        session.incrementRoundCount();
+        sessionRepository.save(session);
+        drawMessagePublisher.publishRoundResult("/topic/session.round-result/"+roomId+"/"+sessionId, new RoundResult(false, session.getRoundCount()));
     }
 
     private int plusDrawScore(int drawingOrder) {
