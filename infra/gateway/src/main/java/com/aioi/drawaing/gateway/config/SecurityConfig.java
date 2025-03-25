@@ -23,10 +23,10 @@ public class SecurityConfig {
         http.csrf(CsrfSpec::disable);
         http.cors(corsSpec -> corsSpec.configurationSource(corsConfigurationSource()));
         http.authorizeExchange(exchanges -> exchanges
-                        .pathMatchers("/auth/**").permitAll()
-                        .pathMatchers("/game/**").hasAnyRole("USER", "ADMIN")
-                        .pathMatchers("/game-test/**").hasRole("TESTER")
-                        .anyExchange().permitAll()
+                                .pathMatchers("/auth/**").permitAll()
+                                .pathMatchers("/game/**").hasAnyRole("USER", "ADMIN")
+                                .pathMatchers("/game-test/**").hasRole("TESTER")
+//                        .anyExchange().permitAll()
                 )
                 .addFilterAt(filter, SecurityWebFiltersOrder.AUTHENTICATION)
                 .formLogin(FormLoginSpec::disable);
