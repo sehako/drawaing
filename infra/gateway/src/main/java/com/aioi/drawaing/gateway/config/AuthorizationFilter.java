@@ -6,6 +6,7 @@ import com.aioi.drawaing.gateway.exception.FailureCode;
 import com.aioi.drawaing.gateway.jwt.BearerParser;
 import com.aioi.drawaing.gateway.jwt.JwtProvider;
 import java.nio.charset.StandardCharsets;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.core.io.buffer.DataBuffer;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
+@Slf4j
 @Component
 public class AuthorizationFilter extends AbstractGatewayFilterFactory<Config> {
     private static final String REFRESH_TOKEN = "refresh-token";
@@ -36,6 +38,7 @@ public class AuthorizationFilter extends AbstractGatewayFilterFactory<Config> {
             // RxJava라는 웹 플럭스 지원해주는 라이브러리
             try {
                 String accessToken = resolveAccessToken(exchange);
+                log.info(accessToken);
                 String refreshToken = resolveRefreshToken(exchange);
 
                 String userId = jwtProvider.getUserId(accessToken, refreshToken);
