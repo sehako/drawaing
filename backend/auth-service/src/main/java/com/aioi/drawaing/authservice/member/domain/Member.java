@@ -53,22 +53,21 @@ public class Member extends BaseEntity implements UserDetails {
     @Enumerated(EnumType.STRING)
     private RoleType role;
 
-    // item_id 일대일 매핑
-    @Column(name = "character_id")
-    private Long characterId;
-
     @Setter
     @Column(name = "character_image")
     private String characterImage;
 
     @Column(name = "level", columnDefinition = "integer default 1")
-    private Integer level;
+    @Builder.Default
+    private Integer level = 1;
 
     @Column(name = "exp", columnDefinition = "integer default 0")
-    private Integer exp;
+    @Builder.Default
+    private Integer exp = 0;
 
     @Column(name = "point", columnDefinition = "integer default 0")
-    private Integer point;
+    @Builder.Default
+    private Integer point = 0;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

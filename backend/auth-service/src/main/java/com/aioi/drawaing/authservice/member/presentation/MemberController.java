@@ -2,7 +2,7 @@ package com.aioi.drawaing.authservice.member.presentation;
 
 import com.aioi.drawaing.authservice.common.response.ApiResponseEntity;
 import com.aioi.drawaing.authservice.member.application.MemberService;
-import com.aioi.drawaing.authservice.member.application.request.MemberReqDto;
+import com.aioi.drawaing.authservice.member.presentation.request.MemberReqDto;
 import com.aioi.drawaing.authservice.member.presentation.request.MemberRequest;
 import com.aioi.drawaing.authservice.member.presentation.response.MemberResponse;
 import io.swagger.v3.oas.annotations.Operation;
