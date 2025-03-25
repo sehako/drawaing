@@ -27,10 +27,10 @@ public class Room {
     public static Room createRoom(AddRoomParticipantInfo addRoomParticipantInfo, String title) {
         Room room = Room.builder()
             .title(title)
-            .hostId(addRoomParticipantInfo.userId())
+            .hostId(addRoomParticipantInfo.memberId())
             .status(RoomStatus.READY.name())
             .build();
-        room.getParticipants().put(addRoomParticipantInfo.userId(), RoomParticipant.createRoomParticipant(addRoomParticipantInfo.nickname(), addRoomParticipantInfo.characterUrl()));
+        room.getParticipants().put(addRoomParticipantInfo.memberId(), RoomParticipant.createRoomParticipant(addRoomParticipantInfo.nickname(), addRoomParticipantInfo.characterUrl()));
         return room;
     }
 
@@ -41,7 +41,8 @@ public class Room {
     }
 
     public void addParticipant(AddRoomParticipantInfo addRoomParticipantInfo) {
-        this.getParticipants().put(addRoomParticipantInfo.userId(), RoomParticipant.createRoomParticipant(addRoomParticipantInfo.nickname(), addRoomParticipantInfo.characterUrl()));
+        System.out.println("room: "+addRoomParticipantInfo.memberId());
+        this.getParticipants().put(addRoomParticipantInfo.memberId(), RoomParticipant.createRoomParticipant(addRoomParticipantInfo.nickname(), addRoomParticipantInfo.characterUrl()));
     }
 
     public void updateParticipantReady(long userId) {
@@ -57,6 +58,7 @@ public class Room {
         if (!participants.containsKey(hostId) && !participants.isEmpty()) {
             // 가장 오래된 참여자 선택 (LinkedHashMap의 첫 번째 키)
             this.hostId = participants.keySet().iterator().next();
+            this.status = RoomStatus.READY.name();
         }
     }
 

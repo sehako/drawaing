@@ -52,7 +52,7 @@ public class Session {
     public void updateSessionStartInfo(List<String> words, List<AddRoomParticipantInfo> addParticipantInfos) {
         this.words = words;
         addParticipantInfos.forEach(addParticipantInfo -> {
-            addParticipant(addParticipantInfo.userId(), Participant.createParticipant(addParticipantInfo.nickname(), addParticipantInfo.characterUrl()));
+            addParticipant(addParticipantInfo.memberId(), Participant.createParticipant(addParticipantInfo.nickname(), addParticipantInfo.characterUrl()));
         });
     }
 
