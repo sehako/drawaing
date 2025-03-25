@@ -68,7 +68,7 @@ public class AuthorizationFilter extends AbstractGatewayFilterFactory<Config> {
                 .getHeaders()
                 .getFirst(REFRESH_TOKEN);
 
-        assert refreshToken != null;
+//        assert refreshToken != null;
         return BearerParser.parse(refreshToken);
     }
 
