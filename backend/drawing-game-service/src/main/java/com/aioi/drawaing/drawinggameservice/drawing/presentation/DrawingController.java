@@ -30,7 +30,7 @@ public class DrawingController {
 
     @MessageMapping("/session.end/{roomId}/{sessionId}")
     public void endDraw(@DestinationVariable String roomId, @DestinationVariable String sessionId) {
-        drawingService.resetDrawingTimer(sessionId, 30);
+        drawingService.resetDrawingTimer(sessionId);
     }
 
     @MessageMapping("/session.lose/{roomId}/{sessionId}")

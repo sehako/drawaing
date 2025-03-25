@@ -7,6 +7,7 @@ import com.aioi.drawaing.drawinggameservice.drawing.domain.*;
 import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.KeywordRepository;
 import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.RoomSesseionRepository;
 import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.SessionRepository;
+import com.aioi.drawaing.drawinggameservice.drawing.presentation.DrawMessagePublisher;
 import com.aioi.drawaing.drawinggameservice.drawing.presentation.dto.AddSessionParticipantInfo;
 import com.aioi.drawaing.drawinggameservice.drawing.presentation.dto.WinParticipantInfo;
 import com.aioi.drawaing.drawinggameservice.room.application.dto.AddRoomParticipantInfo;
@@ -31,19 +32,22 @@ public class DrawingService {
     private final RoomSesseionRepository roomSesseionRepository;
     private final SessionRepository sessionRepository;
     private final int DEFAULT_WORD_COUNT = 30;
-    private final int DEFAULT_SESSION_TIMER = 60;
-    private final int DEFAULT_DRAW_TIMER = 3;
+    private final int DEFAULT_SESSION_TIMER = 10;
+    private final int DEFAULT_DRAW_TIMER = 5;
     private final int MAX_PARTICIPANT_NUMBER = 4;
     //세션 시작
     //세션 시작할 때, 게임 제시어 주기
     //세션 시작할 때, 타이머 시작 + 전달
     //세션 시작할 때, 게임 어떻게 할건지 의논 필요
+
+
     public void startSession(String roomId, String sessionId, List<AddRoomParticipantInfo> addParticipantInfos) {
         List<String> words = extractWords(DEFAULT_WORD_COUNT);
         System.out.println("startSession: "+sessionId);
         Session session = findSession(sessionId);
 
         session.updateSessionStartInfo(words, addParticipantInfos);
+        sessionRepository.save(session);
         startTimers(roomId, sessionId);
         drawMessagePublisher.publishRoundInfo("/topic/session.info/"+roomId+"/"+sessionId, new RoundInfo(words, session.getParticipants()));
     }
@@ -64,7 +68,7 @@ public class DrawingService {
         return ThreadLocalRandom.current()
                 .ints(0, keywords.size())
                 .distinct()
-                .limit(count)
+                .limit(Math.min(count, keywords.size()))
                 .mapToObj(keywords::get)
                 .map(Keyword::getKeyword)
                 .collect(Collectors.toList());
@@ -86,9 +90,10 @@ public class DrawingService {
             int time = remainTime.get(sessionKey).decrementAndGet();
             if(remainTime.get(sessionKey).intValue()<=0){
                 remainTime.remove(sessionKey);
+                endSession(roomId, sessionId);
                 stopTimer(sessionKey);
                 stopTimer(drawKey);
-                endSession(roomId, sessionId);
+
             }
             drawMessagePublisher.publishTimer("/topic/session.total-timer/"+roomId+"/"+sessionId, new Timer(time));
 
@@ -113,13 +118,14 @@ public class DrawingService {
         scheduledFutures.put(key, scheduledFuture);
     }
 
-    public void resetDrawingTimer(String sessionId, int drawTimer) {
+    public void resetDrawingTimer(String sessionId) {
         String key = getKey(TimeType.DRAWING, sessionId);
-        remainTime.put(key, new AtomicInteger(drawTimer));
+        remainTime.put(key, new AtomicInteger(DEFAULT_DRAW_TIMER));
     }
 
     private void endSession(String roomId, String sessionId){
         Session session = findSession(sessionId);
+        System.out.println("endSession: "+sessionId);
         drawMessagePublisher.publishGameResult("/topic/session.result/"+roomId+"/"+sessionId, session.toParticipantScoreInfo());
     }
 

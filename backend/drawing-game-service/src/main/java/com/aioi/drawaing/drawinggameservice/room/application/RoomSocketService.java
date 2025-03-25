@@ -8,6 +8,7 @@ import com.aioi.drawaing.drawinggameservice.room.infrastructure.repository.RoomR
 
 import java.util.Objects;
 
+import com.aioi.drawaing.drawinggameservice.room.presentation.RoomMessagePublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -19,8 +20,8 @@ import org.springframework.stereotype.Service;
 public class RoomSocketService {
 
     private final RoomRepository repository;
-    private final SimpMessagingTemplate messagingTemplate;
     private final DrawingService drawingService;
+    private final RoomMessagePublisher roomMessagePublisher;
 
 //    public void createRoom(String title, Long hostId) {
 //        Room room = Room.builder()
@@ -45,7 +46,7 @@ public class RoomSocketService {
         room.updateHostIfNeeded();// 방장이 없다면 새로운 방장 선정
         repository.save(room);
 
-        broadcastRoomState(room);
+        roomMessagePublisher.publishRoomState(room);
     }
 
     public void startGame(String roomId, Long memberId) {
@@ -69,10 +70,9 @@ public class RoomSocketService {
         Room room = getRoom(roomId);
 
         room.updateParticipantReady(memberId);
-//        room.getParticipants().computeIfPresent(memberId, (k, v) -> !v.isReady());
         repository.save(room);
 
-        broadcastRoomState(room);
+        roomMessagePublisher.publishRoomState(room);
     }
 
     public void leaveRoom(String roomId, Long userId) {
@@ -88,7 +88,7 @@ public class RoomSocketService {
         }
         repository.save(room);
 
-        broadcastRoomState(room);
+        roomMessagePublisher.publishRoomState(room);
     }
 
     private void validateJoinRoom(Room room, Long memberId) {
@@ -105,12 +105,5 @@ public class RoomSocketService {
     private Room getRoom(String roomId) {
         return repository.findById(roomId)
                 .orElseThrow(() -> new RuntimeException("방을 찾을 수 없습니다: " + roomId));
-    }
-
-    private void broadcastRoomState(Room room) {
-        messagingTemplate.convertAndSend(
-                "/topic/room/" + room.getId(),
-                room
-        );
     }
 }
