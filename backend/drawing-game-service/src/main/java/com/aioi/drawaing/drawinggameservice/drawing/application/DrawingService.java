@@ -1,14 +1,17 @@
 package com.aioi.drawaing.drawinggameservice.drawing.application;
 
 import com.aioi.drawaing.drawinggameservice.drawing.application.dto.RoundInfo;
+import com.aioi.drawaing.drawinggameservice.drawing.application.dto.RoundResult;
 import com.aioi.drawaing.drawinggameservice.drawing.application.dto.Timer;
 import com.aioi.drawaing.drawinggameservice.drawing.domain.*;
 import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.KeywordRepository;
 import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.RoomSesseionRepository;
 import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.SessionRepository;
 import com.aioi.drawaing.drawinggameservice.drawing.presentation.dto.AddSessionParticipantInfo;
+import com.aioi.drawaing.drawinggameservice.drawing.presentation.dto.WinParticipantInfo;
 import com.aioi.drawaing.drawinggameservice.room.application.dto.AddRoomParticipantInfo;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -27,11 +30,10 @@ public class DrawingService {
     private final KeywordRepository keywordRepository;
     private final RoomSesseionRepository roomSesseionRepository;
     private final SessionRepository sessionRepository;
-
-    private static final int DEFAULT_WORD_COUNT = 3;
-    private static final int DEFAULT_SESSION_TIMER = 60;
-    private static final int DEFAULT_DRAW_TIMER = 3;
-
+    private final int DEFAULT_WORD_COUNT = 30;
+    private final int DEFAULT_SESSION_TIMER = 60;
+    private final int DEFAULT_DRAW_TIMER = 3;
+    private final int MAX_PARTICIPANT_NUMBER = 4;
     //세션 시작
     //세션 시작할 때, 게임 제시어 주기
     //세션 시작할 때, 타이머 시작 + 전달
@@ -68,8 +70,12 @@ public class DrawingService {
                 .collect(Collectors.toList());
     }
 
+//    public void increaseRound(String sessionId){
+//        Session session = findSession(sessionId);
+//        session.incrementRoundCount();
+//        sessionRepository.save(session);
+//    }
 
-    //sessionId 빼는거 고려 중..
     public void publishSessionTimer(String roomId, String sessionId, int startTime) {
         String sessionKey = getKey(TimeType.SESSION, sessionId);
         String drawKey = getKey(TimeType.DRAWING, sessionId);
@@ -82,6 +88,7 @@ public class DrawingService {
                 remainTime.remove(sessionKey);
                 stopTimer(sessionKey);
                 stopTimer(drawKey);
+                endSession(roomId, sessionId);
             }
             drawMessagePublisher.publishTimer("/topic/session.total-timer/"+roomId+"/"+sessionId, new Timer(time));
 
@@ -106,8 +113,14 @@ public class DrawingService {
         scheduledFutures.put(key, scheduledFuture);
     }
 
-    public void resetDrawingTimer(String key, int startTime) {
-        remainTime.put(key, new AtomicInteger(startTime));
+    public void resetDrawingTimer(String sessionId, int drawTimer) {
+        String key = getKey(TimeType.DRAWING, sessionId);
+        remainTime.put(key, new AtomicInteger(drawTimer));
+    }
+
+    private void endSession(String roomId, String sessionId){
+        Session session = findSession(sessionId);
+        drawMessagePublisher.publishGameResult("/topic/session.result/"+roomId+"/"+sessionId, session.toParticipantScoreInfo());
     }
 
     private void addParticipant(Session session, AddSessionParticipantInfo addSessionParticipantInfo) {
@@ -118,17 +131,6 @@ public class DrawingService {
         return sessionRepository.findById(sessionId).orElseThrow(()->new RuntimeException("session id가 잘못됐습니다."));
     }
 
-
-
-//    private RoomSession getOrCreateRoomSession(String roomId, List<String> words) {
-//        return roomSesseionRepository.findByRoomId(roomId)
-//                .orElseGet(()->{
-//                    Session session = Session.createSession(roomId, words);
-//                    sessionRepository.save(session);
-//                    return roomSesseionRepository.save(RoomSession.buildRoomSession(roomId, session.getId()));
-//                });
-//    }
-
     private String getKey(TimeType timeType, String sessionId) {
         return timeType.name()+":"+sessionId;
     }
@@ -137,6 +139,31 @@ public class DrawingService {
         scheduledFutures.get(key).cancel(true);
     }
 
+    public void win(String roomId, String sessionId, WinParticipantInfo winParticipantInfo) {
+        Session session = findSession(sessionId);
+        int correctScore = plusCorrectScore(sessionId, winParticipantInfo.drawingOrder());
+        int drawScore = plusDrawScore(winParticipantInfo.drawingOrder());
+//        System.out.println(correctScore+" "+drawScore);
+        session.win(winParticipantInfo, correctScore, drawScore);
+//        System.out.println(session.getHumanWin());
+        sessionRepository.save(session);
+        drawMessagePublisher.publishRoundResult("/topic/session.round-result/"+roomId+"/"+sessionId, new RoundResult(true, session.getRoundCount()));
+    }
 
+    public void lose(String roomId, String sessionId){
+        Session session = findSession(sessionId);
+        session.incrementRoundCount();
+        sessionRepository.save(session);
+        drawMessagePublisher.publishRoundResult("/topic/session.round-result/"+roomId+"/"+sessionId, new RoundResult(false, session.getRoundCount()));
+    }
 
+    private int plusDrawScore(int drawingOrder) {
+        return (MAX_PARTICIPANT_NUMBER-drawingOrder)*5;
+    }
+
+    private int plusCorrectScore(String sessionId, int drawingOrder) {
+        int totalRoundTime=DEFAULT_DRAW_TIMER*3;
+        int roundTime=remainTime.get(getKey(TimeType.DRAWING, sessionId)).get()+DEFAULT_DRAW_TIMER*drawingOrder;
+        return (totalRoundTime-roundTime)/3;
+    }
 }
