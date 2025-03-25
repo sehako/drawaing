@@ -6,6 +6,7 @@ import com.aioi.drawaing.drawinggameservice.drawing.domain.*;
 import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.KeywordRepository;
 import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.RoomSesseionRepository;
 import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.SessionRepository;
+import com.aioi.drawaing.drawinggameservice.drawing.presentation.DrawMessagePublisher;
 import com.aioi.drawaing.drawinggameservice.drawing.presentation.dto.AddSessionParticipantInfo;
 import com.aioi.drawaing.drawinggameservice.room.application.dto.AddRoomParticipantInfo;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +37,8 @@ public class DrawingService {
     //세션 시작할 때, 게임 제시어 주기
     //세션 시작할 때, 타이머 시작 + 전달
     //세션 시작할 때, 게임 어떻게 할건지 의논 필요
+
+
     public void startSession(String roomId, String sessionId, List<AddRoomParticipantInfo> addParticipantInfos) {
         List<String> words = extractWords(DEFAULT_WORD_COUNT);
         System.out.println("startSession: "+sessionId);
@@ -117,17 +120,6 @@ public class DrawingService {
     private Session findSession(String sessionId) {
         return sessionRepository.findById(sessionId).orElseThrow(()->new RuntimeException("session id가 잘못됐습니다."));
     }
-
-
-
-//    private RoomSession getOrCreateRoomSession(String roomId, List<String> words) {
-//        return roomSesseionRepository.findByRoomId(roomId)
-//                .orElseGet(()->{
-//                    Session session = Session.createSession(roomId, words);
-//                    sessionRepository.save(session);
-//                    return roomSesseionRepository.save(RoomSession.buildRoomSession(roomId, session.getId()));
-//                });
-//    }
 
     private String getKey(TimeType timeType, String sessionId) {
         return timeType.name()+":"+sessionId;
