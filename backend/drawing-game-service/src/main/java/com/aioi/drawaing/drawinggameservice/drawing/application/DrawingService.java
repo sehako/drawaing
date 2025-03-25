@@ -9,6 +9,7 @@ import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.SessionReposi
 import com.aioi.drawaing.drawinggameservice.drawing.presentation.dto.AddSessionParticipantInfo;
 import com.aioi.drawaing.drawinggameservice.room.application.dto.AddRoomParticipantInfo;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -27,18 +28,20 @@ public class DrawingService {
     private final KeywordRepository keywordRepository;
     private final RoomSesseionRepository roomSesseionRepository;
     private final SessionRepository sessionRepository;
-    private static final int DEFAULT_WORD_COUNT = 30;
+    private final int DEFAULT_WORD_COUNT = 30;
+    private final int DEFAULT_SESSION_TIMER = 60;
+    private final int DEFAULT_DRAW_TIMER = 3;
     //세션 시작
     //세션 시작할 때, 게임 제시어 주기
     //세션 시작할 때, 타이머 시작 + 전달
     //세션 시작할 때, 게임 어떻게 할건지 의논 필요
-    public void startSession(String roomId, String sessionId, List<AddRoomParticipantInfo> addParticipantInfos, int sessionTimer, int drawTimer) {
+    public void startSession(String roomId, String sessionId, List<AddRoomParticipantInfo> addParticipantInfos) {
         List<String> words = extractWords(DEFAULT_WORD_COUNT);
         System.out.println("startSession: "+sessionId);
         Session session = findSession(sessionId);
 
         session.updateSessionStartInfo(words, addParticipantInfos);
-        startTimers(roomId, sessionId, sessionTimer, drawTimer);
+        startTimers(roomId, sessionId);
         drawMessagePublisher.publishRoundInfo("/topic/session.info/"+roomId+"/"+sessionId, new RoundInfo(words, session.getParticipants()));
     }
 
@@ -47,9 +50,9 @@ public class DrawingService {
         return sessionRepository.save(session);
     }
 
-    private void startTimers(String roomId, String sessionId, int sessionTimer, int drawTimer) {
-        publishSessionTimer(roomId, sessionId, sessionTimer);
-        publishDrawingTimer(roomId, sessionId, drawTimer);
+    private void startTimers(String roomId, String sessionId) {
+        publishSessionTimer(roomId, sessionId, DEFAULT_SESSION_TIMER);
+        publishDrawingTimer(roomId, sessionId, DEFAULT_DRAW_TIMER);
     }
 
     //게임 제시어 뽑기
@@ -64,8 +67,12 @@ public class DrawingService {
                 .collect(Collectors.toList());
     }
 
+    public void increaseRound(String sessionId){
+        Session session = findSession(sessionId);
+        session.incrementRoundCount();
+        sessionRepository.save(session);
+    }
 
-    //sessionId 빼는거 고려 중..
     public void publishSessionTimer(String roomId, String sessionId, int startTime) {
         String sessionKey = getKey(TimeType.SESSION, sessionId);
         String drawKey = getKey(TimeType.DRAWING, sessionId);

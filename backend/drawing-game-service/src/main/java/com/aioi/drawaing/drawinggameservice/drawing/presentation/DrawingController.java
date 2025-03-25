@@ -19,9 +19,6 @@ public class DrawingController {
     private final SimpMessagingTemplate simpMessagingTemplate;
     private final DrawingService drawingService;
 
-    private static final int DEFAULT_SESSION_TIMER = 60;
-    private static final int DEFAULT_DRAW_TIMER = 3;
-
     @MessageMapping("/session.draw/{roomId}/{sessionId}")
     public void send(@DestinationVariable String roomId, @DestinationVariable String sessionId, @Payload List<DrawInfo> drawInfo) {
         log.info("send message: {}", drawInfo.toString());
@@ -32,19 +29,24 @@ public class DrawingController {
 
     @MessageMapping("/session.end/{roomId}/{sessionId}")
     public void endDraw(@DestinationVariable String roomId, @DestinationVariable String sessionId) {
-        drawingService.resetDrawingTimer(sessionId, DEFAULT_DRAW_TIMER);
+        drawingService.resetDrawingTimer(sessionId, 30);
+    }
+
+    @MessageMapping("/session.lose/{roomId}/{sessionId}")
+    public void lose(@DestinationVariable String roomId, @DestinationVariable String sessionId) {
+        drawingService.increaseRound(sessionId);
     }
 
     // 삭제 예정 : 세션 타이머 보는 용도
     @MessageMapping("/send")
     public void send(@Payload String message) {
-        drawingService.publishSessionTimer("1","1",DEFAULT_SESSION_TIMER);
+        drawingService.publishSessionTimer("1","1",30);
     }
 
     // 삭제 예정 : 그림 타이머
     @MessageMapping("/draw")
     public void draw(@Payload String message) {
-        drawingService.publishDrawingTimer("1","1",DEFAULT_DRAW_TIMER);
+        drawingService.publishDrawingTimer("1","1",3);
     }
 
 //    @SendTo

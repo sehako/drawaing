@@ -52,4 +52,8 @@ public class Session {
             addParticipant(addParticipantInfo.userId(), Participant.createParticipant(addParticipantInfo.nickname(), addParticipantInfo.characterUrl()));
         });
     }
+
+    public void incrementRoundCount(){
+        this.roundCount++;
+    }
 }
