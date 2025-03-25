@@ -100,12 +100,13 @@ public class MemberService {
         if (memberRepository.existsByEmail(signUp.getEmail())) {
             return ApiResponseEntity.onFailure(ErrorCode.ALREADY_EXIST_EMAIL);
         }
-//        VerificationCodeCache verificationCodeCache = verificationCodeCacheRepository.findByEmail(
-//                        signUp.getEmail())
-//                .orElseThrow(() -> new IllegalArgumentException("인증이 만료되었습니다."));
-//        if (!verificationCodeCache.getVerified()) {
-//            return ApiResponseEntity.onFailure(ErrorCode.NOT_AUTHENTICATED_EMAIL);
-//        }
+        //이메일 인증
+        VerificationCodeCache verificationCodeCache = verificationCodeCacheRepository.findByEmail(
+                        signUp.getEmail())
+                .orElseThrow(() -> new IllegalArgumentException("인증이 만료되었습니다."));
+        if (!verificationCodeCache.getVerified()) {
+            return ApiResponseEntity.onFailure(ErrorCode.NOT_AUTHENTICATED_EMAIL);
+        }
         String nickname = signUp.getNickname();
         Member member = Member.builder()
                 .email(signUp.getEmail())
