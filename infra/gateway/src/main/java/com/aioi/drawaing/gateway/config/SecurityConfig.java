@@ -2,26 +2,20 @@ package com.aioi.drawaing.gateway.config;
 
 import java.util.Arrays;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.context.annotation.Primary;
+import org.springframework.security.config.web.server.ServerHttpSecurity;
+import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.cors.reactive.CorsConfigurationSource;
+import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 
 @Configuration
-@EnableWebSecurity
-@RequiredArgsConstructor
 public class SecurityConfig {
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http.cors(cors ->
-                cors.configurationSource(corsConfigurationSource()))
-        ;
-
+    public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
+        http.cors(corsSpec -> corsSpec.configurationSource(corsConfigurationSource()));
         return http.build();
     }
 
@@ -39,4 +33,9 @@ public class SecurityConfig {
         return source;
     }
 
+    @Bean
+    @Primary
+    public ServerHttpSecurity configure(ServerHttpSecurity http) {
+        return http;
+    }
 }
