@@ -35,13 +35,13 @@ public class DrawingController {
 
     @MessageMapping("/session.lose/{roomId}/{sessionId}")
     public void lose(@DestinationVariable String roomId, @DestinationVariable String sessionId) {
-        drawingService.increaseRound(sessionId);
+        drawingService.lose(roomId, sessionId);
     }
 
     @MessageMapping("/session.correct/{roomId}/{sessionId}")
     public void win(@DestinationVariable String roomId, @DestinationVariable String sessionId, @Payload WinParticipantInfo winParticipantInfo) {
         System.out.println(sessionId);
-        drawingService.win(sessionId, winParticipantInfo);
+        drawingService.win(roomId, sessionId, winParticipantInfo);
     }
 
     // 삭제 예정 : 세션 타이머 보는 용도

@@ -60,6 +60,7 @@ public class Session {
 
     public void win(WinParticipantInfo winParticipantInfo, int correctScore, int drawScore){
         this.humanWin++;
+        incrementRoundCount();
         this.participants.get(winParticipantInfo.drawingMemberId()).incrementBonusPointsDrawing(drawScore);
         this.participants.get(winParticipantInfo.answerMemberId()).incrementBonusPointsGuessing(correctScore);
     }
