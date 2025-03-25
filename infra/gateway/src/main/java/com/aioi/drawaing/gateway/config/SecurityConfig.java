@@ -24,7 +24,7 @@ public class SecurityConfig {
         http.cors(corsSpec -> corsSpec.configurationSource(corsConfigurationSource()));
         http.authorizeExchange(exchanges -> exchanges
                                 .pathMatchers("/auth/**").permitAll()
-                                .pathMatchers("/game/**").hasAnyRole("USER", "ADMIN")
+                                .pathMatchers("/game/**").hasAnyRole("USER", "ADMIN", "GUEST")
                                 .pathMatchers("/game-test/**").hasRole("TESTER")
 //                        .anyExchange().permitAll()
                 )
