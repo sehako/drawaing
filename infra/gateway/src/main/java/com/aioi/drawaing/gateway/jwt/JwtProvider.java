@@ -6,16 +6,9 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.security.Keys;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Collection;
 import javax.crypto.SecretKey;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 @Slf4j
@@ -33,25 +26,14 @@ public class JwtProvider {
         this.redisTokenService = redisTokenService;
     }
 
-    public UsernamePasswordAuthenticationToken getAuthentication(String accessToken, String refreshToken) {
+    public String getUserId(String accessToken, String refreshToken) {
         validateTokens(accessToken, refreshToken);
-        Claims claims = parseToken(accessToken);
 
-        if (claims.get(AUTHORITIES_KEY) == null) {
-            throw new RuntimeException("권한 정보가 없는 토큰입니다.");
-        }
-
-        Collection<? extends GrantedAuthority> authorities =
-                Arrays.stream(claims.get(AUTHORITIES_KEY).toString().split(","))
-                        .map(SimpleGrantedAuthority::new)
-                        .toList();
-
-        if (redisTokenService.getToken(claims.getSubject()) == null) {
+        if (redisTokenService.getToken(refreshToken) == null) {
             throw new RuntimeException();
         }
 
-        UserDetails principal = new User(claims.getSubject(), "", authorities);
-        return new UsernamePasswordAuthenticationToken(principal, "", authorities);
+        return parseToken(accessToken).get("id", String.class);
     }
 
     private Claims parseToken(String token) {
