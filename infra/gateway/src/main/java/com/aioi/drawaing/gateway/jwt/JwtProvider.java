@@ -22,12 +22,15 @@ import org.springframework.stereotype.Component;
 @Component
 public class JwtProvider {
     private final SecretKey secretKey;
+    private final RedisTokenService redisTokenService;
     private static final String AUTHORITIES_KEY = "auth";
 
     public JwtProvider(
-            @Value("${jwt.secret}") String secretKey
+            @Value("${jwt.secret}") String secretKey,
+            RedisTokenService redisTokenService
     ) {
         this.secretKey = Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
+        this.redisTokenService = redisTokenService;
     }
 
     public UsernamePasswordAuthenticationToken getAuthentication(String accessToken, String refreshToken) {
@@ -42,6 +45,10 @@ public class JwtProvider {
                 Arrays.stream(claims.get(AUTHORITIES_KEY).toString().split(","))
                         .map(SimpleGrantedAuthority::new)
                         .toList();
+
+        if (redisTokenService.getToken(claims.getSubject()) == null) {
+            throw new RuntimeException();
+        }
 
         UserDetails principal = new User(claims.getSubject(), "", authorities);
         return new UsernamePasswordAuthenticationToken(principal, "", authorities);
