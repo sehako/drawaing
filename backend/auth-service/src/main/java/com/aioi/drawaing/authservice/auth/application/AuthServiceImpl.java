@@ -1,12 +1,12 @@
-package com.aioi.drawaing.authservice.auth.service;
+package com.aioi.drawaing.authservice.auth.application;
 
 import static com.aioi.drawaing.authservice.common.jwt.JwtTokenProvider.getRefreshTokenExpireTimeCookie;
 import static com.aioi.drawaing.authservice.oauth.infrastructure.repository.OAuth2AuthorizationRequestBasedOnCookieRepository.REFRESH_TOKEN;
 
-import com.aioi.drawaing.authservice.auth.dto.EmailRequest;
-import com.aioi.drawaing.authservice.auth.dto.EmailVerificationRequest;
-import com.aioi.drawaing.authservice.auth.entity.VerificationCodeCache;
-import com.aioi.drawaing.authservice.auth.repository.VerificationCodeCacheRepository;
+import com.aioi.drawaing.authservice.auth.presentation.dto.EmailRequest;
+import com.aioi.drawaing.authservice.auth.presentation.dto.EmailVerificationRequest;
+import com.aioi.drawaing.authservice.auth.domain.VerificationCodeCache;
+import com.aioi.drawaing.authservice.auth.infrastructure.repository.VerificationCodeCacheRepository;
 import com.aioi.drawaing.authservice.common.constant.EmailTemplate;
 import com.aioi.drawaing.authservice.common.jwt.JwtTokenProvider;
 import com.aioi.drawaing.authservice.common.jwt.TokenInfo;
@@ -33,7 +33,7 @@ import org.springframework.util.ObjectUtils;
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
-public class AuthServiceImpl implements com.aioi.drawaing.authservice.auth.service.AuthService {
+public class AuthServiceImpl implements com.aioi.drawaing.authservice.auth.application.AuthService {
     private final MemberRepository memberRepository;
     private final VerificationCodeCacheRepository verificationCodeCacheRepository;
     private final EmailSender emailSender;

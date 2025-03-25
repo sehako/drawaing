@@ -1,7 +1,7 @@
 package com.aioi.drawaing.authservice.common.constant;
 
 public class EmailTemplate {
-    public static final String EMAIL_VERIFICATION_SUBJECT = "[D3V] 이메일 인증 코드입니다.";
+    public static final String EMAIL_VERIFICATION_SUBJECT = "[DrawAIng] 이메일 인증 코드입니다.";
     public static final String EMAIL_VERIFICATION_CONTENT = """
                         <!DOCTYPE html>
                                     <html lang="ko">
@@ -58,7 +58,7 @@ public class EmailTemplate {
                                     <body>
                                         <div class="container">
                                             <div class="header">
-                                                D3V 이메일 인증 코드 안내
+                                                DrawAIng 이메일 인증 코드 안내
                                             </div>
                                             <p>안녕하세요!</p>
                                             <p>아래 인증 코드를 사용하여 이메일 인증을 완료해 주세요.</p>
@@ -73,7 +73,7 @@ public class EmailTemplate {
                                     </html>
             """;
 
-    public static final String EMAIL_PASSWORD_SUBJECT = "[D3V] 비밀번호 임시 비밀번호 안내입니다.";
+    public static final String EMAIL_PASSWORD_SUBJECT = "[DrawAIng] 비밀번호 임시 비밀번호 안내입니다.";
     public static final String EMAIL_PASSWORD_CONTENT = """
             <!DOCTYPE html>
                         <html lang="ko">
@@ -130,7 +130,7 @@ public class EmailTemplate {
                         <body>
                             <div class="container">
                                 <div class="header">
-                                    D3V 임시 비밀번호 안내
+                                    DrawAIng 임시 비밀번호 안내
                                 </div>
                                 <p>안녕하세요!</p>
                                 <p>고객님의 임시 비밀번호는 아래와 같습니다.</p>

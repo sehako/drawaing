@@ -57,10 +57,10 @@ public class WebSecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/actuator/**",
-                                "/swagger-ui/**",
+                                "/docs/swagger-ui/**",
                                 "/v3/api-docs/**",
                                 "/swagger-resources/**",
-                                "/swagger/**",
+                                "/docs/swagger/**",
                                 "/h2-console/**",
                                 "/api/v1/**"
                         )
