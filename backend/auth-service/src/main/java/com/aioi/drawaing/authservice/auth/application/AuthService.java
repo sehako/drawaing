@@ -1,7 +1,7 @@
-package com.aioi.drawaing.authservice.auth.service;
+package com.aioi.drawaing.authservice.auth.application;
 
-import com.aioi.drawaing.authservice.auth.dto.EmailRequest;
-import com.aioi.drawaing.authservice.auth.dto.EmailVerificationRequest;
+import com.aioi.drawaing.authservice.auth.presentation.dto.EmailRequest;
+import com.aioi.drawaing.authservice.auth.presentation.dto.EmailVerificationRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.ResponseEntity;
