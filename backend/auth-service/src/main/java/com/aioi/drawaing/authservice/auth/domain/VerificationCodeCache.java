@@ -1,4 +1,4 @@
-package com.aioi.drawaing.authservice.auth.entity;
+package com.aioi.drawaing.authservice.auth.domain;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
