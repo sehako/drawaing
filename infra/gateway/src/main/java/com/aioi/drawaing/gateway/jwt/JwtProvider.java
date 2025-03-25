@@ -27,7 +27,7 @@ public class JwtProvider {
     }
 
     public String getUserId(String accessToken, String refreshToken) {
-        validateTokens(accessToken, refreshToken);
+//        validateTokens(accessToken, refreshToken);
 
         if (redisTokenService.getToken(refreshToken) == null) {
             throw new RuntimeException();
