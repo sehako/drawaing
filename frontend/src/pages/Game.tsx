@@ -5,6 +5,8 @@ import CanvasSection from '../components/Game/CanvasSection';
 import AISection from '../components/Game/AIsection';
 import word from '../assets/Game/word.png';
 import axios from 'axios';
+import { Howl } from 'howler'; // Howler.js import 추가
+import pen_sound from '../assets/Sound/drawing_sound.mp3';
 
 interface Player {
   id: number;
@@ -38,12 +40,41 @@ const Game: React.FC = () => {
   const [passCount, setPassCount] = useState<number>(0);
   const MAX_PASS_COUNT = 3;
 
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
   // roomId가 없으면 기본 방으로 리다이렉트
   useEffect(() => {
     if (!roomId) {
       navigate('/game/1');
     }
   }, [roomId, navigate]);
+
+  useEffect(() => {
+    // 오디오 요소 생성
+    const audio = new Audio(pen_sound);
+    audio.volume = 0.3;
+    audio.preload = 'auto';
+    
+    // 오디오 로드 확인
+    audio.addEventListener('canplaythrough', () => {
+      console.log('오디오 로드 완료!');
+    });
+    
+    audio.addEventListener('error', (e) => {
+      console.error('오디오 로드 오류:', e);
+      console.log('시도한 소스 경로:', pen_sound);
+    });
+    
+    // REF에 오디오 요소 저장
+    audioRef.current = audio;
+    
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = '';
+      }
+    };
+  }, []);
 
   // 환경 변수에서 API URL을 가져옴
   const API_URL = import.meta.env.VITE_API_URL || 'https://www.drawaing.site';
@@ -91,6 +122,9 @@ const Game: React.FC = () => {
   const [hasCompleted, setHasCompleted] = useState<boolean>(false);
   const [showCorrectAnswer, setShowCorrectAnswer] = useState<boolean>(false);
   const [correctAnimation, setCorrectAnimation] = useState<boolean>(false);
+  const [humanRoundWinCount, setHumanRoundWinCount] = useState<number>(0);
+  const [aiRoundWinCount, setAIRoundWinCount] = useState<number>(0);
+  const [isHumanCorrect, setIsHumanCorrect] = useState<boolean>(false);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [context, setContext] = useState<CanvasRenderingContext2D | null>(null);
@@ -128,8 +162,8 @@ const Game: React.FC = () => {
             playerName: currentPlayer // 현재 플레이어 이름 사용
           }
         };
-        ws.send(JSON.stringify(joinMessage));
-        
+        ws.send(JSON.stringify(joinMessage)); 
+        console.log('ㅎㅇㅎㅇ')
         // 자신의 접속 상태 업데이트
         handlePlayerConnection(currentPlayer, true);
       };
@@ -170,7 +204,8 @@ ws.onmessage = (event) => {
           reason: event.reason,
           wasClean: event.wasClean
         });
-        
+        console.trace('웹소켓 연결 종료 추적');
+
         setIsConnected(false);
         
         // 자신의 접속 상태 업데이트
@@ -268,6 +303,8 @@ ws.onmessage = (event) => {
   
   const handleAICorrectAnswer = () => {
     setEggCount(prev => Math.max(0, prev - 1));
+
+    setAIRoundWinCount(prev => prev + 1);
   };
 
   useEffect(() => {
@@ -348,56 +385,57 @@ ws.onmessage = (event) => {
     }
   };
 
-  const handleGuessSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!guess.trim()) return;
-    
-    if (guess.trim().toLowerCase() === quizWord.toLowerCase()) {
-      setCorrectAnimation(true);
-      setShowCorrectAnswer(true);
-      handlePlayerCorrectAnswer();
+const handleGuessSubmit = (e: React.FormEvent) => {
+  e.preventDefault();
+  
+  if (!guess.trim()) return;
+  
+  if (guess.trim().toLowerCase() === quizWord.toLowerCase()) {
+    handlePlayerCorrectAnswer();
+    setIsHumanCorrect(true); // 이 줄 추가
 
-      setTimeout(() => {
-        setCorrectAnimation(false);
-        setShowCorrectAnswer(false);
-        
-        setCurrentRound(prev => prev + 1);
-        setGuesserIndex((guesserIndex + 1) % 4);
-        setActiveDrawerIndex(0);
-        
-        setTimeLeft(20);
-        
-        setHasCompleted(false);
-        
-        if (context && canvasRef.current) {
-          context.fillStyle = 'white';
-          context.fillRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-        }
-        
-        const newWords = ['사과', '자동차', '컴퓨터', '강아지', '고양이', '비행기', '꽃', '커피'];
-        setQuizWord(newWords[Math.floor(Math.random() * newWords.length)]);
-      }, 2000);
-    } else {
-      setAiAnswer('틀렸습니다! 다시 시도해보세요.');
-    }
-    
-    setGuess('');
-  };
-
-  const handlePass = () => {
-    // 조건 수정: 순서3(activeDrawerIndex === 2)이고 전체 PASS 횟수가 3회 미만일 때
-    if (activeDrawerIndex === 2 && passCount < MAX_PASS_COUNT) {
-      setPassCount(prev => prev + 1);
+    setTimeout(() => {
       setCurrentRound(prev => prev + 1);
       setGuesserIndex((guesserIndex + 1) % 4);
       setActiveDrawerIndex(0);
       
+      setHumanRoundWinCount(prev => prev + 1);
+  
+      setTimeLeft(20);
+      
+      setHasCompleted(false);
+      
+      if (context && canvasRef.current) {
+        context.fillStyle = 'white';
+        context.fillRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+      }
+      
+      const newWords = ['사과', '자동차', '컴퓨터', '강아지', '고양이', '비행기', '꽃', '커피'];
+      setQuizWord(newWords[Math.floor(Math.random() * newWords.length)]);
+      
+      // CorrectAnswerModal 표시를 위해 showCorrectAnswer 상태 설정
+      setShowCorrectAnswer(true);
+    }, 500);
+  } else {
+    setAiAnswer('틀렸습니다! 다시 시도해보세요.');
+  }
+  
+  setGuess('');
+}; 
+
+  const handlePass = () => {
+    // 조건 수정: 순서3(activeDrawerIndex === 2)이고 전체 PASS 횟수가 3회 미만일 때
+    if (activeDrawerIndex === 2 && passCount < MAX_PASS_COUNT) {
+      setAIRoundWinCount(prev => prev + 1);      
+      setPassCount(prev => prev + 1);
+      setCurrentRound(prev => prev + 1);
+      setGuesserIndex((guesserIndex + 1) % 4);
+      setActiveDrawerIndex(0);
+
       setTimeLeft(20);
       
       setHasCompleted(false);
       setShowCorrectAnswer(false);
-      
       if (context && canvasRef.current) {
         context.fillStyle = 'white';
         context.fillRect(0, 0, canvasRef.current.width, canvasRef.current.height);
@@ -458,20 +496,22 @@ ws.onmessage = (event) => {
             <div className="flex-1 text-left pl-10">
               <div className="text-6xl font-bold text-gray-800 whitespace-nowrap">ROUND {currentRound}</div>
             </div>
-            
             <div className="flex-1 flex justify-center items-center">
               <div className="relative flex items-center justify-center w-[200px] h-full">
                 <img 
                   src={word} 
                   alt="Word background" 
                   className="absolute w-full h-auto object-cover mb-5"
-                />
+                  />
                 <div className="relative z-10 text-white text-3xl font-bold text-center mt-6">
                   {quizWord}
                 </div>
               </div>
             </div>
             
+            <div>
+              사람 {humanRoundWinCount} : {aiRoundWinCount} AI
+            </div>
             <div className="flex-1 text-right pr-10">
               <div className="text-lg text-gray-700 text-5xl">남은시간: {timeLeft}초</div>
             </div>
@@ -479,17 +519,9 @@ ws.onmessage = (event) => {
         </div>
       </div>
 
-      {/* 방 정보 및 웹소켓 연결 상태 표시 */}
-      {/* <div className="w-full max-w-7xl mb-4 p-2 rounded text-center bg-yellow-50 text-amber-800 border border-amber-200">
-        <div className="font-bold">게임방 #{roomId}</div>
-        <div className={`mt-1 text-sm ${isConnected ? 'text-green-600' : 'text-red-600'}`}>
-          {isConnected ? `실시간 연결 활성화: 당신은 ${currentPlayer}입니다` : '연결 끊김: 재연결 중...'}
-        </div>
-      </div> */}
-
       <div className="flex w-full max-w-7xl">
         {/* 플레이어 컴포넌트 - 좌측 */}
-        <div className="w-1/5 mr-4">
+        <div className="w-1/5 mr-9">
           <PlayerSection 
             currentRound={currentRound}
             activeDrawerIndex={activeDrawerIndex}
@@ -529,7 +561,7 @@ ws.onmessage = (event) => {
             activeDrawerIndex={activeDrawerIndex}
             handleCanvasSubmit={handleCanvasSubmit}
             setPredictions={setPredictions}
-          />
+            />
         </div>
 
         {/* AI 컴포넌트 - 우측 */}
@@ -547,6 +579,8 @@ ws.onmessage = (event) => {
             predictions={predictions}
             canPass={activeDrawerIndex === 2 && passCount < MAX_PASS_COUNT}
             passCount={passCount}
+            isHumanCorrect={isHumanCorrect}
+            setIsHumanCorrect={setIsHumanCorrect}
           />
         </div>
       </div>
