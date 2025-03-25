@@ -33,7 +33,10 @@ public class JwtProvider {
             throw new RuntimeException();
         }
 
-        return parseToken(accessToken).get("id", String.class);
+        String email = parseToken(accessToken).getSubject();
+
+        log.info("email: {} -----------------------------------------------------", email);
+        return email;
     }
 
     private Claims parseToken(String token) {
