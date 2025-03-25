@@ -88,6 +88,7 @@ public class DrawingService {
                 remainTime.remove(sessionKey);
                 stopTimer(sessionKey);
                 stopTimer(drawKey);
+                endSession(roomId, sessionId);
             }
             drawMessagePublisher.publishTimer("/topic/session.total-timer/"+roomId+"/"+sessionId, new Timer(time));
 
@@ -115,6 +116,11 @@ public class DrawingService {
     public void resetDrawingTimer(String sessionId, int drawTimer) {
         String key = getKey(TimeType.DRAWING, sessionId);
         remainTime.put(key, new AtomicInteger(drawTimer));
+    }
+
+    private void endSession(String roomId, String sessionId){
+        Session session = findSession(sessionId);
+        drawMessagePublisher.publishGameResult("/topic/session.result/"+roomId+"/"+sessionId, session.toParticipantScoreInfo());
     }
 
     private void addParticipant(Session session, AddSessionParticipantInfo addSessionParticipantInfo) {
