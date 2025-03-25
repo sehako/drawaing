@@ -3,9 +3,8 @@ package com.aioi.drawaing.gateway.jwt;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.UnsupportedJwtException;
+import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
-import java.nio.charset.StandardCharsets;
 import javax.crypto.SecretKey;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,21 +21,21 @@ public class JwtProvider {
             @Value("${jwt.secret}") String secretKey,
             RedisTokenService redisTokenService
     ) {
-        this.secretKey = Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
+//        this.secretKey = Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
+        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
+        this.secretKey = Keys.hmacShaKeyFor(keyBytes);
         this.redisTokenService = redisTokenService;
     }
 
     public String getUserId(String accessToken, String refreshToken) {
 //        validateTokens(accessToken, refreshToken);
 
-        if (redisTokenService.getToken(refreshToken) == null) {
-            throw new RuntimeException();
-        }
-
+//        if (redisTokenService.getToken(refreshToken) == null) {
+//            throw new RuntimeException();
+//        }
+        
         String email = parseToken(accessToken).getSubject();
-
-        log.info("wqelrkjw;lkrj;lkwejr");
-        log.info("email: {} -----------------------------------------------------", email);
+        String role = parseToken(accessToken).get(AUTHORITIES_KEY, String.class);
         return email;
     }
 
@@ -47,7 +46,7 @@ public class JwtProvider {
                     .build()
                     .parseSignedClaims(token)
                     .getPayload();
-        } catch (UnsupportedJwtException | IllegalArgumentException e) {
+        } catch (Exception e) {
             log.error(e.getMessage());
             throw e;
         }

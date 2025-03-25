@@ -13,6 +13,7 @@ import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.integration.json.SimpleJsonSerializer;
 import org.springframework.stereotype.Component;
@@ -34,23 +35,34 @@ public class AuthorizationFilter extends AbstractGatewayFilterFactory<Config> {
     public GatewayFilter apply(Config config) {
 
         // Custom Pre Filter
-        return ((exchange, chain) -> {
-            // RxJava라는 웹 플럭스 지원해주는 라이브러리
+        return (exchange, chain) -> {
             try {
                 String accessToken = resolveAccessToken(exchange);
-                log.info(accessToken);
-                String refreshToken = resolveRefreshToken(exchange);
+                log.info("Access Token: {}", accessToken);
+                log.info("Path = {}", exchange.getRequest().getPath());
 
-                String userId = jwtProvider.getUserId(accessToken, refreshToken);
-                return chain.filter(exchange)
+                String userId = jwtProvider.getUserId(accessToken, "refreshToken");
+
+                // 기존 요청에서 새로운 요청 생성 후 헤더 추가
+                ServerHttpRequest mutatedRequest = exchange.getRequest().mutate()
+                        .header("user-id", userId)
+                        .build();
+
+                // 새로운 요청을 포함한 exchange로 체인 진행
+                ServerWebExchange mutatedExchange = exchange.mutate()
+                        .request(mutatedRequest)
+                        .build();
+
+                return chain.filter(mutatedExchange)
                         .then(Mono.fromRunnable(() -> {
-                            exchange.getRequest().getHeaders().add("user-id", userId);
+                            // Post-filter 로직이 필요하다면 여기에 작성
                         }));
             } catch (Exception e) {
                 return unauthorizedResponse(exchange);
             }
-        });
+        };
     }
+
 
     private String resolveAccessToken(ServerWebExchange exchange) {
         String accessToken = exchange
