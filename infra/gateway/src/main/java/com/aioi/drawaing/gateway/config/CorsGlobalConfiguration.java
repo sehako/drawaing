@@ -16,7 +16,7 @@ public class CorsGlobalConfiguration {
         CorsConfiguration config = new CorsConfiguration();
 
         // 자격 증명 허용
-        config.setAllowCredentials(true);
+//        config.setAllowCredentials(true);
 
         // 허용할 Origin
         config.setAllowedOrigins(List.of("*"));
