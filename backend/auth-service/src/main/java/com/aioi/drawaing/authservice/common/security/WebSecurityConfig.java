@@ -47,7 +47,7 @@ public class WebSecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                //.cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .headers(headers -> headers
                         .frameOptions(FrameOptionsConfig::sameOrigin)
@@ -128,45 +128,19 @@ public class WebSecurityConfig {
     }
 
 
-//    // CORS 허용 적용
-//    @Bean
-//    public CorsConfigurationSource corsConfigurationSource() {
-//        CorsConfiguration configuration = new CorsConfiguration();
-//
-//        // 허용할 Origin 설정 (와일드카드 제거, 정확한 도메인만 허용)
-//        configuration.setAllowedOriginPatterns(List.of(
-//                "http://localhost:8080",
-//                "http://localhost:3000",
-//                "http://localhost:5173",
-//                "http://localhost:5174",
-//                "http://localhost:5175"
-//        ));
-//
-//        // 허용할 HTTP Method 설정
-//        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-//
-//        // 허용할 Header 설정
-//        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
-//
-//        // 인증 정보를 포함한 요청 허용
-//        configuration.setAllowCredentials(true);
-//
-//        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-//        source.registerCorsConfiguration("/**", configuration);
-//
-//        return source;
-//    }
+    // CORS 허용 적용
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOriginPatterns(List.of("*")); // 프론트엔드 URL
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(true);
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")); // 허용할 HTTP Method 설정
+        configuration.setAllowedHeaders(List.of("*")); // 허용할 Header 설정
+        configuration.setAllowCredentials(true); // 인증 정보를 포함한 요청 허용
         configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
+
         return source;
     }
 }
