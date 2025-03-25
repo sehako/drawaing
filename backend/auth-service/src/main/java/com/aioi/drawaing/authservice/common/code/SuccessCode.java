@@ -16,12 +16,12 @@ public enum SuccessCode {
     //Video
 
     //Member(2100~2199)
-    CREATE_MEMBER(HttpStatus.CREATED, "사용자 등록 성공했습니다."),
     AUTH_SUCCESS(HttpStatus.REQUEST_TIMEOUT, "사용자 인증 성공했습니다."),
     TOKEN_REFRESHED(HttpStatus.CREATED, "토큰 재발급 성공했습니다."),
     VALID_EMAIL(HttpStatus.OK, "사용 가능한 Email 입니다."),
-    SUCCESS_MEMBER_REGISTER(HttpStatus.OK, "회원가입에 성공하였습니다."),
-    SUCCESS_LOGIN(HttpStatus.OK, "로그인에 성공하였습니다.")
+    SUCCESS_MEMBER_REGISTER(HttpStatus.CREATED, "회원가입에 성공하였습니다."),
+    SUCCESS_LOGIN(HttpStatus.OK, "로그인에 성공하였습니다."),
+    LOGOUT_SUCCESS(HttpStatus.OK, "로그아웃에 성공하였습니다.")
     ;
 
     private final HttpStatus status;

@@ -7,6 +7,7 @@ import com.aioi.drawaing.authservice.auth.presentation.dto.EmailRequest;
 import com.aioi.drawaing.authservice.auth.presentation.dto.EmailVerificationRequest;
 import com.aioi.drawaing.authservice.auth.domain.VerificationCodeCache;
 import com.aioi.drawaing.authservice.auth.infrastructure.repository.VerificationCodeCacheRepository;
+import com.aioi.drawaing.authservice.common.code.ErrorCode;
 import com.aioi.drawaing.authservice.common.constant.EmailTemplate;
 import com.aioi.drawaing.authservice.common.jwt.JwtTokenProvider;
 import com.aioi.drawaing.authservice.common.jwt.TokenInfo;
@@ -112,7 +113,7 @@ public class AuthServiceImpl implements com.aioi.drawaing.authservice.auth.appli
         Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("해당 이메일을 가진 유저가 존재하지 않습니다."));
 
-        return ResponseEntity.ok(member.getProviderType());
+        return ApiResponseEntity.onSuccess(member.getProviderType());
     }
 
     @Override
@@ -124,19 +125,22 @@ public class AuthServiceImpl implements com.aioi.drawaing.authservice.auth.appli
 
         // 2. Refresh Token 검증
         if (!jwtTokenProvider.validateToken(refreshToken)) {
-            return ApiResponseEntity.badRequest("Refresh Token 정보가 유효하지 않습니다.");
+            return ApiResponseEntity.onFailure(ErrorCode.INVALID_REFRESH_TOKEN);
         }
+
         // 3. 리프레시 토큰 복호화
         String memberEmail = jwtTokenProvider.extractIdFromToken(refreshToken);
 
-        // 4. Redis 에서 User email 을 기반으로 저장된 Refresh Token 값을 가져옵니다.
+        // 4. Redis에서 User email을 기반으로 저장된 Refresh Token 값을 가져옵니다.
         String redisRefreshToken = redisTemplate.opsForValue().get("RT:" + memberEmail);
-        // (추가) 로그아웃되어 Redis 에 RefreshToken 이 존재하지 않는 경우 처리
+
+        // (추가) 로그아웃되어 Redis에 RefreshToken이 존재하지 않는 경우 처리
         if (ObjectUtils.isEmpty(redisRefreshToken)) {
-            return ApiResponseEntity.badRequest("잘못된 요청입니다.");
+            return ApiResponseEntity.onFailure(ErrorCode.INVALID_REQUEST);
         }
+
         if (!redisRefreshToken.equals(refreshToken)) {
-            return ApiResponseEntity.badRequest("Refresh Token 정보가 일치하지 않습니다.");
+            return ApiResponseEntity.onFailure(ErrorCode.INVALID_REFRESH_TOKEN);
         }
 
         // 5. 새로운 토큰 생성
@@ -150,6 +154,6 @@ public class AuthServiceImpl implements com.aioi.drawaing.authservice.auth.appli
         CookieUtil.addCookie(response, REFRESH_TOKEN, tokenInfo.getRefreshToken(),
                 getRefreshTokenExpireTimeCookie());
 
-        return ResponseEntity.ok(tokenInfo);
+        return ApiResponseEntity.onSuccess(tokenInfo);
     }
 }
