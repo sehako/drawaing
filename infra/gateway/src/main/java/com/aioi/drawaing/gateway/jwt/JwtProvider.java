@@ -35,6 +35,7 @@ public class JwtProvider {
 
         String email = parseToken(accessToken).getSubject();
 
+        log.info("wqelrkjw;lkrj;lkwejr");
         log.info("email: {} -----------------------------------------------------", email);
         return email;
     }
