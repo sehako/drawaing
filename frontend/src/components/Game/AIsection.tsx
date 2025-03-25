@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import dambi from '../../assets/Game/dambi.png';
 import egg from '../../assets/Game/egg.png';
-import { PassConfirmModal, CorrectAnswerModal } from './GameModals';
+import { PassConfirmModal, CorrectAnswerModal, EmptyGuessModal, WrongGuessModal } from './GameModals';
 
 interface AISectionProps {
   aiImages: string[];
@@ -14,6 +14,10 @@ interface AISectionProps {
   onAICorrectAnswer: () => void;
   quizWord: string;
   predictions: { class: string; probability: number }[];  // 예측 데이터
+  canPass?: boolean; // PASS 가능 여부
+  passCount?: number; // 현재 PASS 횟수
+  isHumanCorrect?: boolean;
+  setIsHumanCorrect?: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const AISection: React.FC<AISectionProps> = ({
@@ -26,11 +30,17 @@ const AISection: React.FC<AISectionProps> = ({
   eggCount,
   quizWord,
   onAICorrectAnswer,
-  predictions
+  predictions,
+  canPass = false,
+  passCount = 0,
+  isHumanCorrect = false,
+  setIsHumanCorrect = () => {},
 }) => {
   const [isPassModalOpen, setIsPassModalOpen] = useState(false);
   const [isCorrectModalOpen, setIsCorrectModalOpen] = useState(false);
   
+  const [isEmptyGuessModalOpen, setIsEmptyGuessModalOpen] = useState(false);
+  const [isWrongGuessModalOpen, setIsWrongGuessModalOpen] = useState(false);
   // 이 autoCloseCounter 상태는 필요 없음 - 모달 컴포넌트 내부에서 처리됨
   // const [autoCloseCounter, setAutoCloseCounter] = useState(5);
 
@@ -76,6 +86,13 @@ const AISection: React.FC<AISectionProps> = ({
     }
     handleGuessSubmit({ preventDefault: () => {} } as React.FormEvent);
   };
+
+  useEffect(() => {
+    if (isHumanCorrect) {
+      openCorrectModal();
+      setIsHumanCorrect(false);
+    }
+  }, [isHumanCorrect]);
   
   return (
     <div className="w-full h-full flex justify-center items-center">
@@ -105,14 +122,21 @@ const AISection: React.FC<AISectionProps> = ({
         
         {/* 버튼 영역 */}
         <div className="flex flex-col space-y-2 mx-2 mb-2">
-          <button 
+        <button 
             onClick={openPassModal}
-            className="h-[52px] w-full bg-orange-500 text-white font-medium hover:bg-orange-600 rounded-[10px]"
+            disabled={!canPass}
+            className={`h-[52px] w-full text-white font-medium rounded-[10px] 
+              ${canPass 
+                ? 'bg-orange-500 hover:bg-orange-600' 
+                : 'bg-orange-500 cursor-not-allowed'
+              }`}
           >
-            PASS
+            {canPass 
+              ? `PASS (${3 - passCount}회 남음)` 
+              : '패스'}
           </button>
           <button 
-            onClick={handleAISubmit}
+            onClick={handleGuessSubmit}
             className="h-[52px] w-full bg-green-500 text-white font-medium hover:bg-green-600 rounded-[10px]"
           >
             제출
@@ -130,6 +154,17 @@ const AISection: React.FC<AISectionProps> = ({
       <CorrectAnswerModal 
         isOpen={isCorrectModalOpen} 
         onClose={closeCorrectModal}
+        quizWord={quizWord}
+        isHumanTeam={true} // Add this prop to specify it's the human team
+      />
+
+      <EmptyGuessModal 
+        isOpen={isEmptyGuessModalOpen}
+        onClose={() => setIsEmptyGuessModalOpen(false)}
+      />
+      <WrongGuessModal 
+        isOpen={isWrongGuessModalOpen}
+        onClose={() => setIsWrongGuessModalOpen(false)}
         quizWord={quizWord}
       />
     </div>

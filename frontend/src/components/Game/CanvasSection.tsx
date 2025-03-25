@@ -2,8 +2,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import ColorPicker from './ColorPicker';
 import chick from '../../assets/Common/chick.gif'
 import CustomModal from '../common/CustomModal';
-import { CanvasCorrectModal } from './GameModals';
 import axios from 'axios';
+import pen_sound from '../../assets/Sound/drawing_sound.mp3';
+import { Howl } from 'howler';
 
 
 interface CanvasSectionProps {
@@ -67,9 +68,16 @@ const CanvasSection: React.FC<CanvasSectionProps> = ({
   handlePass,
   activeDrawerIndex,
   handleCanvasSubmit, 
-  setPredictions 
+  setPredictions,
 }) => {
-  
+  const penSoundRef = useRef<Howl | null>(null);
+  const [isPlayingSound, setIsPlayingSound] = useState(false);
+
+  const [isMouseButtonDown, setIsMouseButtonDown] = useState(false);
+
+
+  const [lastSoundTime, setLastSoundTime] = useState(0);
+
   const totalTime = 20; // 각 플레이어에게 20초 부여
   const timerBarWidth = (timeLeft / totalTime) * 100; // 바의 길이는 그대로 유지
   
@@ -94,8 +102,7 @@ const CanvasSection: React.FC<CanvasSectionProps> = ({
   
   // 현재 플레이어가 이미 그림을 그렸는지 확인
   const hasCurrentPlayerDrawn = hasDrawnInRound[activeDrawerIndex];
-  
-  
+
   const saveCurrentDrawing = async () => {
     if (!canvasRef.current || !context) return;
   
@@ -214,7 +221,123 @@ const CanvasSection: React.FC<CanvasSectionProps> = ({
     
     // 이미 그림을 그렸거나 완료 상태라면 그리기 불가능
     if (hasCurrentPlayerDrawn || !isDrawing || !context || !lastPoint) return;
+  
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+  
+    // 캔버스의 CSS 크기와 실제 캔버스 크기의 비율 계산
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
+    // 정확한 좌표 계산
+    const x = (e.clientX - rect.left - 1) * scaleX;
+    const y = (e.clientY - rect.top - 1) * scaleY;
+  
+    // 이전 위치와 현재 위치의 거리 계산
+    const dx = x - lastPoint.x;
+    const dy = y - lastPoint.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+  
+    // 빠른 움직임 감지 (거리가 큰 경우)
+    if (distance > 10) { // 10픽셀 이상 떨어진 경우
+      // 두 점 사이를 부드럽게 보간
+      const steps = Math.max(Math.floor(distance / 5), 5); // 최소 5개 점
+      
+      for (let i = 1; i <= steps; i++) {
+        // 선형 보간으로 중간 점 계산
+        const t = i / steps;
+        const ix = lastPoint.x + dx * t;
+        const iy = lastPoint.y + dy * t;
+        
+        // 중간 점들 그리기
+        context.beginPath();
+        context.arc(ix, iy, isEraser ? 10 : 2, 0, Math.PI * 2);
+        context.fillStyle = isEraser ? 'white' : currentColor;
+        context.fill();
+        
+        // 이전 점과 연결
+        if (i > 1) {
+          const prevX = lastPoint.x + dx * (i - 1) / steps;
+          const prevY = lastPoint.y + dy * (i - 1) / steps;
+          
+          context.beginPath();
+          context.moveTo(prevX, prevY);
+          context.lineTo(ix, iy);
+          context.strokeStyle = isEraser ? 'white' : currentColor;
+          context.lineWidth = isEraser ? 20 : 5;
+          context.lineCap = 'round';
+          context.stroke();
+        }
+      }
+    } else {
+      // 일반적인 그리기 (거리가 작은 경우)
+      context.beginPath();
+      context.moveTo(lastPoint.x, lastPoint.y);
+      context.lineTo(x, y);
+      context.strokeStyle = isEraser ? 'white' : currentColor;
+      context.lineWidth = isEraser ? 20 : 5;
+      context.lineCap = 'round';
+      context.stroke();
+    }
+  
+    // 좌표 업데이트
+    setLastPoint({ x, y });
+    
+    // 마우스 이동 거리에 따른 소리 제어
+    if (!isEraser && penSoundRef.current) {
+      // 거리 임계값을 낮춤 (5픽셀 -> 1픽셀)
+      if (distance > 1) { 
+        const now = Date.now();
+        // 시간 간격도 줄임 (200ms -> 150ms)
+        if (now - lastSoundTime > 200) {
+          penSoundRef.current.play('draw');
+          setLastSoundTime(now);
+        }
+      }
+    }
+  };
 
+const handleMouseUp = () => {
+  if (isDrawing) {
+    setIsDrawing(false);
+    setHasCompleted(true);
+    
+    // 그림이 완료되면 현재 그림 저장
+    saveCurrentDrawing();
+    
+    // 현재 플레이어가 그림을 그렸음을 표시
+    const newHasDrawnInRound = [...hasDrawnInRound];
+    newHasDrawnInRound[activeDrawerIndex] = true;
+    setHasDrawnInRound(newHasDrawnInRound);
+    
+    // 소리 중지 추가
+    if (penSoundRef.current) {
+      penSoundRef.current.stop();
+    }
+  }
+};
+
+const handleMouseLeave = () => {
+  setCursorPosition(null);
+  
+  // 마우스가 캔버스를 떠날 때 이전 위치(lastPoint)를 null로 설정
+  // 이렇게 하면 다시 들어왔을 때 연결선이 그려지지 않음
+  if (isDrawing) {
+    setLastPoint(null);
+    
+    // 소리 중지
+    if (penSoundRef.current) {
+      penSoundRef.current.stop();
+    }
+  }
+};
+
+const handleMouseEnter = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  updateCursorPosition(e);
+  
+  // 마우스 버튼이 여전히 눌려있고 그리기 상태일 때
+  if (isDrawing && !hasCurrentPlayerDrawn) {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -223,62 +346,22 @@ const CanvasSection: React.FC<CanvasSectionProps> = ({
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
     
-    // 정확한 좌표 계산 (커서 끝점 조정: -1, -1 픽셀 오프셋)
+    // 정확한 좌표 계산
     const x = (e.clientX - rect.left - 1) * scaleX;
     const y = (e.clientY - rect.top - 1) * scaleY;
-
-    context.beginPath();
-    context.moveTo(lastPoint.x, lastPoint.y);
-    context.lineTo(x, y);
-    context.strokeStyle = isEraser ? 'white' : currentColor;
-    context.lineWidth = isEraser ? 20 : 5;
-    context.lineCap = 'round';
-    context.stroke();
-
-    setLastPoint({ x, y });
-  };
-
-  const handleMouseUp = () => {
-    if (isDrawing) {
-      setIsDrawing(false);
-      setHasCompleted(true);
-      
-      // 그림이 완료되면 현재 그림 저장
-      saveCurrentDrawing();
-      
-      // 현재 플레이어가 그림을 그렸음을 표시 (추가된 부분)
-      const newHasDrawnInRound = [...hasDrawnInRound];
-      newHasDrawnInRound[activeDrawerIndex] = true;
-      setHasDrawnInRound(newHasDrawnInRound);
-    }
-  };
-
-  const handleMouseLeave = () => {
-    setCursorPosition(null);
-    if (isDrawing) {
-      setLastPoint(null);
-    }
-  };
-
-  const handleMouseEnter = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    updateCursorPosition(e);
     
-    if (isDrawing && !hasCurrentPlayerDrawn) {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-
-      // 캔버스의 CSS 크기와 실제 캔버스 크기의 비율 계산
-      const rect = canvas.getBoundingClientRect();
-      const scaleX = canvas.width / rect.width;
-      const scaleY = canvas.height / rect.height;
-      
-      // 정확한 좌표 계산 (커서 끝점 조정: -1, -1 픽셀 오프셋)
-      const x = (e.clientX - rect.left - 1) * scaleX;
-      const y = (e.clientY - rect.top - 1) * scaleY;
-      
-      setLastPoint({ x, y });
+    // 새로운 시작점만 설정하고 이전 위치와 연결하지 않음
+    setLastPoint({ x, y });
+    
+    // 새로운 점 찍기 (선을 연결하지 않고)
+    if (context) {
+      context.beginPath();
+      context.arc(x, y, isEraser ? 10 : 2, 0, Math.PI * 2);
+      context.fillStyle = isEraser ? 'white' : currentColor;
+      context.fill();
     }
-  };
+  }
+};
   
   // Next 버튼 클릭 시 현재 그림 저장 후 다음 플레이어로 전환
   const handleNextPlayerWithSave = () => {
@@ -296,6 +379,61 @@ const CanvasSection: React.FC<CanvasSectionProps> = ({
 
   // 순서3(activeDrawerIndex가 2)일 때 Next 버튼 비활성화 여부 확인
   const isNextButtonDisabled = !hasCompleted || activeDrawerIndex === 2;
+  useEffect(() => {
+    penSoundRef.current = new Howl({
+      src: [pen_sound],
+      volume: 0.3,
+      sprite: {
+        draw: [200, 220] // 200ms 지점부터 10ms 동안
+      }
+    });
+  
+    return () => {
+      if (penSoundRef.current) {
+        penSoundRef.current.unload();
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    // 문서 어디서든 마우스 버튼을 떼면 상태 업데이트
+    const handleDocumentMouseUp = () => {
+      if (isDrawing) {
+        // 그림판 밖에서도 마우스를 떼면 그리기 중지
+        setIsDrawing(false);
+        setHasCompleted(true);
+        
+        // 그림 저장
+        saveCurrentDrawing();
+        
+        // 현재 플레이어가 그림을 그렸음을 표시
+        const newHasDrawnInRound = [...hasDrawnInRound];
+        newHasDrawnInRound[activeDrawerIndex] = true;
+        setHasDrawnInRound(newHasDrawnInRound);
+        
+        // 소리 중지
+        if (penSoundRef.current) {
+          penSoundRef.current.stop();
+        }
+      }
+      setIsMouseButtonDown(false);
+    };
+    
+    // 문서 어디서든 마우스 버튼을 누르면 상태 업데이트
+    const handleDocumentMouseDown = () => {
+      setIsMouseButtonDown(true);
+    };
+    
+    // 이벤트 리스너 등록
+    document.addEventListener('mouseup', handleDocumentMouseUp);
+    document.addEventListener('mousedown', handleDocumentMouseDown);
+    
+    // 컴포넌트 언마운트 시 정리
+    return () => {
+      document.removeEventListener('mouseup', handleDocumentMouseUp);
+      document.removeEventListener('mousedown', handleDocumentMouseDown);
+    };
+  }, [isDrawing, activeDrawerIndex, hasDrawnInRound, saveCurrentDrawing]);
 
   useEffect(() => {
     // 라운드나 첫 번째 플레이어로 돌아왔을 때 모든 상태 초기화
@@ -381,17 +519,17 @@ const CanvasSection: React.FC<CanvasSectionProps> = ({
         context.fillRect(0, 0, canvasRef.current.width, canvasRef.current.height);
       }
     }
-  }, [currentRound, activeDrawerIndex]);
+  }, [currentRound, activeDrawerIndex, context]);
   
   // 컴포넌트 마운트 시 한 번 모든 그림 렌더링
   useEffect(() => {
     renderAllDrawings();
   }, []);
-
+  
   return (
     <div className="h-[580px] flex flex-col bg-gray-300">
       {/* 타이머 바 */}
-      <div className="w-full h-7 bg-gray-200">
+      <div className="w-full h-5 bg-gray-200">
       <div 
         className={`h-full ${
           timeLeft <= 5 
@@ -444,20 +582,11 @@ const CanvasSection: React.FC<CanvasSectionProps> = ({
             className="hidden"
           />
           
-          {/* 정답 표시 오버레이 */}
-          {showCorrectAnswer && (
-            <div className="absolute inset-0 bg-black bg-opacity-50 flex justify-center items-center animate-fade-in">
-              <div className="bg-green-500 text-white p-5 rounded-lg text-2xl font-bold text-center animate-bounce">
-                Correct Answer!
-                <div className="mt-2.5 text-xl text-yellow-300">{quizWord}</div>
-              </div>
-            </div>
-          )}
           
           {/* 이미 그림을 그렸음을 알리는 오버레이 */}
           {hasCurrentPlayerDrawn && (
             <div className="absolute top-2 left-1/2 transform -translate-x-1/2 bg-yellow-700 text-white px-4 py-1 rounded-full text-sm font-medium">
-              이미 그림을 그렸습니다 (1회만 가능)
+              이미 그림을 그렸습니다. 순서를 넘기세요!
             </div>
           )}
         </div>
@@ -541,35 +670,6 @@ const CanvasSection: React.FC<CanvasSectionProps> = ({
           />
         </form>
       </div>
-
-      <CustomModal
-      isOpen={isCorrectModalOpen}
-      onClose={() => {
-        setIsCorrectModalOpen(false);
-      }}
-      title="정답입니다!"
-      media={{
-        type: 'gif',
-        src: chick,
-        alt: '축하 GIF'
-      }}
-      actionButtons={{
-        confirmText: "계속하기",
-        onConfirm: () => {
-          setIsCorrectModalOpen(false);
-          handleNextPlayer();
-        }
-      }}
-    >
-      <div className="text-center">
-        <p className="mb-4 text-gray-700">
-          정답은 "{quizWord}"입니다!
-        </p>
-        <p className="text-green-600 font-bold">
-          축하합니다! 정답을 맞추셨습니다.
-        </p>
-      </div>
-    </CustomModal>
     </div>
   );
 };
@@ -597,7 +697,6 @@ function getContrastColor(hexOrRgb: string): string {
     return 'black'; // 기본값
   }
   
-  // YIQ 공식으로 밝기 계산 (대략적인 휘도)
   const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
   return (yiq >= 128) ? 'black' : 'white';
 }

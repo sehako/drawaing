@@ -26,36 +26,36 @@ const GameWaitingRoom: React.FC = () => {
   
   // 현재 경로에 따라 음악이 자동으로 변경되도록 MusicContext를 수정해야 합니다
   // 다음은 이 컴포넌트에서 Music3.mp3를 임시로 재생하는 코드입니다
-  useEffect(() => {
-    const audioElement = new Audio('/Music/Music3.mp3');
-    audioElement.loop = true;
-    audioElement.volume = 0.3; // 볼륨 설정
+  // useEffect(() => {
+  //   const audioElement = new Audio('/Music/Music3.mp3');
+  //   audioElement.loop = true;
+  //   audioElement.volume = 0.3; // 볼륨 설정
     
-    // 기존 음악 일시 중지
-    if (currentTrack) {
-      setPlaying(false);
-    }
+  //   // 기존 음악 일시 중지
+  //   if (currentTrack) {
+  //     setPlaying(false);
+  //   }
     
-    // Music3 재생
-    audioElement.play()
-      .then(() => {
-        console.log('Music3.mp3 재생 시작');
-      })
-      .catch(error => {
-        console.error('Music3.mp3 재생 실패:', error);
-      });
+  //   // Music3 재생
+  //   audioElement.play()
+  //     .then(() => {
+  //       console.log('Music3.mp3 재생 시작');
+  //     })
+  //     .catch(error => {
+  //       console.error('Music3.mp3 재생 실패:', error);
+  //     });
     
-    // 컴포넌트 언마운트 시 정리
-    return () => {
-      audioElement.pause();
-      audioElement.currentTime = 0;
+  //   // 컴포넌트 언마운트 시 정리
+  //   return () => {
+  //     audioElement.pause();
+  //     audioElement.currentTime = 0;
       
-      // 다시 원래 음악으로 돌아갈 수 있도록 설정
-      if (currentTrack) {
-        setPlaying(true);
-      }
-    };
-  }, []);
+  //     // 다시 원래 음악으로 돌아갈 수 있도록 설정
+  //     if (currentTrack) {
+  //       setPlaying(true);
+  //     }
+  //   };
+  // }, []);
   
   // 예시 데이터로 초기화 (실제로는 API에서 가져올 것입니다)
   useEffect(() => {
