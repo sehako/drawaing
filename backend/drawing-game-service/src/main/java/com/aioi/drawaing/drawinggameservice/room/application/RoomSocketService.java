@@ -5,7 +5,7 @@ import com.aioi.drawaing.drawinggameservice.room.application.dto.AddRoomParticip
 import com.aioi.drawaing.drawinggameservice.room.domain.Room;
 import com.aioi.drawaing.drawinggameservice.room.domain.RoomParticipant;
 import com.aioi.drawaing.drawinggameservice.room.infrastructure.repository.RoomRepository;
-import java.util.Map;
+
 import java.util.Objects;
 
 import lombok.RequiredArgsConstructor;
@@ -37,7 +37,10 @@ public class RoomSocketService {
     public void joinRoom(String roomId, AddRoomParticipantInfo addRoomParticipantInfo) {
         Room room = getRoom(roomId);
 
-        validateJoinRoom(room, addRoomParticipantInfo.userId());// 방 유효성 체크
+        validateJoinRoom(room, addRoomParticipantInfo.memberId());// 방 유효성 체크
+
+        System.out.println(addRoomParticipantInfo.memberId());
+
         room.addParticipant(addRoomParticipantInfo);// 사용자를 방에 추가 (초기 준비 상태는 false)
         room.updateHostIfNeeded();// 방장이 없다면 새로운 방장 선정
         repository.save(room);
@@ -90,9 +93,11 @@ public class RoomSocketService {
 
     private void validateJoinRoom(Room room, Long memberId) {
         if (room.getParticipants().size() >= 4) {
+            log.error("방이 이미 꽉 찼습니다.");
             throw new RuntimeException("방이 이미 꽉 찼습니다.");
         }
         if (room.getParticipants().containsKey(memberId)) {
+            log.error("이미 방에 참여한 사용자입니다.");
             throw new RuntimeException("이미 방에 참여한 사용자입니다.");
         }
     }
