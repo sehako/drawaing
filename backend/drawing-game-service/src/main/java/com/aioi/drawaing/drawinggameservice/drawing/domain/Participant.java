@@ -19,4 +19,12 @@ public class Participant {
                 .characterUrl(characterUrl)
                 .build();
     }
+
+    public void incrementBonusPointsGuessing(int bonusPointsGuessing){
+        this.bonusPointsGuessing += bonusPointsGuessing;
+    }
+
+    public void incrementBonusPointsDrawing(int bonusPointsDrawing){
+        this.bonusPointsDrawing += bonusPointsDrawing;
+    }
 }
