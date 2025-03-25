@@ -3,6 +3,8 @@ package com.aioi.drawaing.authservice.member.application;
 import static com.aioi.drawaing.authservice.common.jwt.JwtTokenProvider.getRefreshTokenExpireTimeCookie;
 import static com.aioi.drawaing.authservice.oauth.infrastructure.repository.OAuth2AuthorizationRequestBasedOnCookieRepository.REFRESH_TOKEN;
 
+import com.aioi.drawaing.authservice.auth.domain.VerificationCodeCache;
+import com.aioi.drawaing.authservice.auth.infrastructure.repository.VerificationCodeCacheRepository;
 import com.aioi.drawaing.authservice.common.code.ErrorCode;
 import com.aioi.drawaing.authservice.common.jwt.JwtTokenProvider;
 import com.aioi.drawaing.authservice.common.jwt.TokenInfo;
@@ -46,6 +48,7 @@ public class MemberService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final RedisTemplate<String, String> redisTemplate;
+    private final VerificationCodeCacheRepository verificationCodeCacheRepository;
 
     public MemberResponse get(long memberId) {
         Member member = memberRepository.findMemberById(memberId).orElseThrow();
@@ -97,7 +100,12 @@ public class MemberService {
         if (memberRepository.existsByEmail(signUp.getEmail())) {
             return ApiResponseEntity.onFailure(ErrorCode.ALREADY_EXIST_EMAIL);
         }
-
+//        VerificationCodeCache verificationCodeCache = verificationCodeCacheRepository.findByEmail(
+//                        signUp.getEmail())
+//                .orElseThrow(() -> new IllegalArgumentException("인증이 만료되었습니다."));
+//        if (!verificationCodeCache.getVerified()) {
+//            return ApiResponseEntity.onFailure(ErrorCode.NOT_AUTHENTICATED_EMAIL);
+//        }
         String nickname = signUp.getNickname();
         Member member = Member.builder()
                 .email(signUp.getEmail())
