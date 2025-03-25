@@ -18,7 +18,7 @@ import com.aioi.drawaing.authservice.member.presentation.request.MemberReqDto.Si
 import com.aioi.drawaing.authservice.member.application.response.MemberLoginResponse;
 import com.aioi.drawaing.authservice.member.domain.Member;
 import com.aioi.drawaing.authservice.member.infrastructure.repository.MemberRepository;
-import com.aioi.drawaing.authservice.member.presentation.request.MemberRequest;
+import com.aioi.drawaing.authservice.member.presentation.request.MemberUpdateRequest;
 import com.aioi.drawaing.authservice.member.presentation.response.MemberResponse;
 import com.aioi.drawaing.authservice.oauth.domain.entity.ProviderType;
 import com.aioi.drawaing.authservice.oauth.domain.entity.RoleType;
@@ -36,7 +36,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
 @Slf4j
 @Service
@@ -62,21 +61,16 @@ public class MemberService {
     }
 
     @Transactional
-    public MemberResponse update(MemberRequest memberRequest, MultipartFile profileImage) {
+    public MemberResponse update(MemberUpdateRequest memberUpdateRequest) {
         Member member = getMember();
 
-        // 캐릭터 이미지 로직 수정해야함
-
-        if (profileImage != null && !profileImage.isEmpty()) {
-            s3ImageUploader.deleteImageFromS3(member.getCharacterImage());
-            String profileImg = s3ImageUploader.upload(profileImage);
-            member.setCharacterImage(profileImg);
-        }
-
         Member updated = memberRepository.saveAndFlush(member.toBuilder()
-                .nickname(memberRequest.nickname() == null ? member.getNickname() : memberRequest.nickname())
-                .password(memberRequest.password() == null ? member.getPassword()
-                        : passwordEncoder.encode(memberRequest.password()))
+                .nickname(memberUpdateRequest.nickname() == null
+                        ? member.getNickname() : memberUpdateRequest.nickname())
+                .characterImage(memberUpdateRequest.characterImageUrl() == null
+                        ? member.getCharacterImage() : memberUpdateRequest.characterImageUrl())
+                .password(memberUpdateRequest.password() == null
+                        ? member.getPassword() : passwordEncoder.encode(memberUpdateRequest.password()))
                 .build());
 
         return MemberResponse.of(updated);

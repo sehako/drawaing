@@ -3,7 +3,7 @@ package com.aioi.drawaing.authservice.member.presentation;
 import com.aioi.drawaing.authservice.common.response.ApiResponseEntity;
 import com.aioi.drawaing.authservice.member.application.MemberService;
 import com.aioi.drawaing.authservice.member.presentation.request.MemberReqDto;
-import com.aioi.drawaing.authservice.member.presentation.request.MemberRequest;
+import com.aioi.drawaing.authservice.member.presentation.request.MemberUpdateRequest;
 import com.aioi.drawaing.authservice.member.presentation.response.MemberResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -18,15 +18,12 @@ import org.springframework.validation.Errors;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
 
 @Slf4j
 @RestController
@@ -44,9 +41,8 @@ public class MemberController {
 
     @Operation(summary = "회원 정보 수정")
     @PatchMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<MemberResponse> update(@ModelAttribute MemberRequest memberRequest,
-                                                 @RequestParam(value = "profile_image", required = false) MultipartFile profileImage) {
-        return ResponseEntity.ok().body(memberService.update(memberRequest, profileImage));
+    public ResponseEntity<MemberResponse> update(@RequestBody MemberUpdateRequest memberUpdateRequest) {
+        return ResponseEntity.ok().body(memberService.update(memberUpdateRequest));
     }
 
     @Operation(summary = "회원 탈퇴")
@@ -102,7 +98,7 @@ public class MemberController {
             @ApiResponse(responseCode = "200", description = "로그아웃 성공"),
             @ApiResponse(responseCode = "400", description = "로그아웃 실패"),
     })
-    @GetMapping("/logout")
+    @PostMapping("/logout")
     public ResponseEntity<?> logout(
             HttpServletRequest request,
             HttpServletResponse response) {
