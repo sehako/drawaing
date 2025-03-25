@@ -7,6 +7,7 @@ import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.KeywordReposi
 import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.RoomSesseionRepository;
 import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.SessionRepository;
 import com.aioi.drawaing.drawinggameservice.drawing.presentation.dto.AddSessionParticipantInfo;
+import com.aioi.drawaing.drawinggameservice.drawing.presentation.dto.WinParticipantInfo;
 import com.aioi.drawaing.drawinggameservice.room.application.dto.AddRoomParticipantInfo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,6 +32,7 @@ public class DrawingService {
     private final int DEFAULT_WORD_COUNT = 30;
     private final int DEFAULT_SESSION_TIMER = 60;
     private final int DEFAULT_DRAW_TIMER = 3;
+    private final int MAX_PARTICIPANT_NUMBER = 4;
     //세션 시작
     //세션 시작할 때, 게임 제시어 주기
     //세션 시작할 때, 타이머 시작 + 전달
@@ -130,6 +132,23 @@ public class DrawingService {
         scheduledFutures.get(key).cancel(true);
     }
 
+    public void win(String sessionId, WinParticipantInfo winParticipantInfo) {
+        Session session = findSession(sessionId);
+        int correctScore = plusCorrectScore(sessionId, winParticipantInfo.drawingOrder());
+        int drawScore = plusDrawScore(winParticipantInfo.drawingOrder());
+//        System.out.println(correctScore+" "+drawScore);
+        session.win(winParticipantInfo, correctScore, drawScore);
+//        System.out.println(session.getHumanWin());
+        sessionRepository.save(session);
+    }
 
+    private int plusDrawScore(int drawingOrder) {
+        return (MAX_PARTICIPANT_NUMBER-drawingOrder)*5;
+    }
 
+    private int plusCorrectScore(String sessionId, int drawingOrder) {
+        int totalRoundTime=DEFAULT_DRAW_TIMER*3;
+        int roundTime=remainTime.get(getKey(TimeType.DRAWING, sessionId)).get()+DEFAULT_DRAW_TIMER*drawingOrder;
+        return (totalRoundTime-roundTime)/3;
+    }
 }

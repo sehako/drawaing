@@ -2,6 +2,7 @@ package com.aioi.drawaing.drawinggameservice.drawing.presentation;
 
 import com.aioi.drawaing.drawinggameservice.drawing.application.DrawingService;
 import com.aioi.drawaing.drawinggameservice.drawing.presentation.dto.DrawInfo;
+import com.aioi.drawaing.drawinggameservice.drawing.presentation.dto.WinParticipantInfo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
@@ -37,16 +38,22 @@ public class DrawingController {
         drawingService.increaseRound(sessionId);
     }
 
+    @MessageMapping("/session.correct/{roomId}/{sessionId}")
+    public void win(@DestinationVariable String roomId, @DestinationVariable String sessionId, @Payload WinParticipantInfo winParticipantInfo) {
+        System.out.println(sessionId);
+        drawingService.win(sessionId, winParticipantInfo);
+    }
+
     // 삭제 예정 : 세션 타이머 보는 용도
     @MessageMapping("/send")
     public void send(@Payload String message) {
-        drawingService.publishSessionTimer("1","1",30);
+        drawingService.publishSessionTimer("1","67e10625a415fd3d4fd0b7b3",30);
     }
 
     // 삭제 예정 : 그림 타이머
     @MessageMapping("/draw")
     public void draw(@Payload String message) {
-        drawingService.publishDrawingTimer("1","1",3);
+        drawingService.publishDrawingTimer("1","67e10625a415fd3d4fd0b7b3",3);
     }
 
 //    @SendTo

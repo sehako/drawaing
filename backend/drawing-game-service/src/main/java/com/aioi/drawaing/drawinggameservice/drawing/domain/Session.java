@@ -1,6 +1,7 @@
 package com.aioi.drawaing.drawinggameservice.drawing.domain;
 
 
+import com.aioi.drawaing.drawinggameservice.drawing.presentation.dto.WinParticipantInfo;
 import com.aioi.drawaing.drawinggameservice.room.application.dto.AddRoomParticipantInfo;
 import lombok.*;
 import org.springframework.data.annotation.Id;
@@ -55,5 +56,11 @@ public class Session {
 
     public void incrementRoundCount(){
         this.roundCount++;
+    }
+
+    public void win(WinParticipantInfo winParticipantInfo, int correctScore, int drawScore){
+        this.humanWin++;
+        this.participants.get(winParticipantInfo.drawingMemberId()).incrementBonusPointsDrawing(drawScore);
+        this.participants.get(winParticipantInfo.answerMemberId()).incrementBonusPointsGuessing(correctScore);
     }
 }
