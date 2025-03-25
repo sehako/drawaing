@@ -24,7 +24,6 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter implements WebFilter {
     private final JwtProvider jwtProvider;
-    private static final String AUTHORITIES_KEY = "auth";
     private static final String REFRESH_TOKEN = "refresh-token";
 
     @Override
