@@ -54,9 +54,13 @@ export const MusicProvider: React.FC<{children: ReactNode}> = ({ children }) => 
     if (location.pathname === '/') {
       newTrack = '/Music/Music1.mp3';
       newTrackTitle = 'Music1';
-    } else if (location.pathname === '/game') {
+    } else if (location.pathname.startsWith('/game')) {
       newTrack = '/Music/Music2.mp3';
       newTrackTitle = 'Music2';
+    } else if (location.pathname.startsWith('/waiting-room')) {
+      newTrack = '/Music/Music3.mp3';
+      newTrackTitle = 'Music3';
+    
     } else {
       // 다른 페이지는 음악 없음
       newTrack = '';
@@ -114,24 +118,18 @@ export const MusicProvider: React.FC<{children: ReactNode}> = ({ children }) => 
       audioRef.current = audio;
     }
     
-    const timer = setTimeout(() => {
-      if (audioRef.current && !isPlaying && currentTrack) {
-        audioRef.current.play()
-          .then(() => {
-            setIsPlaying(true);
-            console.log('음악 재생 시작됨');
-          })
-          .catch(error => {
-            console.error('자동 재생 실패:', error);
-            setupUserInteractionListeners();
-          });
-      }
-    }, 1000);
-    
-    return () => {
-      clearTimeout(timer);
-    };
+    if (audioRef.current && !isPlaying && currentTrack) {
+      audioRef.current.play()
+        .then(() => {
+          setIsPlaying(true);
+          console.log('음악 재생 시작됨');
+        })
+        .catch(error => {
+          console.error('자동 재생 실패:', error);
+        });
+    }
   }, [currentTrack, volume]);
+  
   
   // 사용자 상호작용 감지 함수
   const handleUserInteraction = () => {
