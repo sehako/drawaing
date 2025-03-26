@@ -14,8 +14,8 @@ public class CorsConfig {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowCredentials(true);
         config.setAllowedOrigins(List.of(
-                "http://127.0.0.1:5500",
-                "http://127.0.0.1:5173",
+                "http://localhost:5500",
+                "http://localhost:5173",
                 "https://www.drawaing.site",
                 "http://70.12.247.64:5173",
                 "http://70.12.247.78:5500"
