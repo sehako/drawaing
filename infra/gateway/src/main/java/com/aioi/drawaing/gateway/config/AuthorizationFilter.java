@@ -6,18 +6,21 @@ import com.aioi.drawaing.gateway.exception.FailureCode;
 import com.aioi.drawaing.gateway.jwt.BearerParser;
 import com.aioi.drawaing.gateway.jwt.JwtProvider;
 import java.nio.charset.StandardCharsets;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.integration.json.SimpleJsonSerializer;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
+@Slf4j
 @Component
 public class AuthorizationFilter extends AbstractGatewayFilterFactory<Config> {
     private static final String REFRESH_TOKEN = "refresh-token";
@@ -32,28 +35,41 @@ public class AuthorizationFilter extends AbstractGatewayFilterFactory<Config> {
     public GatewayFilter apply(Config config) {
 
         // Custom Pre Filter
-        return ((exchange, chain) -> {
-            // RxJava라는 웹 플럭스 지원해주는 라이브러리
+        return (exchange, chain) -> {
             try {
+                log.info("Path = {}", exchange.getRequest().getPath());
                 String accessToken = resolveAccessToken(exchange);
                 String refreshToken = resolveRefreshToken(exchange);
 
                 String userId = jwtProvider.getUserId(accessToken, refreshToken);
-                return chain.filter(exchange)
+
+                // 기존 요청에서 새로운 요청 생성 후 헤더 추가
+                ServerHttpRequest mutatedRequest = exchange.getRequest().mutate()
+                        .header("user-id", userId)
+                        .build();
+
+                // 새로운 요청을 포함한 exchange로 체인 진행
+                ServerWebExchange mutatedExchange = exchange.mutate()
+                        .request(mutatedRequest)
+                        .build();
+
+                return chain.filter(mutatedExchange)
                         .then(Mono.fromRunnable(() -> {
-                            exchange.getRequest().getHeaders().add("user-id", userId);
                         }));
             } catch (Exception e) {
                 return unauthorizedResponse(exchange);
             }
-        });
+        };
     }
+
 
     private String resolveAccessToken(ServerWebExchange exchange) {
         String accessToken = exchange
                 .getRequest()
                 .getHeaders()
                 .getFirst(HttpHeaders.AUTHORIZATION);
+
+        log.info("access token = {}", accessToken);
 
         assert accessToken != null;
         return BearerParser.parse(accessToken);
@@ -64,6 +80,8 @@ public class AuthorizationFilter extends AbstractGatewayFilterFactory<Config> {
                 .getRequest()
                 .getHeaders()
                 .getFirst(REFRESH_TOKEN);
+
+        log.info("refresh_token = {}", refreshToken);
 
         assert refreshToken != null;
         return BearerParser.parse(refreshToken);
