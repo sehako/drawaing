@@ -3,12 +3,13 @@ package com.aioi.drawaing.authservice.auth.application;
 import static com.aioi.drawaing.authservice.common.jwt.JwtTokenProvider.getRefreshTokenExpireTimeCookie;
 import static com.aioi.drawaing.authservice.oauth.infrastructure.repository.OAuth2AuthorizationRequestBasedOnCookieRepository.REFRESH_TOKEN;
 
-import com.aioi.drawaing.authservice.auth.presentation.dto.EmailRequest;
-import com.aioi.drawaing.authservice.auth.presentation.dto.EmailVerificationRequest;
 import com.aioi.drawaing.authservice.auth.domain.VerificationCodeCache;
 import com.aioi.drawaing.authservice.auth.infrastructure.repository.VerificationCodeCacheRepository;
+import com.aioi.drawaing.authservice.auth.presentation.dto.EmailRequest;
+import com.aioi.drawaing.authservice.auth.presentation.dto.EmailVerificationRequest;
 import com.aioi.drawaing.authservice.common.code.ErrorCode;
 import com.aioi.drawaing.authservice.common.constant.EmailTemplate;
+import com.aioi.drawaing.authservice.common.exception.CustomJwtException;
 import com.aioi.drawaing.authservice.common.jwt.JwtTokenProvider;
 import com.aioi.drawaing.authservice.common.jwt.TokenInfo;
 import com.aioi.drawaing.authservice.common.response.ApiResponseEntity;
@@ -16,6 +17,7 @@ import com.aioi.drawaing.authservice.common.util.CodeGenerator;
 import com.aioi.drawaing.authservice.common.util.CookieUtil;
 import com.aioi.drawaing.authservice.common.util.EmailSender;
 import com.aioi.drawaing.authservice.member.domain.Member;
+import com.aioi.drawaing.authservice.member.exception.MemberException;
 import com.aioi.drawaing.authservice.member.infrastructure.repository.MemberRepository;
 import com.aioi.drawaing.authservice.oauth.domain.entity.RoleType;
 import jakarta.servlet.http.Cookie;
@@ -48,14 +50,14 @@ public class AuthServiceImpl implements com.aioi.drawaing.authservice.auth.appli
     @Override
     public void checkNicknameDuplication(String nickname) {
         memberRepository.findByNickname(nickname).ifPresent(member -> {
-            throw new IllegalStateException("이미 사용 중인 닉네임입니다. 닉네임: " + nickname);
+            throw new MemberException(ErrorCode.ALREADY_EXIST_NICKNAME);
         });
     }
 
     @Override
     public void checkEmailDuplication(String email) {
         memberRepository.findByEmail(email).ifPresent(member -> {
-            throw new IllegalStateException("이미 사용 중인 이메일입니다. 이메일: " + email);
+            throw new MemberException(ErrorCode.ALREADY_EXIST_EMAIL);
         });
     }
 
@@ -82,10 +84,10 @@ public class AuthServiceImpl implements com.aioi.drawaing.authservice.auth.appli
     public void verifyEmailCode(EmailVerificationRequest emailVerificationRequest) {
         VerificationCodeCache verificationCodeCache = verificationCodeCacheRepository.findValidCode(
                         emailVerificationRequest.email())
-                .orElseThrow(() -> new IllegalArgumentException("인증 코드가 만료되었습니다."));
+                .orElseThrow(() -> new MemberException(ErrorCode.EMAIL_VERIFICATION_CODE_EXPIRED));
 
         if (!verificationCodeCache.getCode().equals(emailVerificationRequest.code())) {
-            throw new IllegalArgumentException("인증 코드가 일치하지 않습니다.");
+            throw new MemberException(ErrorCode.EMAIL_VERIFICATION_CODE_MISMATCH);
         } else {
             verificationCodeCache.verify();
             verificationCodeCacheRepository.save(verificationCodeCache);
@@ -96,7 +98,7 @@ public class AuthServiceImpl implements com.aioi.drawaing.authservice.auth.appli
     @Transactional
     public void sendEmailPassword(EmailRequest emailRequest) {
         Member member = memberRepository.findByEmail(emailRequest.email())
-                .orElseThrow(() -> new IllegalArgumentException("해당 이메일을 가진 유저가 존재하지 않습니다."));
+                .orElseThrow(() -> new MemberException(ErrorCode.NOT_FOUND_MEMBER_EMAIL));
 
         String password = codeGenerator.generateCode();
         String text = emailSender.buildTextForVerificationCode(EmailTemplate.EMAIL_PASSWORD_CONTENT, password);
@@ -111,7 +113,7 @@ public class AuthServiceImpl implements com.aioi.drawaing.authservice.auth.appli
     @Override
     public ResponseEntity<?> getSocialType(String email) {
         Member member = memberRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("해당 이메일을 가진 유저가 존재하지 않습니다."));
+                .orElseThrow(() -> new MemberException(ErrorCode.NOT_FOUND_MEMBER_EMAIL));
 
         return ApiResponseEntity.onSuccess(member.getProviderType());
     }
@@ -121,7 +123,7 @@ public class AuthServiceImpl implements com.aioi.drawaing.authservice.auth.appli
 
         // 1. 쿠키에서 Refresh Token 가져오기
         String refreshToken = CookieUtil.getCookie(request, REFRESH_TOKEN).map(Cookie::getValue)
-                .orElseThrow(() -> new IllegalArgumentException("Refresh Token 정보가 없습니다"));
+                .orElseThrow(() -> new CustomJwtException(ErrorCode.JWT_NOT_FOUND));
 
         // 2. Refresh Token 검증
         if (!jwtTokenProvider.validateToken(refreshToken)) {

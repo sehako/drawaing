@@ -7,6 +7,7 @@ import com.aioi.drawaing.authservice.auth.domain.VerificationCodeCache;
 import com.aioi.drawaing.authservice.auth.infrastructure.repository.VerificationCodeCacheRepository;
 import com.aioi.drawaing.authservice.common.code.ErrorCode;
 import com.aioi.drawaing.authservice.common.code.SuccessCode;
+import com.aioi.drawaing.authservice.common.exception.CustomJwtException;
 import com.aioi.drawaing.authservice.common.jwt.JwtTokenProvider;
 import com.aioi.drawaing.authservice.common.jwt.TokenInfo;
 import com.aioi.drawaing.authservice.common.response.ApiResponseEntity;
@@ -14,6 +15,7 @@ import com.aioi.drawaing.authservice.common.util.CookieUtil;
 import com.aioi.drawaing.authservice.common.util.HeaderUtil;
 import com.aioi.drawaing.authservice.member.application.response.MemberLoginResponse;
 import com.aioi.drawaing.authservice.member.domain.Member;
+import com.aioi.drawaing.authservice.member.exception.MemberException;
 import com.aioi.drawaing.authservice.member.infrastructure.repository.MemberRepository;
 import com.aioi.drawaing.authservice.member.presentation.request.MemberReqDto.Login;
 import com.aioi.drawaing.authservice.member.presentation.request.MemberReqDto.SignUp;
@@ -75,7 +77,7 @@ public class MemberService {
 
     public Member getMember(Long memberId) {
         return memberRepository.findById(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원 입니다. 회원 ID: " + memberId));
+                .orElseThrow(() -> new MemberException(ErrorCode.NOT_FOUND_MEMBER_ID));
     }
 
     @Transactional
@@ -86,7 +88,7 @@ public class MemberService {
         //이메일 인증
         VerificationCodeCache verificationCodeCache = verificationCodeCacheRepository.findByEmail(
                         signUp.getEmail())
-                .orElseThrow(() -> new IllegalArgumentException("인증이 만료되었습니다."));
+                .orElseThrow(() -> new CustomJwtException(ErrorCode.JWT_NOT_FOUND));
         if (!verificationCodeCache.getVerified()) {
             return ApiResponseEntity.onFailure(ErrorCode.NOT_AUTHENTICATED_EMAIL);
         }
@@ -164,10 +166,10 @@ public class MemberService {
     private Member validateUser(String email, String password) {
         // 1. 이메일로 사용자 조회
         Member member = memberRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("해당하는 유저가 존재하지 않습니다."));
+                .orElseThrow(() -> new MemberException(ErrorCode.NOT_FOUND_MEMBER_EMAIL));
         // 2. 비밀번호 검증
         if (!passwordEncoder.matches(password, member.getPassword())) {
-            throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
+            throw new MemberException(ErrorCode.INVALID_PASSWORD);
         }
         return member;
     }
