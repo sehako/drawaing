@@ -1,9 +1,14 @@
 import React, { useState } from 'react';
 
 interface GameInstructionModalProps {
-  onClose: () => void;
-}
+    onClose: () => void;
+    onDontShowAgain: (value: boolean) => void;  // 이 prop 추가
+  }
 
+interface GameInstructionModalProps {
+  onClose: () => void;
+  onDontShowAgain: (value: boolean) => void;  // 이 prop 추가
+}
 const GameInstructionModal: React.FC<GameInstructionModalProps> = ({ onClose }) => {
   const [dontShowAgain, setDontShowAgain] = useState(false);
   
@@ -28,7 +33,7 @@ const GameInstructionModal: React.FC<GameInstructionModalProps> = ({ onClose }) 
           <div className="space-y-6 text-base md:text-lg">
             <div className="bg-amber-100 rounded-xl p-4 border-4 border-amber-800">
               <h3 className="text-xl font-bold mb-2">🐓 게임 목표</h3>
-              <p>닭 그림 그리기 게임에서 챔피언이 되어보세요! 주어진 제시어를 보고 그림을 그리면 다른 플레이어들이 맞춰야 합니다.</p>
+              <p>AI와 유저 팀의 그림 맞추기 대결을 합니다! 주어진 제시어를 보고 그림을 그리면 다른 플레이어들이 맞춰야 합니다.</p>
             </div>
             
             <div className="bg-amber-100 rounded-xl p-4 border-4 border-amber-800">

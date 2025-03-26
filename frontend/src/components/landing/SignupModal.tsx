@@ -124,7 +124,7 @@ const SignupModal: React.FC<SignupModalProps> = ({
       // 이메일 인증 코드 검증 API 호출
       await axios.post('/service/auth/api/v1/member/email/authentication', { 
         email, 
-        verificationCode 
+        code: verificationCode
       });
       
       setIsEmailVerified(true);
