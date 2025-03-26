@@ -3,6 +3,7 @@ package com.aioi.drawaing.authservice.member.presentation;
 import com.aioi.drawaing.authservice.common.code.ErrorCode;
 import com.aioi.drawaing.authservice.common.response.ApiResponseEntity;
 import com.aioi.drawaing.authservice.member.application.MemberService;
+import com.aioi.drawaing.authservice.member.presentation.request.MemberIdRequest;
 import com.aioi.drawaing.authservice.member.presentation.request.MemberReqDto;
 import com.aioi.drawaing.authservice.member.presentation.request.MemberUpdateRequest;
 import com.aioi.drawaing.authservice.member.presentation.response.MemberResponse;
@@ -48,17 +49,10 @@ public class MemberController {
 
     @Operation(summary = "회원 탈퇴")
     @DeleteMapping
-    public ResponseEntity<?> delete() {
-        memberService.delete();
+    public ResponseEntity<?> delete(@RequestBody MemberIdRequest memberIdRequest) {
+        memberService.delete(memberIdRequest.memberId());
         return ApiResponseEntity.onSuccess("회원 탈퇴에 성공하였습니다.");
     }
-
-    @Operation(summary = "로그인 되어있는 멤버ID 조회")
-    @GetMapping("/id")
-    public ResponseEntity<?> getUser() {
-        return ApiResponseEntity.onSuccess(memberService.getMemberId());
-    }
-
 
     @Operation(summary = "회원가입")
     @PostMapping("/signup")
@@ -79,8 +73,6 @@ public class MemberController {
             HttpServletResponse response,
             @RequestBody @Validated MemberReqDto.Login login,
             Errors errors) {
-        // validation  check
-        log.info(login.toString());
         if (errors.hasErrors()) {
             log.error("login 에러 : {}", errors.getAllErrors());
             return ApiResponseEntity.onFailure(ErrorCode.VALIDATION_ERROR);
