@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useMusic } from '../contexts/MusicContext'; // MusicContext의 useMusic 훅 임포트
+import GameInstructionModal from '../components/Game/GameInstructionModal';
 
 // 타입 정의
 interface Player {
@@ -20,10 +21,31 @@ const GameWaitingRoom: React.FC = () => {
   const [chatMessages, setChatMessages] = useState<string[]>([]);
   const [chatInput, setChatInput] = useState<string>('');
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const [showInstructionModal, setShowInstructionModal] = useState<boolean>(false);
   
   // MusicContext 가져오기
   const { setPlaying, currentTrack } = useMusic();
   
+  // 컴포넌트 마운트 시 모달 표시 여부 결정
+  useEffect(() => {
+    // 로컬 스토리지에서 '다시 보지 않기' 설정 확인
+    const dontShowAgain = localStorage.getItem('gameInstructionDontShowAgain');
+    
+    // '다시 보지 않기'를 선택하지 않았다면 모달 표시
+    if (dontShowAgain !== 'true') {
+      setShowInstructionModal(true);
+    }
+  }, []);
+  
+  // 게임 설명 모달 관련 함수들
+  const handleShowInstructions = () => {
+    setShowInstructionModal(true);
+  };
+  
+  const closeInstructionModal = () => {
+    setShowInstructionModal(false);
+  };
+
   // 현재 경로에 따라 음악이 자동으로 변경되도록 MusicContext를 수정해야 합니다
   // 다음은 이 컴포넌트에서 Music3.mp3를 임시로 재생하는 코드입니다
   // useEffect(() => {
