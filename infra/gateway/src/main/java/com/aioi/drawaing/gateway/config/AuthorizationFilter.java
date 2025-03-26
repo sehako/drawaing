@@ -37,9 +37,9 @@ public class AuthorizationFilter extends AbstractGatewayFilterFactory<Config> {
         // Custom Pre Filter
         return (exchange, chain) -> {
             try {
+                log.info("Path = {}", exchange.getRequest().getPath());
                 String accessToken = resolveAccessToken(exchange);
                 String refreshToken = resolveRefreshToken(exchange);
-                log.info("Path = {}", exchange.getRequest().getPath());
 
                 String userId = jwtProvider.getUserId(accessToken, refreshToken);
 
