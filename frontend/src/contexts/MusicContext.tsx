@@ -45,69 +45,66 @@ export const MusicProvider: React.FC<{children: ReactNode}> = ({ children }) => 
     setVolume(constrainedVolume);
   }, []);
   
-  // 경로에 따라 트랙 변경
-  useEffect(() => {
-    let newTrack = '';
-    let newTrackTitle = '';
+// 경로에 따라 트랙 변경
+useEffect(() => {
+  let newTrack = '';
+  let newTrackTitle = '';
+  
+  // 경로별 음악 설정 (기존 코드 유지)
+  if (location.pathname === '/') {
+    newTrack = '/Music/Music1.mp3';
+    newTrackTitle = 'Music1';
+  } else if (location.pathname.startsWith('/game')) {
+    newTrack = '/Music/Music2.mp3';
+    newTrackTitle = 'Music2';
+  } else if (location.pathname.startsWith('/waiting-room')) {
+    newTrack = '/Music/Music3.mp3';
+    newTrackTitle = 'Music3';
+  } else {
+    // 다른 페이지는 음악 없음
+    newTrack = '';
+    newTrackTitle = '음악 없음';
+  }
+  
+  // 트랙이 변경되었을 때 처리
+  if (newTrack !== currentTrack) {
+    console.log(`트랙 변경: ${currentTrack} -> ${newTrack}`);
     
-    // 경로별 음악 설정
-    if (location.pathname === '/') {
-      newTrack = '/Music/Music1.mp3';
-      newTrackTitle = 'Music1';
-    } else if (location.pathname.startsWith('/game')) {
-      newTrack = '/Music/Music2.mp3';
-      newTrackTitle = 'Music2';
-    } else if (location.pathname.startsWith('/waiting-room')) {
-      newTrack = '/Music/Music3.mp3';
-      newTrackTitle = 'Music3';
+    // 기존 오디오 정지
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
     
+    setCurrentTrack(newTrack);
+    setTrackTitle(newTrackTitle);
+    
+    // 새 트랙이 있는 경우에만 오디오 생성
+    if (newTrack) {
+      // 새 오디오 생성 및 설정
+      const audio = new Audio(newTrack);
+      audio.loop = true;
+      audio.volume = volume;
+      audioRef.current = audio;
+      
+      // 트랙 변경 시 항상 재생 시도
+      audio.play()
+        .then(() => {
+          setIsPlaying(true);
+          console.log(`새 트랙 재생 성공: ${newTrackTitle}`);
+        })
+        .catch(error => {
+          console.error('트랙 변경 중 자동 재생 실패:', error);
+          setIsPlaying(false);
+          // 재생 실패 시 사용자 상호작용 리스너 설정
+          setupUserInteractionListeners();
+        });
     } else {
-      // 다른 페이지는 음악 없음
-      newTrack = '';
-      newTrackTitle = '음악 없음';
+      // 트랙이 없으면 재생 중지
+      setIsPlaying(false);
     }
-    
-    // 트랙이 변경되었을 때만 오디오 변경
-    if (newTrack !== currentTrack) {
-      const wasPlaying = isPlaying;
-      
-      // 기존 오디오 정지
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
-      
-      // 새 트랙이 있는 경우에만 오디오 생성
-      if (newTrack) {
-        // 새 오디오 생성 및 설정
-        const audio = new Audio(newTrack);
-        audio.loop = true;
-        
-        // 이전 볼륨 설정 유지
-        audio.volume = volume;
-        
-        audioRef.current = audio;
-        
-        // 이전에 재생 중이었다면 새 트랙도 재생
-        if (wasPlaying) {
-          audio.play()
-            .then(() => {
-              console.log(`새 트랙 재생: ${newTrackTitle}`);
-            })
-            .catch(error => {
-              console.error('트랙 변경 중 재생 실패:', error);
-              setIsPlaying(false);
-            });
-        }
-      } else {
-        // 트랙이 없으면 재생 중지
-        setIsPlaying(false);
-      }
-      
-      setCurrentTrack(newTrack);
-      setTrackTitle(newTrackTitle);
-    }
-  }, [location.pathname, currentTrack, isPlaying, volume]);
+  }
+}, [location.pathname, volume]);
   
   // 초기 로드 시 1초 후 재생 시도
   useEffect(() => {
