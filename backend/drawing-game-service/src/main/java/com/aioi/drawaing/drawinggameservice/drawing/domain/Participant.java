@@ -17,6 +17,7 @@ public class Participant {
         return Participant.builder()
                 .nickname(nickname)
                 .characterUrl(characterUrl)
+                .chanceCount(3)
                 .build();
     }
 

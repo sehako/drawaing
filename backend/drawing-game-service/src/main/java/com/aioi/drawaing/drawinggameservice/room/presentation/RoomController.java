@@ -6,15 +6,18 @@ import com.aioi.drawaing.drawinggameservice.room.application.dto.AddRoomParticip
 import com.aioi.drawaing.drawinggameservice.room.presentation.dto.CreateRoomRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RequiredArgsConstructor
-@RestController("/api/v1/drawing/room")
+@RequestMapping("/api/v1/drawing/room")
+@RestController
 public class RoomController {
     private final RoomService roomService;
 
     @PostMapping
-    public CreateRoomResponse createRoom(AddRoomParticipantInfo addRoomParticipantInfo, CreateRoomRequest createRoomRequest) {
-        return roomService.createRoom(addRoomParticipantInfo,  createRoomRequest);
+    public CreateRoomResponse createRoom(@RequestBody CreateRoomRequest createRoomRequest) {
+        return roomService.createRoom(createRoomRequest);
     }
 }
