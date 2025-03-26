@@ -225,14 +225,14 @@ const CustomModal: React.FC<CustomModalProps> = ({
           <div className="flex justify-center space-x-4">
             <button
               onClick={handleConfirm}
-              className="px-8 py-2 bg-yellow-200 text-black rounded hover:bg-blue-600"
+              className="px-8 py-2 bg-yellow-200 text-black rounded hover:bg-yellow-600"
             >
               {actionButtons.confirmText || '확인'}
             </button>
             {actionButtons.cancelText && (
               <button
                 onClick={handleCancel}
-                className="px-4 py-2 bg-yellow-200 text-black rounded hover:bg-gray-300"
+                className="px-4 py-2 bg-yellow-200 text-black rounded hover:bg-yellow-600"
               >
                 {actionButtons.cancelText || '취소'}
               </button>
