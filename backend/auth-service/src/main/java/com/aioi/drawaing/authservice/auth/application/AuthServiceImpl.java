@@ -86,6 +86,8 @@ public class AuthServiceImpl implements com.aioi.drawaing.authservice.auth.appli
                         emailVerificationRequest.email())
                 .orElseThrow(() -> new MemberException(ErrorCode.EMAIL_VERIFICATION_CODE_EXPIRED));
 
+        log.info("verificationCodeCache: {}", verificationCodeCache);
+        log.info("emailVerificationRequest: {}", emailVerificationRequest.code());
         if (!verificationCodeCache.getCode().equals(emailVerificationRequest.code())) {
             throw new MemberException(ErrorCode.EMAIL_VERIFICATION_CODE_MISMATCH);
         } else {
