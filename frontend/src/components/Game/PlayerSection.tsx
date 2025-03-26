@@ -16,7 +16,7 @@ interface PlayerSectionProps {
   currentRound: number;
   activeDrawerIndex: number;
   guesserIndex: number;
-  roomId: string;
+  roomId: string | undefined;
   isConnected?: boolean;
   playerConnections?: PlayerConnectionMap; // 플레이어 접속 상태 맵
 }
