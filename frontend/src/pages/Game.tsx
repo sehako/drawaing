@@ -111,7 +111,7 @@ const Game: React.FC = () => {
     { id: 2, name: 'Player 3', level: 25, avatar: '/avatars/angry-bird.png' },
     { id: 3, name: 'Player 4', level: 16, avatar: '/avatars/yellow-bird.png' },
   ]);
-
+  
   const [currentRound, setCurrentRound] = useState<number>(1);
   const [quizWord, setQuizWord] = useState<string>('바나나');
   const [timeLeft, setTimeLeft] = useState<number>(20); 
@@ -128,6 +128,9 @@ const Game: React.FC = () => {
   const [isEmptyGuess, setIsEmptyGuess] = useState<boolean>(false);
   const [isWrongGuess, setIsWrongGuess] = useState<boolean>(false);
   const [isRoundTransitioning, setIsRoundTransitioning] = useState<boolean>(false);
+  const [isGameOver, setIsGameOver] = useState<boolean>(false);
+  const TOTAL_GAME_TIME = 1.5 * 60; // 10분(600초)
+  const [gameTimeLeft, setGameTimeLeft] = useState<number>(TOTAL_GAME_TIME);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [context, setContext] = useState<CanvasRenderingContext2D | null>(null);
@@ -249,6 +252,12 @@ ws.onmessage = (event) => {
     };
   }, [roomId, currentPlayer]);
 
+  const formatGameTime = (seconds: number): string => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes.toString().padStart(2, '0')}분${remainingSeconds.toString().padStart(2, '0')}초`;
+  };
+
   // 특정 플레이어의 접속 상태 업데이트
   const handlePlayerConnection = (playerName: string, isConnected: boolean) => {
     if (playerName.startsWith('플레이어')) {
@@ -281,6 +290,21 @@ ws.onmessage = (event) => {
     
     setPlayerConnections(newConnectionState);
   };
+
+  useEffect(() => {
+    const gameTimer = setInterval(() => {
+      setGameTimeLeft(prev => {
+        if (prev <= 0) {
+          clearInterval(gameTimer);
+          setIsGameOver(true); // 게임 종료 상태로 설정
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  
+    return () => clearInterval(gameTimer);
+  }, []);
 
   // 하트비트 메시지 전송 (연결 유지)
   useEffect(() => {
@@ -333,43 +357,49 @@ ws.onmessage = (event) => {
     setIsEraser(true);
   };
 
-  const handleNextPlayer = () => {
-    setIsDrawing(false);
-    setHasCompleted(false);
+const handleNextPlayer = () => {
+  // 게임이 종료됐으면 동작하지 않음
+  if (isGameOver) return;
   
-    const nextDrawerIndex = (activeDrawerIndex + 1) % 3;
+  setIsDrawing(false);
+  setHasCompleted(false);
+
+  const nextDrawerIndex = (activeDrawerIndex + 1) % 3;
+  
+  if (nextDrawerIndex === 0) {
+    // 세 번째 턴이 끝났을 때만 라운드 전환 시작
+    setIsRoundTransitioning(true);
     
-    if (nextDrawerIndex === 0) {
-      // 세 번째 턴이 끝났을 때만 라운드 전환 시작
-      setIsRoundTransitioning(true);
+    setTimeout(() => {
+      setCurrentRound(prev => prev + 1);
+      setGuesserIndex((guesserIndex + 1) % 4);
+      setActiveDrawerIndex(0); // 첫 번째 플레이어부터 시작
       
-      setTimeout(() => {
-        setCurrentRound(prev => prev + 1);
-        setGuesserIndex((guesserIndex + 1) % 4);
-        setActiveDrawerIndex(0); // 첫 번째 플레이어부터 시작
-        
-        if (context && canvasRef.current) {
-          context.fillStyle = 'white';
-          context.fillRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-        }
-  
-        const newWords = ['사과', '자동차', '컴퓨터', '강아지'];
-        setQuizWord(newWords[Math.floor(Math.random() * newWords.length)]);
-        
-        // 라운드 전환 완료 표시
-        setIsRoundTransitioning(false);
-      }, 3000);
-    } else {
-      // 첫 번째나 두 번째 턴이 끝났을 때는 그냥 다음 턴으로 넘어감
-      setActiveDrawerIndex(nextDrawerIndex);
-      setTimeLeft(20);
-    }
-  };
+      if (context && canvasRef.current) {
+        context.fillStyle = 'white';
+        context.fillRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+      }
+
+      const newWords = ['사과', '자동차', '컴퓨터', '강아지'];
+      setQuizWord(newWords[Math.floor(Math.random() * newWords.length)]);
+      
+      // 라운드 전환 완료 표시
+      setIsRoundTransitioning(false);
+    }, 3000);
+  } else {
+    // 첫 번째나 두 번째 턴이 끝났을 때는 그냥 다음 턴으로 넘어감
+    setActiveDrawerIndex(nextDrawerIndex);
+    setTimeLeft(20);
+  }
+};
+
 
 
 const handleGuessSubmit = (e: React.FormEvent) => {
   e.preventDefault();
-  
+
+  if (isGameOver) return;
+
   if (!guess || guess.trim() === '') {
     console.log('빈 입력값 감지됨');
     setIsEmptyGuess(true);
@@ -414,6 +444,9 @@ const handleGuessSubmit = (e: React.FormEvent) => {
 };
 
 const handlePass = () => {
+
+  if (isGameOver) return;
+
   // 조건 수정: 순서3(activeDrawerIndex === 2)이고 전체 PASS 횟수가 3회 미만일 때
   if (activeDrawerIndex === 2 && passCount < MAX_PASS_COUNT) {
     setAIRoundWinCount(prev => prev + 1);      
@@ -482,8 +515,8 @@ const handlePass = () => {
     }
   };
   useEffect(() => {
-    // 라운드 전환 중이면 타이머를 멈춤
-    if (isRoundTransitioning) return;
+    // 게임이 종료됐거나 라운드 전환 중이면 타이머를 멈춤
+    if (isGameOver || isRoundTransitioning) return;
   
     if (timeLeft <= 0) {
       const nextDrawerIndex = (activeDrawerIndex + 1) % 3;
@@ -526,7 +559,7 @@ const handlePass = () => {
     }, 1000);
   
     return () => clearInterval(timer);
-  }, [timeLeft, context, guesserIndex, activeDrawerIndex, isRoundTransitioning]);
+  }, [timeLeft, context, guesserIndex, activeDrawerIndex, isRoundTransitioning, isGameOver]);
   
 
   const currentDrawerIndex = calculateCurrentDrawerPlayerIndex();
@@ -534,6 +567,36 @@ const handlePass = () => {
 
   return (
     <div className="flex justify-center items-center w-full min-h-screen bg-cover bg-[url('/backgrounds/wooden-bg.jpg')] px-[150px] py-4 box-border flex-col">
+      {isGameOver && (
+        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
+          <div className="bg-yellow-100 rounded-xl p-8 text-center border-4 border-yellow-500 shadow-lg max-w-2xl w-full">
+            <h2 className="text-4xl font-bold mb-6 text-yellow-800">게임 종료!</h2>
+            <div className="text-2xl mb-6">
+              <p className="mb-4">최종 점수</p>
+              <div className="flex justify-center items-center gap-8 bg-white p-4 rounded-lg shadow-inner">
+                <div className="text-blue-700 font-bold text-3xl">사람: {humanRoundWinCount}</div>
+                <div className="text-2xl">VS</div>
+                <div className="text-red-700 font-bold text-3xl">AI: {aiRoundWinCount}</div>
+              </div>
+            </div>
+            <p className="text-lg mt-6">
+              {humanRoundWinCount > aiRoundWinCount 
+                ? '축하합니다! 사람팀이 이겼습니다!' 
+                : humanRoundWinCount < aiRoundWinCount 
+                  ? 'AI팀이 이겼습니다. 다음 기회에...' 
+                  : '동점입니다! 좋은 승부였습니다!'}
+            </p>
+
+            <button 
+              onClick={() => navigate('/game-record')} 
+              className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-8 rounded-full text-xl shadow-md transition-colors duration-300"
+            >
+              게임 종료
+            </button>
+          </div>
+        </div>
+      )}
+      
       {/* 라운드 전환 컴포넌트 */}
       <RoundTransition 
         isVisible={isRoundTransitioning} 
@@ -566,6 +629,9 @@ const handlePass = () => {
             </div>
             <div className="flex-1 text-right pr-10">
               <div className="text-lg text-gray-700 text-5xl">남은시간: {timeLeft}초</div>
+            </div>
+            <div className="bg-yellow-100 px-6 py-1 rounded-full border-2 border-yellow-400 text-xl font-bold shadow-md">
+              남은 시간: {formatGameTime(gameTimeLeft)}
             </div>
           </div>
         </div>
