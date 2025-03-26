@@ -66,11 +66,7 @@ public class AuthController {
             authService.checkNicknameDuplication(nickname);
             return ResponseEntity.ok().body("사용 가능한 닉네임 입니다.");
         } catch (DuplicateResourceException e) {
-            return ResponseEntity.badRequest()
-                    .header("Access-Control-Allow-Origin", "*")
-                    .header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-                    .header("Access-Control-Allow-Headers", "Authorization, Content-Type")
-                    .body("이미 사용 중인 닉네임입니다.");
+            return ApiResponseEntity.onFailure(ErrorCode.ALREADY_EXIST_NICKNAME);
         }
     }
 
@@ -81,11 +77,7 @@ public class AuthController {
             authService.checkEmailDuplication(email);
             return ResponseEntity.ok().body("사용 가능한 이메일 입니다.");
         } catch (DuplicateResourceException e) {
-            return ResponseEntity.badRequest()
-                    .header("Access-Control-Allow-Origin", "*")
-                    .header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-                    .header("Access-Control-Allow-Headers", "Authorization, Content-Type")
-                    .body("이미 사용 중인 이메일입니다.");
+            return ApiResponseEntity.onFailure(ErrorCode.ALREADY_EXIST_EMAIL);
         }
     }
 
