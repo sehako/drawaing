@@ -653,7 +653,7 @@ const handleMouseEnter = (e: React.MouseEvent<HTMLCanvasElement>) => {
             disabled={isNextButtonDisabled}
             className={`bg-blue-500 text-white rounded px-3 py-1 text-sm ${isNextButtonDisabled && 'opacity-50 cursor-not-allowed'}`}
           >
-            Next
+            순서 넘기기
           </button>
         </div>
       </div>
