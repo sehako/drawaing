@@ -4,6 +4,7 @@ import com.aioi.drawaing.authservice.auth.presentation.dto.EmailRequest;
 import com.aioi.drawaing.authservice.auth.presentation.dto.EmailVerificationRequest;
 import com.aioi.drawaing.authservice.auth.exception.DuplicateResourceException;
 import com.aioi.drawaing.authservice.auth.application.AuthService;
+import com.aioi.drawaing.authservice.common.code.ErrorCode;
 import com.aioi.drawaing.authservice.common.response.ApiResponseEntity;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -52,10 +53,10 @@ public class AuthController {
             return authService.getSocialType(email);
         } catch (NoSuchElementException e) {
             log.error(e.getMessage());
-            return ApiResponseEntity.badRequest("잘못된 요청입니다.");
+            return ApiResponseEntity.onFailure(ErrorCode.INVALID_REQUEST);
         } catch (Exception e) {
             log.error(e.getMessage());
-            return ApiResponseEntity.badRequest("서버 에러");
+            return ApiResponseEntity.onFailure(ErrorCode.SERVER_ERROR);
         }
     }
 
@@ -64,7 +65,7 @@ public class AuthController {
     public ResponseEntity<?> checkNicknameDuplication(@RequestParam("nickname") String nickname) {
         try {
             authService.checkNicknameDuplication(nickname);
-            return ResponseEntity.ok().body("사용 가능한 닉네임 입니다.");
+            return ApiResponseEntity.onSuccess("사용 가능한 닉네임 입니다.");
         } catch (DuplicateResourceException e) {
             return ResponseEntity.badRequest()
                     .header("Access-Control-Allow-Origin", "*")
@@ -79,7 +80,7 @@ public class AuthController {
     public ResponseEntity<?> checkEmailDuplication(@RequestParam("email") String email) {
         try {
             authService.checkEmailDuplication(email);
-            return ResponseEntity.ok().body("사용 가능한 이메일 입니다.");
+            return ApiResponseEntity.onSuccess("사용 가능한 이메일 입니다.");
         } catch (DuplicateResourceException e) {
             return ResponseEntity.badRequest()
                     .header("Access-Control-Allow-Origin", "*")
@@ -91,22 +92,22 @@ public class AuthController {
 
     @Operation(summary = "이메일 인증 코드 전송")
     @PostMapping("/email/code")
-    public ResponseEntity sendEmailCode(@RequestBody EmailRequest emailRequest) {
+    public ResponseEntity<?> sendEmailCode(@RequestBody EmailRequest emailRequest) {
         authService.sendEmailCode(emailRequest);
-        return ResponseEntity.ok().build();
+        return ApiResponseEntity.onSuccess(null);
     }
 
     @Operation(summary = "이메일 인증 코드 확인")
     @PostMapping("/email/authentication")
-    public ResponseEntity<String> verifyEmailCode(@RequestBody EmailVerificationRequest emailVerificationRequest) {
+    public ResponseEntity<?> verifyEmailCode(@RequestBody EmailVerificationRequest emailVerificationRequest) {
         authService.verifyEmailCode(emailVerificationRequest);
-        return ResponseEntity.ok().body("이메일 인증에 성공하였습니다.");
+        return ApiResponseEntity.onSuccess("이메일 인증에 성공하였습니다.");
     }
 
     @Operation(summary = "임시 비밀번호 전송")
     @PostMapping("/email/password")
-    public ResponseEntity sendEmailPassword(@RequestBody EmailRequest emailRequest) {
+    public ResponseEntity<?> sendEmailPassword(@RequestBody EmailRequest emailRequest) {
         authService.sendEmailPassword(emailRequest);
-        return ResponseEntity.ok().build();
+        return ApiResponseEntity.onSuccess(null);
     }
 }
