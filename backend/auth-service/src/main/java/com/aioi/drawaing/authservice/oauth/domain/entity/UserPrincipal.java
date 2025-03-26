@@ -23,6 +23,7 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 @RequiredArgsConstructor
 public class UserPrincipal implements OAuth2User, UserDetails, OidcUser {
 
+    private final Long memberId;
     private final String email;
     private final String nickname;
     private final String password;
@@ -46,7 +47,7 @@ public class UserPrincipal implements OAuth2User, UserDetails, OidcUser {
 
     @Override
     public String getName() {
-        return email;
+        return String.valueOf(memberId);
     }
 
     @Override
@@ -91,6 +92,7 @@ public class UserPrincipal implements OAuth2User, UserDetails, OidcUser {
 
     public static UserPrincipal create(Member user) {
         return new UserPrincipal(
+                user.getId(),
                 user.getEmail(),
                 user.getNickname(),
                 user.getPassword(),
