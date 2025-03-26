@@ -1,5 +1,6 @@
-import React, { useState, useContext } from 'react';
-import { AuthContext, useAuth } from '../../contexts/AuthContext';
+import React, { useState } from 'react';
+import axios from 'axios'; // Ensure axios is installed
+import { useAuth } from '../../contexts/AuthContext';
 
 interface LoginModalProps {
   closeModal: () => void;
@@ -7,20 +8,33 @@ interface LoginModalProps {
   handleSocialLogin: (provider: string) => void;
 }
 
-const LoginModal: React.FC<LoginModalProps> = ({ closeModal, handleSignupClick, handleSocialLogin }) => {
+interface LoginResponse {
+  accessToken: string;
+  memberId: number;
+  nickname: string;
+  email: string;
+  characterImage: string | null;
+  providerType: string;
+  level: number;
+  point: number;
+  exp: number;
+}
+
+const LoginModal: React.FC<LoginModalProps> = ({ 
+  closeModal, 
+  handleSignupClick, 
+  handleSocialLogin 
+}) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
-  // AuthContext에서 login 함수 가져오기
   const { login } = useAuth();
 
-  // 폼 제출 핸들러
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // 입력값 검증
     if (!email || !password) {
       setError('이메일과 비밀번호를 모두 입력해주세요.');
       return;
@@ -30,14 +44,34 @@ const LoginModal: React.FC<LoginModalProps> = ({ closeModal, handleSignupClick, 
       setIsLoading(true);
       setError('');
       
-      // AuthContext의 login 함수 호출
-      await login({ email, password });
+      const response = await axios.post('/service/auth/api/v1/member/login', {
+        email,
+        password
+      });
       
-      // 로그인 성공 시 모달 닫기
+      console.log(response)
+      await login({
+        memberId: response.data.memberId,
+        nickname: response.data.nickname,
+        email: response.data.email,
+        characterImage: response.data.characterImage,
+        providerType: response.data.providerType,
+        accessToken: response.data.AccessToken, // AccessToken으로 수정
+        level: response.data.level,
+        point: response.data.point
+      });
+      
+      alert('로그인에 성공했습니다!');
       closeModal();
     } catch (err) {
+      if (axios.isAxiosError(err)) {
+        const errorMessage = err.response?.data?.message || 
+                             '로그인 중 오류가 발생했습니다.';
+        setError(errorMessage);
+      } else {
+        setError('이메일 또는 비밀번호가 올바르지 않습니다.');
+      }
       console.error('로그인 오류:', err);
-      setError('이메일 또는 비밀번호가 올바르지 않습니다.');
     } finally {
       setIsLoading(false);
     }

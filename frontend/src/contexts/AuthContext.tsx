@@ -1,130 +1,122 @@
-// src/contexts/AuthContext.jsx
-import React, { createContext, useState, useEffect } from 'react';
-import { authService } from '../services/authService';
+// AuthContext.tsx
+import React, { createContext, useState, useContext, useEffect } from 'react';
+import axios from 'axios';
 
+interface User {
+  memberId: number;
+  nickname: string;
+  email: string;
+  characterImage: string | null;
+  providerType: string;
+  accessToken: string;
+  level?: number;
+  point?: number;
+}
 
-
-type User = {
-  id: string;
-  username: string;
-  email?: string;
-  isGuest?: boolean;
-};
-
-type AuthContextType = {
+interface AuthContextType {
   user: User | null;
-  login: (credentials: { email: string; password: string }) => Promise<void>;
-  signup: (userData: { username: string; email: string; password: string }) => Promise<void>;
+  isAuthenticated: boolean;
+  login: (userData: User) => Promise<void>;
   logout: () => void;
   loginAsGuest: () => Promise<void>;
-};
+}
 
-// 인증 컨텍스트 생성
-export const AuthContext = createContext<AuthContextType | null>(null);
-// 2. 인증 컨텍스트를 사용하기 위한 커스텀 훅 생성
-export const useAuth = (): AuthContextType => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth는 AuthProvider 내에서 사용되어야 합니다");
-  }
-  return context;
-};
+const AuthContext = createContext<AuthContextType>({
+  user: null,
+  isAuthenticated: false,
+  login: async () => {},
+  logout: () => {},
+  loginAsGuest: async () => {}
+});
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
 
-  // 앱 로드 시 토큰 확인 및 사용자 정보 가져오기
+  // 로컬 스토리지에서 사용자 정보 로드
   useEffect(() => {
-    const checkAuthStatus = async () => {
-      const token = localStorage.getItem('token');
-      
-      if (token) {
-        try {
-          // 토큰으로 사용자 정보 가져오기
-          const userData = await authService.getCurrentUser();
-          setUser(userData);
-          setIsAuthenticated(true);
-        } catch (error) {
-          console.error('인증 오류:', error);
-          localStorage.removeItem('token');
-        }
-      }
-      
-      setIsLoading(false);
-    };
-
-    checkAuthStatus();
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      const parsedUser = JSON.parse(storedUser);
+      setUser(parsedUser);
+      setIsAuthenticated(true);
+    }
   }, []);
 
-  // 로그인 함수
-  const login = async (credentials: { email: string; password: string }) => {
-    setIsLoading(true);
-    try {
-      const response = await authService.login(credentials);
-      const { token, user: userData } = response;
-      
-      // 토큰 저장
-      localStorage.setItem('token', token);
-      
-      setUser({
-        id: "user-id",
-        username: "username",
-        email: "email",
-      });
-      setIsAuthenticated(true);
-      return userData;
-    } catch (error) {
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
+  const login = async (userData: User) => {
+    // 사용자 정보 저장
+    setUser(userData);
+    setIsAuthenticated(true);
+    
+    // 로컬 스토리지에 사용자 정보 저장
+    localStorage.setItem('user', JSON.stringify(userData));
+    
+    // 토큰을 기본 axios 헤더에 추가 (선택적)
+    axios.defaults.headers.common['Authorization'] = `Bearer ${userData.accessToken}`;
   };
 
-  // 로그아웃 함수
   const logout = async () => {
     try {
-      await authService.logout();
-    } catch (error) {
-      console.error('로그아웃 오류:', error);
-    } finally {
-      // 로컬 상태 초기화
-      localStorage.removeItem('token');
+      // 게스트 사용자인 경우 API 호출 없이 로그아웃
+      if (user?.providerType === 'GUEST') {
+        // 사용자 정보 초기화
+        setUser(null);
+        setIsAuthenticated(false);
+        localStorage.removeItem('user');
+        delete axios.defaults.headers.common['Authorization'];
+        return;
+      }
+      
+      // 로그아웃 API 호출 (절대 URL 사용)
+      await axios.post('https://www.drawaing.site/service/auth/api/v1/member/signout', {}, {
+        withCredentials: true // 쿠키를 포함하여 요청
+      });
+      
+      // 사용자 정보 초기화
       setUser(null);
       setIsAuthenticated(false);
+      localStorage.removeItem('user');
+      delete axios.defaults.headers.common['Authorization'];
+    } catch (error) {
+      console.error('로그아웃 오류:', error);
+      
+      // 오류가 발생해도 로컬 상태는 초기화
+      setUser(null);
+      setIsAuthenticated(false);
+      localStorage.removeItem('user');
+      delete axios.defaults.headers.common['Authorization'];
+      
+      // 선택적: 오류 알림 (개발 중에만 활성화)
+      // alert('로그아웃 중 오류가 발생했습니다.');
     }
   };
 
-  // 게스트 모드 함수
+  
   const loginAsGuest = async () => {
-    const guestUser = {
-      id: 'guest-' + Math.random().toString(36).substr(2, 9),
-      username: '게스트',
-      isGuest: true
+    // 게스트 로그인 로직 구현
+    const guestUserData: User = {
+      memberId: 0,
+      nickname: 'Guest',
+      email: 'guest@example.com',
+      characterImage: null,
+      providerType: 'GUEST',
+      accessToken: '',
     };
-    
-    setUser({
-      id: "guest-id",
-      username: "guest",
-      isGuest: true,
-    });
-    setIsAuthenticated(true);
-    return guestUser;
+
+    await login(guestUserData);
   };
 
-  // 제공하는 컨텍스트 값
-  const contextValue = {
-    user,
-    isAuthenticated,
-    isLoading,
-    login,
-    logout,
-    loginAsGuest
-  };
-  
   return (
-    <AuthContext.Provider value={{ user, login, signup, logout, loginAsGuest }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      isAuthenticated, 
+      login, 
+      logout, 
+      loginAsGuest 
+    }}>
       {children}
     </AuthContext.Provider>
   );
 };
+
+export const useAuth = () => useContext(AuthContext);
