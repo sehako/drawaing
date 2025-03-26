@@ -10,4 +10,5 @@ public interface VerificationCodeCacheRepository extends CrudRepository<Verifica
         return findById(email)
                 .filter(cache -> cache.getCreatedAt().isAfter(LocalDateTime.now().minusMinutes(5)));
     }
+    Optional<VerificationCodeCache> findByEmail(String email);
 }

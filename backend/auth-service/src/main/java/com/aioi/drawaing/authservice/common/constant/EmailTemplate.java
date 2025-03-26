@@ -65,9 +65,6 @@ public class EmailTemplate {
                                             <div class="code">%s</div>
                                             <p>이 인증 코드는 5분간 유효합니다.</p>
                                             <p>저희 서비스를 이용해 주셔서 감사합니다!</p>
-                                            <div class="footer">
-                                                <p>이 메일은 발신 전용 메일입니다. 문의 사항이 있을 경우 고객센터를 이용해 주세요.</p>
-                                            </div>
                                         </div>
                                     </body>
                                     </html>
@@ -136,9 +133,6 @@ public class EmailTemplate {
                                 <p>고객님의 임시 비밀번호는 아래와 같습니다.</p>
                                 <div class="code">%s</div>
                                 <p>저희 서비스를 이용해 주셔서 감사합니다!</p>
-                                <div class="footer">
-                                    <p>이 메일은 발신 전용 메일입니다. 문의 사항이 있을 경우 고객센터를 이용해 주세요.</p>
-                                </div>
                             </div>
                         </body>
                         </html>
