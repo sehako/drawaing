@@ -343,7 +343,7 @@ const LandingPage: React.FC = () => {
           closeModal={closeModal}
           handleSignupClick={handleSignupClick}
           handleSocialLogin={handleSocialLogin}
-          onSuccessfulLogin={handleSuccessfulLogin}
+          // onSuccessfulLogin={handleSuccessfulLogin}
         />
       )}
 

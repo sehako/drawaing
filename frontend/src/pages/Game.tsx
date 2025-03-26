@@ -77,7 +77,7 @@ const Game: React.FC = () => {
   }, []);
 
   // 환경 변수에서 API URL을 가져옴
-  const API_URL = import.meta.env.VITE_API_URL || 'https://www.drawaing.site';
+  const API_URL = import.meta.env.VITE_API_URL || 'https://www.drawaing.site'
   const WS_URL = `${API_URL.replace('https://', 'wss://').replace('http://', 'ws://')}/service/game/drawing`;
   
   // 웹소켓 연결 참조
@@ -146,8 +146,11 @@ const Game: React.FC = () => {
 
   // 웹소켓 연결 설정
   useEffect(() => {
-    if (!roomId) return; // roomId가 없으면 연결하지 않음
-    
+    if (!roomId) {
+      console.log("roomId가 없어 웹소켓 연결을 시도하지 않습니다.");
+
+      return; // roomId가 없으면 연결하지 않음
+    }
     // 웹소켓 연결 생성
     const connectWebSocket = () => {
       const ws = new WebSocket(WS_URL);
@@ -166,7 +169,6 @@ const Game: React.FC = () => {
           }
         };
         ws.send(JSON.stringify(joinMessage)); 
-        console.log('ㅎㅇㅎㅇ')
         // 자신의 접속 상태 업데이트
         handlePlayerConnection(currentPlayer, true);
       };
@@ -568,8 +570,7 @@ const handleGuessSubmit = (e: React.FormEvent) => {
             handlePass={handlePass}
             activeDrawerIndex={activeDrawerIndex}
             handleCanvasSubmit={handleCanvasSubmit}
-            setPredictions={setPredictions}
-            
+            setPredictions={setPredictions}      
             />
         </div>
 
