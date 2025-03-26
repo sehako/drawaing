@@ -1,7 +1,7 @@
 // src/services/authService.ts
 
 // API 기본 URL - 환경 변수에서 가져오거나 기본값 사용
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const API_URL = import.meta.env.VITE_API_URL;
 
 interface LoginCredentials {
   email: string;
@@ -9,7 +9,7 @@ interface LoginCredentials {
 }
 
 interface RegisterData {
-  username: string;
+  nickname: string;
   email: string;
   password: string;
 }
@@ -36,7 +36,7 @@ export const authService = {
   // 로그인
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     try {
-      const response = await fetch(`${API_URL}/auth/login`, {
+      const response = await fetch(`${API_URL}/service/auth/api/v1/member/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -82,7 +82,7 @@ export const authService = {
   // 회원가입
   async register(userData: RegisterData): Promise<AuthResponse> {
     try {
-      const response = await fetch(`${API_URL}/auth/register`, {
+      const response = await fetch(`${API_URL}/service/auth/api/v1/member/signup`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -7,9 +7,15 @@ import LandingPage from './pages/LandingPage';
 // import LobbyPage from './pages/LobbyPage';
 import GameWaitingRoom from './pages/GameWaitingRoom.tsx';
 import Game from './pages/Game.tsx'
-// 나중에 다른 페이지들을 추가할 예정
 // import GamePage from './pages/GamePage';
 import Bgm from './components/Music/Bgm.tsx';
+import axios from 'axios';
+
+// .env 파일의 환경변수 사용
+axios.defaults.baseURL = import.meta.env.VITE_API_URL;
+
+// 선택적으로 추가할 수 있는 기본 설정들
+axios.defaults.withCredentials = true; // 쿠키 포함 설정
 
 const App: React.FC = () => {
   return (
