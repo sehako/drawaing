@@ -17,6 +17,15 @@ public class Participant {
         return Participant.builder()
                 .nickname(nickname)
                 .characterUrl(characterUrl)
+                .chanceCount(3)
                 .build();
+    }
+
+    public void incrementBonusPointsGuessing(int bonusPointsGuessing){
+        this.bonusPointsGuessing += bonusPointsGuessing;
+    }
+
+    public void incrementBonusPointsDrawing(int bonusPointsDrawing){
+        this.bonusPointsDrawing += bonusPointsDrawing;
     }
 }
