@@ -18,6 +18,10 @@ interface AISectionProps {
   passCount?: number; // 현재 PASS 횟수
   isHumanCorrect?: boolean;
   setIsHumanCorrect?: React.Dispatch<React.SetStateAction<boolean>>;
+  isEmptyGuess?: boolean;
+  setIsEmptyGuess?: React.Dispatch<React.SetStateAction<boolean>>;
+  isWrongGuess?: boolean;
+  setIsWrongGuess?: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const AISection: React.FC<AISectionProps> = ({
@@ -35,6 +39,10 @@ const AISection: React.FC<AISectionProps> = ({
   passCount = 0,
   isHumanCorrect = false,
   setIsHumanCorrect = () => {},
+  isEmptyGuess = false,
+  setIsEmptyGuess = () => {},
+  isWrongGuess = false,
+  setIsWrongGuess = () => {},
 }) => {
   const [isPassModalOpen, setIsPassModalOpen] = useState(false);
   const [isCorrectModalOpen, setIsCorrectModalOpen] = useState(false);
@@ -93,6 +101,40 @@ const AISection: React.FC<AISectionProps> = ({
       setIsHumanCorrect(false);
     }
   }, [isHumanCorrect]);
+
+  useEffect(() => {
+    if (isEmptyGuess) {
+      setIsEmptyGuessModalOpen(true);
+      setIsEmptyGuess(false);
+    }
+  }, [isEmptyGuess]);
+  
+  useEffect(() => {
+    if (isWrongGuess) {
+      setIsWrongGuessModalOpen(true);
+      setIsWrongGuess(false);
+    }
+  }, [isWrongGuess]);
+
+useEffect(() => {
+  let timer: number;
+  if (isEmptyGuessModalOpen) {
+    timer = window.setTimeout(() => {
+      setIsEmptyGuessModalOpen(false);
+    }, 3000);
+  }
+  return () => window.clearTimeout(timer);
+}, [isEmptyGuessModalOpen]);
+
+useEffect(() => {
+  let timer: number;
+  if (isWrongGuessModalOpen) {
+    timer = window.setTimeout(() => {
+      setIsWrongGuessModalOpen(false);
+    }, 3000);
+  }
+  return () => window.clearTimeout(timer);
+}, [isWrongGuessModalOpen]);
   
   return (
     <div className="w-full h-full flex justify-center items-center">
@@ -136,7 +178,10 @@ const AISection: React.FC<AISectionProps> = ({
               : '패스'}
           </button>
           <button 
-            onClick={handleGuessSubmit}
+            onClick={(e) => {
+              e.preventDefault();
+              handleGuessSubmit(e as unknown as React.FormEvent);
+            }}
             className="h-[52px] w-full bg-green-500 text-white font-medium hover:bg-green-600 rounded-[10px]"
           >
             제출

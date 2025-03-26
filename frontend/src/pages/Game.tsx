@@ -125,6 +125,9 @@ const Game: React.FC = () => {
   const [humanRoundWinCount, setHumanRoundWinCount] = useState<number>(0);
   const [aiRoundWinCount, setAIRoundWinCount] = useState<number>(0);
   const [isHumanCorrect, setIsHumanCorrect] = useState<boolean>(false);
+  const [isEmptyGuess, setIsEmptyGuess] = useState<boolean>(false);
+  const [isWrongGuess, setIsWrongGuess] = useState<boolean>(false);
+
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [context, setContext] = useState<CanvasRenderingContext2D | null>(null);
@@ -388,7 +391,11 @@ ws.onmessage = (event) => {
 const handleGuessSubmit = (e: React.FormEvent) => {
   e.preventDefault();
   
-  if (!guess.trim()) return;
+  if (!guess || guess.trim() === '') {
+    console.log('빈 입력값 감지됨'); // 디버깅용
+    setIsEmptyGuess(true);
+    return;
+  }
   
   if (guess.trim().toLowerCase() === quizWord.toLowerCase()) {
     handlePlayerCorrectAnswer();
@@ -414,9 +421,10 @@ const handleGuessSubmit = (e: React.FormEvent) => {
       setQuizWord(newWords[Math.floor(Math.random() * newWords.length)]);
       
       // CorrectAnswerModal 표시를 위해 showCorrectAnswer 상태 설정
-      setShowCorrectAnswer(true);
+      // setShowCorrectAnswer(true);
     }, 500);
   } else {
+    setIsWrongGuess(true);
     setAiAnswer('틀렸습니다! 다시 시도해보세요.');
   }
   
@@ -561,6 +569,7 @@ const handleGuessSubmit = (e: React.FormEvent) => {
             activeDrawerIndex={activeDrawerIndex}
             handleCanvasSubmit={handleCanvasSubmit}
             setPredictions={setPredictions}
+            
             />
         </div>
 
@@ -581,6 +590,10 @@ const handleGuessSubmit = (e: React.FormEvent) => {
             passCount={passCount}
             isHumanCorrect={isHumanCorrect}
             setIsHumanCorrect={setIsHumanCorrect}
+            isEmptyGuess={isEmptyGuess}
+            setIsEmptyGuess={setIsEmptyGuess}
+            isWrongGuess={isWrongGuess}
+            setIsWrongGuess={setIsWrongGuess}
           />
         </div>
       </div>
