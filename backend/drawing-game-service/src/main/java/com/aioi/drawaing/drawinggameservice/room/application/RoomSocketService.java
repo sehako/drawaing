@@ -40,7 +40,7 @@ public class RoomSocketService {
 
         validateJoinRoom(room, addRoomParticipantInfo.memberId());// 방 유효성 체크
 
-        System.out.println(addRoomParticipantInfo.memberId());
+//        System.out.println(addRoomParticipantInfo.memberId());
 
         room.addParticipant(addRoomParticipantInfo);// 사용자를 방에 추가 (초기 준비 상태는 false)
         room.updateHostIfNeeded();// 방장이 없다면 새로운 방장 선정

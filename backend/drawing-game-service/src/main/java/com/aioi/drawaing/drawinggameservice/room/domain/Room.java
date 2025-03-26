@@ -41,7 +41,7 @@ public class Room {
     }
 
     public void addParticipant(AddRoomParticipantInfo addRoomParticipantInfo) {
-        System.out.println("room: "+addRoomParticipantInfo.memberId());
+//        System.out.println("room: "+addRoomParticipantInfo.memberId());
         this.getParticipants().put(addRoomParticipantInfo.memberId(), RoomParticipant.createRoomParticipant(addRoomParticipantInfo.nickname(), addRoomParticipantInfo.characterUrl()));
     }
 
