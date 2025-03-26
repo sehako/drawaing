@@ -57,25 +57,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
-      // 로그아웃 API 호출
-      await axios.post('/service/auth/api/v1/member/signout');
+      // 게스트 사용자인 경우 API 호출 없이 로그아웃
+      if (user?.providerType === 'GUEST') {
+        // 사용자 정보 초기화
+        setUser(null);
+        setIsAuthenticated(false);
+        localStorage.removeItem('user');
+        delete axios.defaults.headers.common['Authorization'];
+        return;
+      }
+      
+      // 로그아웃 API 호출 (절대 URL 사용)
+      await axios.post('https://www.drawaing.site/service/auth/api/v1/member/signout', {}, {
+        withCredentials: true // 쿠키를 포함하여 요청
+      });
       
       // 사용자 정보 초기화
       setUser(null);
       setIsAuthenticated(false);
-      
-      // 로컬 스토리지에서 사용자 정보 제거
       localStorage.removeItem('user');
-      
-      // 토큰 헤더 제거 (선택적)
       delete axios.defaults.headers.common['Authorization'];
     } catch (error) {
       console.error('로그아웃 오류:', error);
-      // 선택적: 로그아웃 실패 시 사용자에게 알림
-      alert('로그아웃 중 오류가 발생했습니다.');
+      
+      // 오류가 발생해도 로컬 상태는 초기화
+      setUser(null);
+      setIsAuthenticated(false);
+      localStorage.removeItem('user');
+      delete axios.defaults.headers.common['Authorization'];
+      
+      // 선택적: 오류 알림 (개발 중에만 활성화)
+      // alert('로그아웃 중 오류가 발생했습니다.');
     }
   };
 
+  
   const loginAsGuest = async () => {
     // 게스트 로그인 로직 구현
     const guestUserData: User = {
