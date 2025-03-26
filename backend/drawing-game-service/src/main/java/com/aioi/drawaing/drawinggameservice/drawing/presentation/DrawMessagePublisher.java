@@ -15,6 +15,9 @@ import java.util.Map;
 public class DrawMessagePublisher {
     private final SimpMessagingTemplate simpMessagingTemplate;
 
+//    public void publishTimer(String topic, Timer message) {
+//        simpMessagingTemplate.convertAndSend(topic, message);
+//    }
     public void publishTimer(String topic, Timer message) {
         simpMessagingTemplate.convertAndSend(topic, message);
     }

@@ -48,7 +48,7 @@ public class DrawingService {
 
         session.updateSessionStartInfo(words, addParticipantInfos);
         sessionRepository.save(session);
-        startTimers(roomId, sessionId);
+        startTimers(roomId, sessionId, DEFAULT_SESSION_TIMER, DEFAULT_DRAW_TIMER);
         drawMessagePublisher.publishRoundInfo("/topic/session.info/"+roomId+"/"+sessionId, new RoundInfo(words, session.getParticipants()));
     }
 
@@ -57,10 +57,10 @@ public class DrawingService {
         return sessionRepository.save(session);
     }
 
-    private void startTimers(String roomId, String sessionId) {
-        publishSessionTimer(roomId, sessionId, DEFAULT_SESSION_TIMER);
-        publishDrawingTimer(roomId, sessionId, DEFAULT_DRAW_TIMER);
-    }
+//    private void startTimers(String roomId, String sessionId) {
+//        publishSessionTimer(roomId, sessionId, DEFAULT_SESSION_TIMER);
+//        publishDrawingTimer(roomId, sessionId, DEFAULT_DRAW_TIMER);
+//    }
 
     //게임 제시어 뽑기
     public List<String> extractWords(int count) {
@@ -80,42 +80,36 @@ public class DrawingService {
 //        sessionRepository.save(session);
 //    }
 
-    public void publishSessionTimer(String roomId, String sessionId, int startTime) {
+    public void startTimers(String roomId, String sessionId, int sessionInitTime, int drawInitTime){
         String sessionKey = getKey(TimeType.SESSION, sessionId);
         String drawKey = getKey(TimeType.DRAWING, sessionId);
 
-        remainTime.put(sessionKey, new AtomicInteger(startTime));
+        remainTime.put(sessionKey, new AtomicInteger(sessionInitTime));
+        remainTime.put(drawKey, new AtomicInteger(drawInitTime));
 
         ScheduledFuture<?> scheduledFuture = schedule.scheduleAtFixedRate(()->{
-            int time = remainTime.get(sessionKey).decrementAndGet();
-            if(remainTime.get(sessionKey).intValue()<=0){
+            int sessionTime = remainTime.get(sessionKey).decrementAndGet();
+            int drawTime = remainTime.get(drawKey).decrementAndGet();
+
+            System.out.println("sessionTime: "+sessionTime+" drawTime: "+drawTime);
+
+            if(sessionTime<=0){
                 remainTime.remove(sessionKey);
                 endSession(roomId, sessionId);
                 stopTimer(sessionKey);
                 stopTimer(drawKey);
 
             }
-            drawMessagePublisher.publishTimer("/topic/session.total-timer/"+roomId+"/"+sessionId, new Timer(time));
+
+            if(drawTime<=0){
+                remainTime.put(drawKey, new AtomicInteger(drawInitTime));
+            }
+
+            drawMessagePublisher.publishTimer("/topic/session.timer/"+roomId+"/"+sessionId, new Timer(sessionTime, drawTime));
 
         }, 0,1,TimeUnit.SECONDS);
 
         scheduledFutures.put(sessionKey, scheduledFuture);
-    }
-
-    public void publishDrawingTimer(String roomId, String sessionId, int startTime) {
-        String key = getKey(TimeType.DRAWING, sessionId);
-        remainTime.put(key, new AtomicInteger(startTime));
-
-        ScheduledFuture<?> scheduledFuture = schedule.scheduleAtFixedRate(()->{
-            int time = remainTime.get(key).decrementAndGet();
-            if(remainTime.get(key).intValue()<=0){
-                remainTime.put(key, new AtomicInteger(startTime));
-            }
-            drawMessagePublisher.publishTimer("/topic/session.draw-timer/"+roomId+"/"+sessionId, new Timer(time));
-
-        }, 0,1,TimeUnit.SECONDS);
-
-        scheduledFutures.put(key, scheduledFuture);
     }
 
     public void resetDrawingTimer(String sessionId) {
