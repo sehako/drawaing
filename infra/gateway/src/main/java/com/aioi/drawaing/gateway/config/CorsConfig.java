@@ -16,9 +16,7 @@ public class CorsConfig {
         config.setAllowedOrigins(List.of(
                 "http://localhost:5500",
                 "http://localhost:5173",
-                "https://www.drawaing.site",
-                "http://70.12.247.64:5173",
-                "http://70.12.247.78:5500"
+                "https://www.drawaing.site"
         ));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
