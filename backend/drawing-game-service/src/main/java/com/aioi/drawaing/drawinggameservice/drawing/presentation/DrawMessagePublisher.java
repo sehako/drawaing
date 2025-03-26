@@ -1,4 +1,4 @@
-package com.aioi.drawaing.drawinggameservice.drawing.application;
+package com.aioi.drawaing.drawinggameservice.drawing.presentation;
 
 import com.aioi.drawaing.drawinggameservice.drawing.application.dto.RoundInfo;
 import com.aioi.drawaing.drawinggameservice.drawing.application.dto.RoundResult;
@@ -15,10 +15,10 @@ import java.util.Map;
 public class DrawMessagePublisher {
     private final SimpMessagingTemplate simpMessagingTemplate;
 
-    void publishTimer(String topic, Timer message) {
+    public void publishTimer(String topic, Timer message) {
         simpMessagingTemplate.convertAndSend(topic, message);
     }
-    void publishRoundInfo(String topic, RoundInfo roundInfo){simpMessagingTemplate.convertAndSend(topic, roundInfo);}
-    void publishRoundResult(String topic, RoundResult roundResult){simpMessagingTemplate.convertAndSend(topic, roundResult);}
-    void publishGameResult(String topic, Map<Long, ParticipantScoreInfo> result){simpMessagingTemplate.convertAndSend(topic, result);}
+    public void publishRoundInfo(String topic, RoundInfo roundInfo){simpMessagingTemplate.convertAndSend(topic, roundInfo);}
+    public void publishRoundResult(String topic, RoundResult roundResult){simpMessagingTemplate.convertAndSend(topic, roundResult);}
+    public void publishGameResult(String topic, Map<Long, ParticipantScoreInfo> result){simpMessagingTemplate.convertAndSend(topic, result);}
 }
