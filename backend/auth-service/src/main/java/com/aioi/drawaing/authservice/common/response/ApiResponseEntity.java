@@ -17,12 +17,4 @@ public class ApiResponseEntity {
     public static <T> ResponseEntity<ApiResponse<T>> onFailure(ErrorCode code) {
         return ResponseEntity.ok().body(new ApiResponse<>(code.name(), code.getMessage(), null));
     }
-
-    public static <T> ResponseEntity<ApiResponse<T>> badRequest(String message) {
-        return ResponseEntity.ok().body(new ApiResponse<>(HttpStatus.BAD_REQUEST.name(), message, null));
-    }
-
-    public static <T> ResponseEntity<ApiResponse<T>> ok(String message) {
-        return ResponseEntity.ok().body(new ApiResponse<>(HttpStatus.OK.name(), message, null));
-    }
 }
