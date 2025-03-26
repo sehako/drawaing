@@ -1,21 +1,23 @@
 import React from 'react';
+
+// 기존 이미지 import
 import baby from '../../assets/Game/baby.png';
 import angry from '../../assets/Game/angry.png';
 import chicken from '../../assets/Game/chicken.png';
 import kid from '../../assets/Game/kid.png';
 import max from '../../assets/Game/max.png';
 
-// 플레이어 접속 상태 맵 타입 정의 - 인덱스 시그니처 추가
+// 플레이어 접속 상태 맵 타입 정의
 interface PlayerConnectionMap {
   [name: string]: boolean;
 }
 
 interface PlayerSectionProps {
-  currentRound: number; // 현재 라운드
-  activeDrawerIndex: number; // 현재 그리고 있는 사람 인덱스
-  guesserIndex: number; // 정답 맞추는 사람 인덱스
-  roomId: string; // 방 ID
-  isConnected?: boolean; // 웹소켓 연결 상태
+  currentRound: number;
+  activeDrawerIndex: number;
+  guesserIndex: number;
+  roomId: string;
+  isConnected?: boolean;
   playerConnections?: PlayerConnectionMap; // 플레이어 접속 상태 맵
 }
 
@@ -43,6 +45,7 @@ type RoundPositions = {
   [round: number]: PositionMap;
 }
 
+
 const PlayerSection: React.FC<PlayerSectionProps> = ({ 
   currentRound = 1, 
   activeDrawerIndex = 0, 
@@ -51,7 +54,7 @@ const PlayerSection: React.FC<PlayerSectionProps> = ({
   isConnected = false,
   playerConnections = {} 
 }) => {
-    // 고정된 플레이어 데이터 - 이름을 플레이어1~4로 변경
+    // 고정된 플레이어 데이터
     const players: PlayerList = {
         "플레이어1": { level: 12, avatar: baby },
         "플레이어2": { level: 50, avatar: max },
@@ -59,7 +62,7 @@ const PlayerSection: React.FC<PlayerSectionProps> = ({
         "플레이어4": { level: 16, avatar: chicken }
     };
     
-    // 라운드별 플레이어 배치 정의 (고정) - 이름을 플레이어1~4로 변경
+    // 라운드별 플레이어 배치 정의 (고정)
     const roundPositions: RoundPositions = {
         1: {
             "정답자": "플레이어1",
@@ -106,10 +109,10 @@ const PlayerSection: React.FC<PlayerSectionProps> = ({
         return { level: 0, avatar: baby };
     };
 
-    // 플레이어 접속 상태 가져오기
+    // 플레이어 접속 상태 가져오기 (개선된 로직)
     const getPlayerConnectionStatus = (playerName: string): boolean => {
-        // 타입스크립트에서 안전하게 접근하기 위해 in 연산자 사용
-        return playerName in playerConnections ? playerConnections[playerName] : false;
+        // 플레이어 접속 상태가 명시적으로 false로 설정되지 않은 한 true로 간주
+        return playerConnections[playerName] ?? true;
     };
 
     // 접속 상태 텍스트 표시
@@ -118,14 +121,14 @@ const PlayerSection: React.FC<PlayerSectionProps> = ({
     };
     
     return (
-        <div className="h-[580px] w-[250px] flex flex-col pr-2 overflow-hidden">
+        <div className="h-[580px] w-[250px] flex flex-col overflow-hidden">
             {/* 방 정보 표시 */}
-            <div className="w-full mb-2 p-2 bg-amber-50 text-amber-800 rounded-lg border border-amber-200 text-center">
+            {/* <div className="w-full mb-2 p-2 bg-amber-50 text-amber-800 rounded-lg border border-amber-200 text-center">
                 <div className="font-bold">방 #{roomId}</div>
                 <div className={`mt-1 text-xs ${isConnected ? 'text-green-600' : 'text-red-600'}`}>
                     {isConnected ? '실시간 접속 상태 확인 중' : '연결 중...'}
                 </div>
-            </div>
+            </div> */}
             
             {/* 정답자 */}
             <div className="h-[135px] flex border-4 border-purple-600 p-2 rounded-lg bg-[#FDE047] relative mb-3 mt-1 ml-1">

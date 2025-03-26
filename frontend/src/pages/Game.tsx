@@ -5,6 +5,8 @@ import CanvasSection from '../components/Game/CanvasSection';
 import AISection from '../components/Game/AIsection';
 import word from '../assets/Game/word.png';
 import axios from 'axios';
+import { Howl } from 'howler'; // Howler.js import 추가
+import pen_sound from '../assets/Sound/drawing_sound.mp3';
 
 interface Player {
   id: number;
@@ -35,6 +37,11 @@ const Game: React.FC = () => {
   const roomId = params.roomId;
   const navigate = useNavigate();
   
+  const [passCount, setPassCount] = useState<number>(0);
+  const MAX_PASS_COUNT = 3;
+
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
   // roomId가 없으면 기본 방으로 리다이렉트
   useEffect(() => {
     if (!roomId) {
@@ -42,8 +49,35 @@ const Game: React.FC = () => {
     }
   }, [roomId, navigate]);
 
+  useEffect(() => {
+    // 오디오 요소 생성
+    const audio = new Audio(pen_sound);
+    audio.volume = 0.3;
+    audio.preload = 'auto';
+    
+    // 오디오 로드 확인
+    audio.addEventListener('canplaythrough', () => {
+      console.log('오디오 로드 완료!');
+    });
+    
+    audio.addEventListener('error', (e) => {
+      console.error('오디오 로드 오류:', e);
+      console.log('시도한 소스 경로:', pen_sound);
+    });
+    
+    // REF에 오디오 요소 저장
+    audioRef.current = audio;
+    
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = '';
+      }
+    };
+  }, []);
+
   // 환경 변수에서 API URL을 가져옴
-  const API_URL = import.meta.env.VITE_API_URL || 'https://www.drawaing.site';
+  const API_URL = import.meta.env.VITE_API_URL || 'https://www.drawaing.site'
   const WS_URL = `${API_URL.replace('https://', 'wss://').replace('http://', 'ws://')}/service/game/drawing`;
   
   // 웹소켓 연결 참조
@@ -88,6 +122,12 @@ const Game: React.FC = () => {
   const [hasCompleted, setHasCompleted] = useState<boolean>(false);
   const [showCorrectAnswer, setShowCorrectAnswer] = useState<boolean>(false);
   const [correctAnimation, setCorrectAnimation] = useState<boolean>(false);
+  const [humanRoundWinCount, setHumanRoundWinCount] = useState<number>(0);
+  const [aiRoundWinCount, setAIRoundWinCount] = useState<number>(0);
+  const [isHumanCorrect, setIsHumanCorrect] = useState<boolean>(false);
+  const [isEmptyGuess, setIsEmptyGuess] = useState<boolean>(false);
+  const [isWrongGuess, setIsWrongGuess] = useState<boolean>(false);
+
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [context, setContext] = useState<CanvasRenderingContext2D | null>(null);
@@ -106,8 +146,11 @@ const Game: React.FC = () => {
 
   // 웹소켓 연결 설정
   useEffect(() => {
-    if (!roomId) return; // roomId가 없으면 연결하지 않음
-    
+    if (!roomId) {
+      console.log("roomId가 없어 웹소켓 연결을 시도하지 않습니다.");
+
+      return; // roomId가 없으면 연결하지 않음
+    }
     // 웹소켓 연결 생성
     const connectWebSocket = () => {
       const ws = new WebSocket(WS_URL);
@@ -125,43 +168,49 @@ const Game: React.FC = () => {
             playerName: currentPlayer // 현재 플레이어 이름 사용
           }
         };
-        ws.send(JSON.stringify(joinMessage));
-        
+        ws.send(JSON.stringify(joinMessage)); 
         // 자신의 접속 상태 업데이트
         handlePlayerConnection(currentPlayer, true);
       };
 
-      ws.onmessage = (event) => {
-        try {
-          const message: WebSocketMessage = JSON.parse(event.data);
-          
-          // 메시지 타입에 따라 처리
-          switch (message.type) {
-            case "player_connected":
-              // 플레이어 접속 정보 업데이트
-              handlePlayerConnection(message.data.playerName, true);
-              break;
-            
-            case "player_disconnected":
-              // 플레이어 접속 종료 정보 업데이트
-              handlePlayerConnection(message.data.playerName, false);
-              break;
-            
-            case "room_players":
-              // 방의 모든 플레이어 정보 업데이트
-              updateRoomPlayers(message.data.players);
-              break;
-            
-            default:
-              console.log("알 수 없는 메시지 타입:", message.type);
-          }
-        } catch (error) {
-          console.error("메시지 처리 중 오류 발생:", error);
-        }
-      };
+ws.onmessage = (event) => {
+  try {
+    const message: WebSocketMessage = JSON.parse(event.data);
+    
+    console.log("받은 웹소켓 메시지:", message); // 받은 메시지 전체 로깅
+    
+    // 메시지 타입에 따라 처리
+    switch (message.type) {
+      case "player_connected":
+        console.log("플레이어 연결:", message.data.playerName);
+        handlePlayerConnection(message.data.playerName, true);
+        break;
+      
+      case "player_disconnected":
+        console.log("플레이어 연결 해제:", message.data.playerName);
+        handlePlayerConnection(message.data.playerName, false);
+        break;
+      
+      case "room_players":
+        console.log("방 플레이어들:", message.data.players);
+        updateRoomPlayers(message.data.players);
+        break;
+      
+      default:
+        console.log("알 수 없는 메시지 타입:", message.type);
+    }
+  } catch (error) {
+    console.error("메시지 처리 중 오류 발생:", error);
+  }
+};
+      ws.onclose = (event) => {
+        console.log("웹소켓 연결 종료 상세 정보:", {
+          code: event.code,
+          reason: event.reason,
+          wasClean: event.wasClean
+        });
+        console.trace('웹소켓 연결 종료 추적');
 
-      ws.onclose = () => {
-        console.log("웹소켓 연결 종료");
         setIsConnected(false);
         
         // 자신의 접속 상태 업데이트
@@ -259,6 +308,8 @@ const Game: React.FC = () => {
   
   const handleAICorrectAnswer = () => {
     setEggCount(prev => Math.max(0, prev - 1));
+
+    setAIRoundWinCount(prev => prev + 1);
   };
 
   useEffect(() => {
@@ -339,60 +390,70 @@ const Game: React.FC = () => {
     }
   };
 
-  const handleGuessSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!guess.trim()) return;
-    
-    if (guess.trim().toLowerCase() === quizWord.toLowerCase()) {
-      setCorrectAnimation(true);
-      setShowCorrectAnswer(true);
-      handlePlayerCorrectAnswer();
+const handleGuessSubmit = (e: React.FormEvent) => {
+  e.preventDefault();
+  
+  if (!guess || guess.trim() === '') {
+    console.log('빈 입력값 감지됨'); // 디버깅용
+    setIsEmptyGuess(true);
+    return;
+  }
+  
+  if (guess.trim().toLowerCase() === quizWord.toLowerCase()) {
+    handlePlayerCorrectAnswer();
+    setIsHumanCorrect(true); // 이 줄 추가
 
-      setTimeout(() => {
-        setCorrectAnimation(false);
-        setShowCorrectAnswer(false);
-        
-        setCurrentRound(prev => prev + 1);
-        setGuesserIndex((guesserIndex + 1) % 4);
-        setActiveDrawerIndex(0);
-        
-        setTimeLeft(20);
-        
-        setHasCompleted(false);
-        
-        if (context && canvasRef.current) {
-          context.fillStyle = 'white';
-          context.fillRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-        }
-        
-        const newWords = ['사과', '자동차', '컴퓨터', '강아지', '고양이', '비행기', '꽃', '커피'];
-        setQuizWord(newWords[Math.floor(Math.random() * newWords.length)]);
-      }, 2000);
-    } else {
-      setAiAnswer('틀렸습니다! 다시 시도해보세요.');
-    }
-    
-    setGuess('');
-  };
+    setTimeout(() => {
+      setCurrentRound(prev => prev + 1);
+      setGuesserIndex((guesserIndex + 1) % 4);
+      setActiveDrawerIndex(0);
+      
+      setHumanRoundWinCount(prev => prev + 1);
+  
+      setTimeLeft(20);
+      
+      setHasCompleted(false);
+      
+      if (context && canvasRef.current) {
+        context.fillStyle = 'white';
+        context.fillRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+      }
+      
+      const newWords = ['사과', '자동차', '컴퓨터', '강아지', '고양이', '비행기', '꽃', '커피'];
+      setQuizWord(newWords[Math.floor(Math.random() * newWords.length)]);
+      
+      // CorrectAnswerModal 표시를 위해 showCorrectAnswer 상태 설정
+      // setShowCorrectAnswer(true);
+    }, 500);
+  } else {
+    setIsWrongGuess(true);
+    setAiAnswer('틀렸습니다! 다시 시도해보세요.');
+  }
+  
+  setGuess('');
+}; 
 
   const handlePass = () => {
-    setCurrentRound(prev => prev + 1);
-    setGuesserIndex((guesserIndex + 1) % 4);
-    setActiveDrawerIndex(0);
-    
-    setTimeLeft(20);
-    
-    setHasCompleted(false);
-    setShowCorrectAnswer(false);
-    
-    if (context && canvasRef.current) {
-      context.fillStyle = 'white';
-      context.fillRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+    // 조건 수정: 순서3(activeDrawerIndex === 2)이고 전체 PASS 횟수가 3회 미만일 때
+    if (activeDrawerIndex === 2 && passCount < MAX_PASS_COUNT) {
+      setAIRoundWinCount(prev => prev + 1);      
+      setPassCount(prev => prev + 1);
+      setCurrentRound(prev => prev + 1);
+      setGuesserIndex((guesserIndex + 1) % 4);
+      setActiveDrawerIndex(0);
+
+      setTimeLeft(20);
+      
+      setHasCompleted(false);
+      setShowCorrectAnswer(false);
+      if (context && canvasRef.current) {
+        context.fillStyle = 'white';
+        context.fillRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+      }
+      
+      const newWords = ['사과', '자동차', '컴퓨터', '강아지'];
+      setQuizWord(newWords[Math.floor(Math.random() * newWords.length)]);
     }
-    
-    const newWords = ['사과', '자동차', '컴퓨터', '강아지'];
-    setQuizWord(newWords[Math.floor(Math.random() * newWords.length)]);
   };
 
   const calculateCurrentDrawerPlayerIndex = () => {
@@ -445,20 +506,22 @@ const Game: React.FC = () => {
             <div className="flex-1 text-left pl-10">
               <div className="text-6xl font-bold text-gray-800 whitespace-nowrap">ROUND {currentRound}</div>
             </div>
-            
             <div className="flex-1 flex justify-center items-center">
               <div className="relative flex items-center justify-center w-[200px] h-full">
                 <img 
                   src={word} 
                   alt="Word background" 
                   className="absolute w-full h-auto object-cover mb-5"
-                />
+                  />
                 <div className="relative z-10 text-white text-3xl font-bold text-center mt-6">
                   {quizWord}
                 </div>
               </div>
             </div>
             
+            <div>
+              사람 {humanRoundWinCount} : {aiRoundWinCount} AI
+            </div>
             <div className="flex-1 text-right pr-10">
               <div className="text-lg text-gray-700 text-5xl">남은시간: {timeLeft}초</div>
             </div>
@@ -466,17 +529,9 @@ const Game: React.FC = () => {
         </div>
       </div>
 
-      {/* 방 정보 및 웹소켓 연결 상태 표시 */}
-      <div className="w-full max-w-7xl mb-4 p-2 rounded text-center bg-yellow-50 text-amber-800 border border-amber-200">
-        <div className="font-bold">게임방 #{roomId}</div>
-        <div className={`mt-1 text-sm ${isConnected ? 'text-green-600' : 'text-red-600'}`}>
-          {isConnected ? `실시간 연결 활성화: 당신은 ${currentPlayer}입니다` : '연결 끊김: 재연결 중...'}
-        </div>
-      </div>
-
       <div className="flex w-full max-w-7xl">
         {/* 플레이어 컴포넌트 - 좌측 */}
-        <div className="w-1/5 mr-8">
+        <div className="w-1/5 mr-9">
           <PlayerSection 
             currentRound={currentRound}
             activeDrawerIndex={activeDrawerIndex}
@@ -515,8 +570,8 @@ const Game: React.FC = () => {
             handlePass={handlePass}
             activeDrawerIndex={activeDrawerIndex}
             handleCanvasSubmit={handleCanvasSubmit}
-            setPredictions={setPredictions}
-          />
+            setPredictions={setPredictions}      
+            />
         </div>
 
         {/* AI 컴포넌트 - 우측 */}
@@ -532,6 +587,14 @@ const Game: React.FC = () => {
             onAICorrectAnswer={handleAICorrectAnswer}
             quizWord={quizWord}
             predictions={predictions}
+            canPass={activeDrawerIndex === 2 && passCount < MAX_PASS_COUNT}
+            passCount={passCount}
+            isHumanCorrect={isHumanCorrect}
+            setIsHumanCorrect={setIsHumanCorrect}
+            isEmptyGuess={isEmptyGuess}
+            setIsEmptyGuess={setIsEmptyGuess}
+            isWrongGuess={isWrongGuess}
+            setIsWrongGuess={setIsWrongGuess}
           />
         </div>
       </div>

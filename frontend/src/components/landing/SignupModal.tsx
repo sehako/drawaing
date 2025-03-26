@@ -1,6 +1,6 @@
-import React, { useState, useContext, useEffect } from 'react';
-import { AuthContext, useAuth } from '../../contexts/AuthContext'
-import authService from '../../services/authService';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface SignupModalProps {
   closeModal: () => void;
@@ -8,7 +8,23 @@ interface SignupModalProps {
   handleSocialLogin: (provider: string) => void;
 }
 
-const SignupModal: React.FC<SignupModalProps> = ({ closeModal, handleLoginClick, handleSocialLogin }) => {
+interface SignupResponse {
+  message: string;
+  data: {
+    memberId: string;
+    nickname: string;
+    email: string;
+    profileImg?: string;
+    provider_type: string;
+    createdAt: string;
+  };
+}
+
+const SignupModal: React.FC<SignupModalProps> = ({ 
+  closeModal, 
+  handleLoginClick, 
+  handleSocialLogin 
+}) => {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -72,17 +88,14 @@ const SignupModal: React.FC<SignupModalProps> = ({ closeModal, handleLoginClick,
       setIsLoading(true);
       setError('');
       
-      // 실제 API 호출 (서버 구현 후 주석 해제)
-      // await authService.sendVerificationEmail(email);
-      
-      // 임시 코드 (서버 구현 전까지만 사용)
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // 이메일 인증 코드 전송 API 호출
+      await axios.post('/service/auth/api/v1/member/email/code', { email });
       
       setIsEmailVerificationSent(true);
       alert(`${email}로 인증 코드가 전송되었습니다.`);
     } catch (err: any) {
       console.error('이메일 인증 코드 전송 오류:', err);
-      setError(err.message || '이메일 인증 코드 전송에 실패했습니다.');
+      setError(err.response?.data?.message || '이메일 인증 코드 전송에 실패했습니다.');
     } finally {
       setIsLoading(false);
     }
@@ -99,25 +112,33 @@ const SignupModal: React.FC<SignupModalProps> = ({ closeModal, handleLoginClick,
       setIsLoading(true);
       setError('');
       
-      // 실제 API 호출 (서버 구현 후 주석 해제)
-      // const response = await authService.verifyEmailCode(email, verificationCode);
-      
-      // 임시 코드 (서버 구현 전까지만 사용)
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // 이메일 인증 코드 검증 API 호출
+      await axios.post('/service/auth/api/v1/member/email/authentication', { 
+        email, 
+        verificationCode 
+      });
       
       setIsEmailVerified(true);
       alert('이메일이 성공적으로 인증되었습니다.');
     } catch (err: any) {
       console.error('이메일 인증 확인 오류:', err);
-      setError(err.message || '이메일 인증에 실패했습니다. 올바른 코드를 입력해주세요.');
+      setError(err.response?.data?.message || '이메일 인증에 실패했습니다. 올바른 코드를 입력해주세요.');
     } finally {
       setIsLoading(false);
     }
   };
   
-  // 닉네임 중복 확인
   const checkNickname = async () => {
-    if (!username || username.length < 2) {
+    // 1. 입력값 정제
+    const trimmedUsername = username.trim();
+    
+    // 2. 유효성 검사 강화
+    if (!trimmedUsername) {
+      setError('닉네임을 입력해주세요.');
+      return;
+    }
+    
+    if (trimmedUsername.length < 2) {
       setError('닉네임은 2자 이상 입력해주세요.');
       return;
     }
@@ -126,17 +147,40 @@ const SignupModal: React.FC<SignupModalProps> = ({ closeModal, handleLoginClick,
       setIsLoading(true);
       setError('');
       
-      // 실제 API 호출 (서버 구현 후 주석 해제)
-      // const response = await authService.checkNickname(username);
+      // 3. URL 인코딩 처리
+      const encodedNickname = encodeURIComponent(trimmedUsername);
       
-      // 임시 코드 (서버 구현 전까지만 사용)
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // 4. API 호출 시 에러 처리 개선
+      const response = await axios.get(
+        `/service/auth/api/v1/member/nickname/duplication?nickname=${encodedNickname}`,
+        {
+          // 5. 캐시 방지
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
+        }
+      );
+      
+      // 6. 응답 데이터 검증
+      if (response.data?.isDuplicate) {
+        setError('이미 사용 중인 닉네임입니다.');
+        setIsNicknameChecked(false);
+        return;
+      }
       
       setIsNicknameChecked(true);
       alert('사용 가능한 닉네임입니다.');
+      
     } catch (err: any) {
       console.error('닉네임 중복 확인 오류:', err);
-      setError(err.message || '이미 사용 중인 닉네임입니다.');
+      
+      // 7. 에러 메시지 처리 개선
+      const errorMessage = err.response?.data?.message || 
+        err.response?.status === 409 ? '이미 사용 중인 닉네임입니다.' :
+        '닉네임 중복 확인 중 오류가 발생했습니다.';
+      
+      setError(errorMessage);
       setIsNicknameChecked(false);
     } finally {
       setIsLoading(false);
@@ -181,16 +225,16 @@ const SignupModal: React.FC<SignupModalProps> = ({ closeModal, handleLoginClick,
     const hasNumber = /[0-9]/.test(password);
     const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
     
-  if (!hasLetter || !hasNumber || !hasSpecial) {
-    setError('비밀번호는 영문, 숫자, 특수문자를 모두 포함해야 합니다.');
-    return false;
-  }
-  
-  // 비밀번호 일치 검사
-  if (password !== confirmPassword) {
-    setError('비밀번호가 일치하지 않습니다.');
-    return false;
-  }
+    if (!hasLetter || !hasNumber || !hasSpecial) {
+      setError('비밀번호는 영문, 숫자, 특수문자를 모두 포함해야 합니다.');
+      return false;
+    }
+    
+    // 비밀번호 일치 검사
+    if (password !== confirmPassword) {
+      setError('비밀번호가 일치하지 않습니다.');
+      return false;
+    }
     
     return true;
   };
@@ -209,21 +253,38 @@ const SignupModal: React.FC<SignupModalProps> = ({ closeModal, handleLoginClick,
       setError('');
       
       // 회원가입 API 호출
-      const response = await authService.register({ username, email, password });
+      const response = await axios.post<SignupResponse>('/service/auth/api/v1/member/signup', {
+        nickname: username,
+        email,
+        password
+      });
       
-      // 회원가입 성공 시 자동 로그인
-      await login({ email, password });
+      // 여기서 로그를 추가하여 확인
+  console.log('전송할 데이터:', {
+    nickname: username,
+    email,
+    password: '(비밀번호)' // 비밀번호는 보안상 실제 값은 로그에 남기지 않음
+  });
+      // 회원가입 성공 메시지 표시
+      alert(response.data.message);
+      
+      // 회원가입 성공 후 자동 로그인 시도
+      await login({
+        email,
+        password
+      });
       
       // 모달 닫기
       closeModal();
     } catch (err: any) {
       console.error('회원가입 오류:', err);
-      setError(err.message || '회원가입에 실패했습니다. 다시 시도해주세요.');
+      setError(err.response?.data?.message || '회원가입에 실패했습니다. 다시 시도해주세요.');
     } finally {
       setIsLoading(false);
     }
   };
 
+  // 이하 기존 렌더링 코드는 그대로 유지
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50">
       <div className="absolute inset-0 bg-black opacity-50" onClick={closeModal}></div>
@@ -238,7 +299,7 @@ const SignupModal: React.FC<SignupModalProps> = ({ closeModal, handleLoginClick,
           </button>
         </div>
         
-        {/* 에러 메시지 */}
+        {/* 기존 컴포넌트 렌더링 로직 유지 */}
         {error && (
           <div className="mb-4 p-2 bg-red-100 border border-red-400 text-red-700 rounded">
             {error}
@@ -376,9 +437,9 @@ const SignupModal: React.FC<SignupModalProps> = ({ closeModal, handleLoginClick,
                   {passwordRequirements.hasSpecial ? "✓" : "✗"} 특수문자 포함
                 </p>
               </div>
-              )}
-              {!password && <p className="text-xs text-gray-600 mt-1">8자 이상, 영문, 숫자, 특수문자 조합</p>}
-            </div>
+            )}
+            {!password && <p className="text-xs text-gray-600 mt-1">8자 이상, 영문, 숫자, 특수문자 조합</p>}
+          </div>
           
           <div className="mb-6">
             <label className="block text-gray-700 mb-2 font-medium">비밀번호 확인</label>
@@ -426,44 +487,6 @@ const SignupModal: React.FC<SignupModalProps> = ({ closeModal, handleLoginClick,
             </button>
           </div>
         </form>
-        
-        {/* 소셜 로그인 섹션 */}
-        {/* <div className="mb-6">
-          <div className="relative flex items-center justify-center mb-4">
-            <div className="absolute border-b border-gray-600 w-full"></div>
-            <span className="relative bg-yellow-300 px-4 text-sm text-gray-700 font-medium">소셜 계정으로 가입</span>
-          </div>
-          
-          <div className="flex justify-center space-x-4"> */}
-            {/* 카카오 로그인 버튼 */}
-            {/* <button 
-              type="button"
-              onClick={() => handleSocialLogin('카카오')}
-              className="w-full p-0 rounded-lg overflow-hidden border-2 border-black shadow-[2px_2px_0_0_rgba(0,0,0,1)] hover:shadow-[3px_3px_0_0_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:-translate-x-0.5 active:shadow-[1px_1px_0_0_rgba(0,0,0,1)] active:translate-x-0 active:translate-y-0 transition-all duration-200"
-              disabled={isLoading}
-            >
-              <img 
-                src="/images/kakao_login_large_narrow.png" 
-                alt="카카오 로그인" 
-                className="w-full h-full object-contain"
-              />
-            </button> */}
-            
-            {/* 네이버 로그인 버튼 */}
-            {/* <button 
-              type="button"
-              onClick={() => handleSocialLogin('네이버')}
-              className="w-full p-0 rounded-lg overflow-hidden border-2 border-black shadow-[2px_2px_0_0_rgba(0,0,0,1)] hover:shadow-[3px_3px_0_0_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:-translate-x-0.5 active:shadow-[1px_1px_0_0_rgba(0,0,0,1)] active:translate-x-0 active:translate-y-0 transition-all duration-200"
-              disabled={isLoading}
-            >
-              <img 
-                src="/images/naver_login.png" 
-                alt="네이버 로그인" 
-                className="w-full h-full object-contain"
-              />
-            </button>
-          </div>
-        </div> */}
         
         {/* 로그인 버튼 */}
         <div className="flex justify-center">
