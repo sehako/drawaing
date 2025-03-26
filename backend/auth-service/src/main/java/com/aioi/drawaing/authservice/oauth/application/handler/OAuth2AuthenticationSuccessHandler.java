@@ -11,6 +11,7 @@ import com.aioi.drawaing.authservice.common.jwt.TokenInfo;
 import com.aioi.drawaing.authservice.common.util.CookieUtil;
 import com.aioi.drawaing.authservice.oauth.domain.entity.ProviderType;
 import com.aioi.drawaing.authservice.oauth.domain.entity.RoleType;
+import com.aioi.drawaing.authservice.oauth.domain.entity.UserPrincipal;
 import com.aioi.drawaing.authservice.oauth.domain.info.OAuth2UserInfo;
 import com.aioi.drawaing.authservice.oauth.domain.info.OAuth2UserInfoFactory;
 import com.aioi.drawaing.authservice.oauth.infrastructure.repository.OAuth2AuthorizationRequestBasedOnCookieRepository;
@@ -77,14 +78,17 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         OAuth2AuthenticationToken authToken = (OAuth2AuthenticationToken) authentication;
         ProviderType providerType = ProviderType.valueOf(authToken.getAuthorizedClientRegistrationId().toUpperCase());
 
-        OidcUser user = ((OidcUser) authentication.getPrincipal());
+        UserPrincipal user = (UserPrincipal) authentication.getPrincipal();
+
+        //OidcUser user = ((OidcUser) authentication.getPrincipal());
         OAuth2UserInfo userInfo = OAuth2UserInfoFactory.getOAuth2UserInfo(providerType, user.getAttributes());
         Collection<? extends GrantedAuthority> authorities = ((OidcUser) authentication.getPrincipal()).getAuthorities();
 
         RoleType roleType =
                 hasAuthority(authorities, RoleType.ROLE_ADMIN.name()) ? RoleType.ROLE_ADMIN : RoleType.ROLE_USER;
 
-        TokenInfo tokenInfo = jwtTokenProvider.generateToken(userInfo.getEmail(), roleType.name());
+        log.info("memberID = {}", user.getMemberId());
+        TokenInfo tokenInfo = jwtTokenProvider.generateToken(user.getMemberId(), roleType.name());
 
         log.info("RefreshTokenExpirationTime = {}", tokenInfo.getRefreshTokenExpirationTime());
         redisTemplate.opsForValue()

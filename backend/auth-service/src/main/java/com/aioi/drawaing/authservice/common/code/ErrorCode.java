@@ -15,7 +15,9 @@ import org.springframework.http.HttpStatus;
 @RequiredArgsConstructor
 public enum ErrorCode {
 
-    //File
+    //Redis
+    REDIS_CONNECTION_FAILURE(INTERNAL_SERVER_ERROR, "레디스 서버 연결에 실패하였습니다."),
+    REDIS_TIMEOUT(INTERNAL_SERVER_ERROR, "레디스 서버 연결에서 시간 초과가 발생하였습니다."),
     //Image
     INVALID_REQUEST(BAD_REQUEST, "올바르지 않은 요청입니다."),
     INVALID_IMAGE_FORMAT(BAD_REQUEST, "지원하지 않는 이미지 형식입니다."),
@@ -27,11 +29,12 @@ public enum ErrorCode {
     //Video
 
     //Auth
-    NOT_SUPPORT_PROVIDER(BAD_REQUEST, "지원하지 않는 social login 방식입니다."),
+    NOT_SUPPORT_PROVIDER(BAD_REQUEST, "로컬 유저가 아닙니다."),
     INVALID_AUTHORITY(FORBIDDEN, "해당 리소스에 접근할 권한이 없습니다."),
     INVALID_PASSWORD(UNAUTHORIZED, "비밀번호가 일치하지 않습니다."),
     INVALID_JWT_FORMAT(BAD_REQUEST, "JWT 형식이 아닙니다."),
-    JWT_NOT_FOUND(NOT_FOUND, "토큰이 전달되지 않았습니다."),
+    JWT_NOT_FOUND(NOT_FOUND, "토큰 정보가 없습니다."),
+    INVALID_TOKEN_REQUEST(BAD_REQUEST, "잘못된 요청입니다."),
     INVALID_ACCESS_TOKEN(UNAUTHORIZED, "유효하지 않은 AccessToken 입니다."),
     INVALID_REFRESH_TOKEN(UNAUTHORIZED, "유효하지 않은 RefreshToken 입니다."),
     INVALID_AUTHORIZATION_CODE(UNAUTHORIZED, "유효하지 않은 인가 코드 입니다."),
@@ -42,6 +45,7 @@ public enum ErrorCode {
 
 
     //Member
+    VALIDATION_ERROR(BAD_REQUEST, "올바르지 않은 형식의 값입니다."),
     NOT_FOUND_MEMBER_ID(NOT_FOUND, "요청한 ID에 해당하는 사용자가 존재하지 않습니다."),
     NOT_FOUND_MEMBER_EMAIL(NOT_FOUND, "요청한 이메일에 해당하는 사용자가 존재하지 않습니다."),
     NOT_FOUND_MEMBER_PROFILE_FILE(NOT_FOUND, "요청한 이미지 파일을 찾을 수 없습니다."),
