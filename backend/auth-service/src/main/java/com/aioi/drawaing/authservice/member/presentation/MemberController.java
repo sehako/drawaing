@@ -3,18 +3,14 @@ package com.aioi.drawaing.authservice.member.presentation;
 import com.aioi.drawaing.authservice.common.code.ErrorCode;
 import com.aioi.drawaing.authservice.common.response.ApiResponseEntity;
 import com.aioi.drawaing.authservice.member.application.MemberService;
-import com.aioi.drawaing.authservice.member.presentation.request.MemberIdRequest;
 import com.aioi.drawaing.authservice.member.presentation.request.MemberReqDto;
 import com.aioi.drawaing.authservice.member.presentation.request.MemberUpdateRequest;
-import com.aioi.drawaing.authservice.member.presentation.response.MemberResponse;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.Errors;
 import org.springframework.validation.annotation.Validated;
@@ -42,15 +38,20 @@ public class MemberController {
     }
 
     @Operation(summary = "회원 정보 수정")
-    @PatchMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<?> update(@RequestBody MemberUpdateRequest memberUpdateRequest) {
-        return ApiResponseEntity.onSuccess(memberService.update(memberUpdateRequest));
+    @PatchMapping()
+    public ResponseEntity<?> update(
+            HttpServletRequest request,
+            @RequestBody MemberUpdateRequest memberUpdateRequest) {
+        Long memberId = Long.parseLong(request.getParameter("member-id"));
+        return ApiResponseEntity.onSuccess(memberService.update(memberUpdateRequest, memberId));
     }
 
     @Operation(summary = "회원 탈퇴")
-    @DeleteMapping
-    public ResponseEntity<?> delete(@RequestBody MemberIdRequest memberIdRequest) {
-        memberService.delete(memberIdRequest.memberId());
+    @DeleteMapping()
+    public ResponseEntity<?> delete(
+            HttpServletRequest request) {
+        Long memberId = Long.parseLong(request.getParameter("member-id"));
+        memberService.delete(memberId);
         return ApiResponseEntity.onSuccess("회원 탈퇴에 성공하였습니다.");
     }
 

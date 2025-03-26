@@ -12,13 +12,11 @@ import com.aioi.drawaing.authservice.common.jwt.TokenInfo;
 import com.aioi.drawaing.authservice.common.response.ApiResponseEntity;
 import com.aioi.drawaing.authservice.common.util.CookieUtil;
 import com.aioi.drawaing.authservice.common.util.HeaderUtil;
-import com.aioi.drawaing.authservice.common.util.S3ImageUploader;
-import com.aioi.drawaing.authservice.common.util.SecurityUtil;
-import com.aioi.drawaing.authservice.member.presentation.request.MemberReqDto.Login;
-import com.aioi.drawaing.authservice.member.presentation.request.MemberReqDto.SignUp;
 import com.aioi.drawaing.authservice.member.application.response.MemberLoginResponse;
 import com.aioi.drawaing.authservice.member.domain.Member;
 import com.aioi.drawaing.authservice.member.infrastructure.repository.MemberRepository;
+import com.aioi.drawaing.authservice.member.presentation.request.MemberReqDto.Login;
+import com.aioi.drawaing.authservice.member.presentation.request.MemberReqDto.SignUp;
 import com.aioi.drawaing.authservice.member.presentation.request.MemberUpdateRequest;
 import com.aioi.drawaing.authservice.member.presentation.response.MemberResponse;
 import com.aioi.drawaing.authservice.oauth.domain.entity.ProviderType;
@@ -29,13 +27,10 @@ import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.QueryTimeoutException;
-import org.springframework.boot.autoconfigure.cache.CacheProperties.Redis;
-import org.springframework.boot.autoconfigure.data.redis.RedisProperties.Lettuce.Cluster.Refresh;
 import org.springframework.data.redis.RedisConnectionFailureException;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,7 +41,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class MemberService {
     private final MemberRepository memberRepository;
-    private final S3ImageUploader s3ImageUploader;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final RedisTemplate<String, String> redisTemplate;
@@ -57,8 +51,8 @@ public class MemberService {
     }
 
     @Transactional
-    public MemberResponse update(MemberUpdateRequest memberUpdateRequest) {
-        Member member = getMember(memberUpdateRequest.memberId());
+    public MemberResponse update(MemberUpdateRequest memberUpdateRequest, Long memberId) {
+        Member member = getMember(memberId);
 
         Member updated = memberRepository.saveAndFlush(member.toBuilder()
                 .nickname(memberUpdateRequest.nickname() == null
@@ -164,7 +158,7 @@ public class MemberService {
         // 5. 쿠키에서 Refresh Token 삭제
         CookieUtil.deleteCookie(request, response, REFRESH_TOKEN);
 
-        return ApiResponseEntity.from(SuccessCode.LOGOUT_SUCCESS,null);
+        return ApiResponseEntity.from(SuccessCode.LOGOUT_SUCCESS, null);
     }
 
     private Member validateUser(String email, String password) {

@@ -32,10 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
     private final AuthService authService;
 
-    @Operation(summary = "토큰 재발급", responses = {
-            @ApiResponse(responseCode = "200", description = "토큰 재발급 성공"),
-            @ApiResponse(responseCode = "400", description = "토큰 재발급 실패"),
-    })
+    @Operation(summary = "토큰 재발급")
     @PostMapping("/token")
     public ResponseEntity<?> reissue(
             HttpServletRequest request,
