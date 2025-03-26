@@ -47,48 +47,14 @@ public class JwtTokenProvider {
         this.key = Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public String extractIdFromToken(String Token) {
-        Claims claims = Jwts.parser()
-                .verifyWith(key)
-                .build()
-                .parseSignedClaims(Token)
-                .getPayload();
-
-        return claims.getSubject();
+    public Long extractIdFromToken(String Token) {
+        return Long.parseLong(parseClaims(Token).getSubject());
     }
 
-    public com.aioi.drawaing.authservice.common.jwt.TokenInfo generateToken(Authentication authentication) {
-        String authorities = authentication.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.joining(","));
-
+    public TokenInfo generateToken(Long id, String role) {
         long now = (new Date()).getTime();
         String accessToken = Jwts.builder()
-                .subject(authentication.getName())
-                .claim(AUTHORITIES_KEY, authorities)
-                .expiration(new Date(now + ACCESS_TOKEN_EXPIRE_TIME))
-                .issuedAt(new Date(now))
-                .signWith(key)
-                .compact();
-
-        String refreshToken = Jwts.builder()
-                .subject(authentication.getName())
-                .expiration(new Date(now + REFRESH_TOKEN_EXPIRE_TIME))
-                .signWith(key)
-                .compact();
-
-        return com.aioi.drawaing.authservice.common.jwt.TokenInfo.builder()
-                .grantType(BEARER_TYPE)
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
-                .refreshTokenExpirationTime(REFRESH_TOKEN_EXPIRE_TIME)
-                .build();
-    }
-
-    public com.aioi.drawaing.authservice.common.jwt.TokenInfo generateToken(String id, String role) {
-        long now = (new Date()).getTime();
-        String accessToken = Jwts.builder()
-                .subject(id)
+                .subject(String.valueOf(id))
                 .claim(AUTHORITIES_KEY, role)
                 .expiration(new Date(now + ACCESS_TOKEN_EXPIRE_TIME))
                 .issuedAt(new Date(now))
@@ -96,13 +62,13 @@ public class JwtTokenProvider {
                 .compact();
 
         String refreshToken = Jwts.builder()
-                .subject(id)
+                .subject(String.valueOf(id))
                 .expiration(new Date(now + REFRESH_TOKEN_EXPIRE_TIME))
                 .signWith(key)
                 .compact();
 
         log.info("REFRESH_TOKEN_EXPIRE_TIME = {}", REFRESH_TOKEN_EXPIRE_TIME);
-        return com.aioi.drawaing.authservice.common.jwt.TokenInfo.builder()
+        return TokenInfo.builder()
                 .grantType(BEARER_TYPE)
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
