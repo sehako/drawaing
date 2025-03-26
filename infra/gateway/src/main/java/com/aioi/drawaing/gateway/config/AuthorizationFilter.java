@@ -38,10 +38,10 @@ public class AuthorizationFilter extends AbstractGatewayFilterFactory<Config> {
         return (exchange, chain) -> {
             try {
                 String accessToken = resolveAccessToken(exchange);
-                log.info("Access Token: {}", accessToken);
+                String refreshToken = resolveRefreshToken(exchange);
                 log.info("Path = {}", exchange.getRequest().getPath());
 
-                String userId = jwtProvider.getUserId(accessToken, "refreshToken");
+                String userId = jwtProvider.getUserId(accessToken, refreshToken);
 
                 // 기존 요청에서 새로운 요청 생성 후 헤더 추가
                 ServerHttpRequest mutatedRequest = exchange.getRequest().mutate()
@@ -55,7 +55,6 @@ public class AuthorizationFilter extends AbstractGatewayFilterFactory<Config> {
 
                 return chain.filter(mutatedExchange)
                         .then(Mono.fromRunnable(() -> {
-                            // Post-filter 로직이 필요하다면 여기에 작성
                         }));
             } catch (Exception e) {
                 return unauthorizedResponse(exchange);
@@ -80,7 +79,7 @@ public class AuthorizationFilter extends AbstractGatewayFilterFactory<Config> {
                 .getHeaders()
                 .getFirst(REFRESH_TOKEN);
 
-//        assert refreshToken != null;
+        assert refreshToken != null;
         return BearerParser.parse(refreshToken);
     }
 
