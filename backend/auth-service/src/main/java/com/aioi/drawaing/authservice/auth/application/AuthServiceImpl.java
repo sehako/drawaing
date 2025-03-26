@@ -129,10 +129,10 @@ public class AuthServiceImpl implements com.aioi.drawaing.authservice.auth.appli
         }
 
         // 3. 리프레시 토큰 복호화
-        String memberEmail = jwtTokenProvider.extractIdFromToken(refreshToken);
+        Long memberId = jwtTokenProvider.extractIdFromToken(refreshToken);
 
-        // 4. Redis에서 User email을 기반으로 저장된 Refresh Token 값을 가져옵니다.
-        String redisRefreshToken = redisTemplate.opsForValue().get("RT:" + memberEmail);
+        // 4. Redis 에서 MemberId 를 기반으로 저장된 Refresh Token 값을 가져옵니다.
+        String redisRefreshToken = redisTemplate.opsForValue().get("RT:" + memberId);
 
         // (추가) 로그아웃되어 Redis에 RefreshToken이 존재하지 않는 경우 처리
         if (ObjectUtils.isEmpty(redisRefreshToken)) {
@@ -144,10 +144,10 @@ public class AuthServiceImpl implements com.aioi.drawaing.authservice.auth.appli
         }
 
         // 5. 새로운 토큰 생성
-        TokenInfo tokenInfo = jwtTokenProvider.generateToken(memberEmail, RoleType.ROLE_USER.name());
+        TokenInfo tokenInfo = jwtTokenProvider.generateToken(memberId, RoleType.ROLE_USER.name());
 
         // 8. RefreshToken Redis 업데이트
-        redisTemplate.opsForValue().set("RT:" + memberEmail, tokenInfo.getRefreshToken(),
+        redisTemplate.opsForValue().set("RT:" + memberId, tokenInfo.getRefreshToken(),
                 tokenInfo.getRefreshTokenExpirationTime(), TimeUnit.MILLISECONDS);
 
         // 9. 쿠키에 Refresh Token 저장
