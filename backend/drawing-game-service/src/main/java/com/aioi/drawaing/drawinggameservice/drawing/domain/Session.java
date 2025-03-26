@@ -1,6 +1,8 @@
 package com.aioi.drawaing.drawinggameservice.drawing.domain;
 
 
+import com.aioi.drawaing.drawinggameservice.drawing.presentation.dto.ParticipantScoreInfo;
+import com.aioi.drawaing.drawinggameservice.drawing.presentation.dto.WinParticipantInfo;
 import com.aioi.drawaing.drawinggameservice.room.application.dto.AddRoomParticipantInfo;
 import lombok.*;
 import org.springframework.data.annotation.Id;
@@ -10,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 @Builder
 @Getter
@@ -49,7 +52,26 @@ public class Session {
     public void updateSessionStartInfo(List<String> words, List<AddRoomParticipantInfo> addParticipantInfos) {
         this.words = words;
         addParticipantInfos.forEach(addParticipantInfo -> {
-            addParticipant(addParticipantInfo.userId(), Participant.createParticipant(addParticipantInfo.nickname(), addParticipantInfo.characterUrl()));
+            addParticipant(addParticipantInfo.memberId(), Participant.createParticipant(addParticipantInfo.nickname(), addParticipantInfo.characterUrl()));
         });
+    }
+
+    public void incrementRoundCount(){
+        this.roundCount++;
+    }
+
+    public Map<Long, ParticipantScoreInfo> toParticipantScoreInfo(){
+        return participants.entrySet().stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey, // 기존 Long 키 유지
+                        entry -> new ParticipantScoreInfo(this.humanWin, this.humanWin*100+entry.getValue().getBonusPointsDrawing()+entry.getValue().getBonusPointsGuessing()) // 값 변환
+                ));
+    }
+
+    public void win(WinParticipantInfo winParticipantInfo, int correctScore, int drawScore){
+        this.humanWin++;
+        incrementRoundCount();
+        this.participants.get(winParticipantInfo.drawingMemberId()).incrementBonusPointsDrawing(drawScore);
+        this.participants.get(winParticipantInfo.answerMemberId()).incrementBonusPointsGuessing(correctScore);
     }
 }

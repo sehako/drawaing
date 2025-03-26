@@ -18,8 +18,9 @@ public class RoomService {
     private final DrawingService drawingService;
 
     //Transaction 처리 생각
-    public CreateRoomResponse createRoom(AddRoomParticipantInfo addRoomParticipantInfo, CreateRoomRequest createRoomRequest) {
-        Room room = Room.createRoom(addRoomParticipantInfo, createRoomRequest.title());
+    public CreateRoomResponse createRoom(CreateRoomRequest createRoomRequest) {
+        Room room = Room.createRoom(createRoomRequest.addRoomParticipantInfo(), createRoomRequest.title());
+        room.updateParticipantReady(createRoomRequest.addRoomParticipantInfo().memberId());
         roomRepository.save(room);
 
         Session session = drawingService.createSession(room.getId());
