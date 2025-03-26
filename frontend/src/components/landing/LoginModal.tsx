@@ -51,14 +51,15 @@ const LoginModal: React.FC<LoginModalProps> = ({
       
       console.log(response)
       await login({
-        memberId: response.data.memberId,
-        nickname: response.data.nickname,
-        email: response.data.email,
-        characterImage: response.data.characterImage,
-        providerType: response.data.providerType,
-        accessToken: response.data.AccessToken, // AccessToken으로 수정
-        level: response.data.level,
-        point: response.data.point
+        memberId: response.data.data.memberId,
+        nickname: response.data.data.nickname,
+        email: response.data.data.email,
+        characterImage: response.data.data.characterImage,
+        providerType: response.data.data.providerType,
+        accessToken: response.data.data.AccessToken, // AccessToken으로 수정
+        level: response.data.data.level,
+        point: response.data.data.point,
+        exp: response.data.data.exp,
       });
       
       alert('로그인에 성공했습니다!');

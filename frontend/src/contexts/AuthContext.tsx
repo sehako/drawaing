@@ -11,6 +11,7 @@ interface User {
   accessToken: string;
   level?: number;
   point?: number;
+  exp?: number;
 }
 
 interface AuthContextType {
