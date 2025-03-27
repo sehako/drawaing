@@ -12,6 +12,7 @@ import com.aioi.drawaing.drawinggameservice.drawing.presentation.dto.AddSessionP
 import com.aioi.drawaing.drawinggameservice.drawing.presentation.dto.WinParticipantInfo;
 import com.aioi.drawaing.drawinggameservice.room.application.dto.AddRoomParticipantInfo;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -21,6 +22,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class DrawingService {
@@ -89,7 +91,7 @@ public class DrawingService {
             int sessionTime = remainTime.get(sessionKey).decrementAndGet();
             int drawTime = remainTime.get(drawKey).decrementAndGet();
 
-            System.out.println("sessionTime: "+sessionTime+" drawTime: "+drawTime);
+            log.info("sessionTime: {} drawTime: {}", sessionTime, drawTime);
 
             if(sessionTime<=0){
                 remainTime.remove(sessionKey);
