@@ -297,7 +297,7 @@ const LandingPage: React.FC = () => {
                 </div>
                 
                 <div
-                  className={`transition-opacity duration-1000 ${
+                  className={`transition-all duration-1000 ${
                     isPageLoaded ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-10'
                   }`}
                   style={{ transitionDelay: '1.2s' }}
