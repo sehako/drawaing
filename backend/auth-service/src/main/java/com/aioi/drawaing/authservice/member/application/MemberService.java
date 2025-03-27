@@ -14,10 +14,13 @@ import com.aioi.drawaing.authservice.common.response.ApiResponseEntity;
 import com.aioi.drawaing.authservice.common.util.CookieUtil;
 import com.aioi.drawaing.authservice.common.util.HeaderUtil;
 import com.aioi.drawaing.authservice.member.application.response.MemberLoginResponse;
+import com.aioi.drawaing.authservice.member.domain.LevelExp;
+import com.aioi.drawaing.authservice.member.domain.LevelInfo;
 import com.aioi.drawaing.authservice.member.domain.Member;
 import com.aioi.drawaing.authservice.member.domain.NicknameCategory;
 import com.aioi.drawaing.authservice.member.exception.MemberException;
 import com.aioi.drawaing.authservice.member.infrastructure.repository.MemberRepository;
+import com.aioi.drawaing.authservice.member.presentation.request.MemberExpUpdateRequest;
 import com.aioi.drawaing.authservice.member.presentation.request.MemberReqDto.Login;
 import com.aioi.drawaing.authservice.member.presentation.request.MemberReqDto.SignUp;
 import com.aioi.drawaing.authservice.member.presentation.request.MemberUpdateRequest;
@@ -53,7 +56,7 @@ public class MemberService {
     }
 
     @Transactional
-    public MemberResponse update(MemberUpdateRequest memberUpdateRequest, Long memberId) {
+    public MemberResponse infoUpdate(MemberUpdateRequest memberUpdateRequest, Long memberId) {
         Member member = getMember(memberId);
 
         Member updated = memberRepository.saveAndFlush(member.toBuilder()
@@ -65,7 +68,20 @@ public class MemberService {
                         ? member.getPassword() : passwordEncoder.encode(memberUpdateRequest.password()))
                 .build());
 
+        memberRepository.saveAndFlush(updated);
         return MemberResponse.of(updated);
+    }
+
+    @Transactional
+    public void expUpdate(MemberExpUpdateRequest req, Long memberId) {
+        Member member = getMember(memberId);
+        LevelInfo newLevel = calculateNewLevel(member.getLevel(), member.getExp(), req.exp());
+        Member updated = memberRepository.saveAndFlush(member.toBuilder()
+                .level(newLevel.level())
+                .exp(newLevel.exp())
+                .point(member.getPoint() + req.point())
+                .build());
+        memberRepository.saveAndFlush(updated);
     }
 
     @Transactional
@@ -160,6 +176,7 @@ public class MemberService {
         return ApiResponseEntity.from(SuccessCode.LOGOUT_SUCCESS, null);
     }
 
+
     private Member validateUser(String email, String password) {
         // 1. 이메일로 사용자 조회
         Member member = memberRepository.findByEmail(email)
@@ -184,7 +201,7 @@ public class MemberService {
         return member;
     }
 
-    public MemberLoginResponse processLogin(Member member, HttpServletResponse response) {
+    private MemberLoginResponse processLogin(Member member, HttpServletResponse response) {
         // 토큰 생성
         TokenInfo tokenInfo = jwtTokenProvider.generateToken(member.getId(), RoleType.ROLE_USER.name());
         // Redis에 RefreshToken 저장
@@ -233,5 +250,22 @@ public class MemberService {
         String randomNumber = String.format("%04d", Math.abs(uuid.hashCode() % 10000));
 
         return adjective + noun + randomNumber;
+    }
+
+    private LevelInfo calculateNewLevel(int currentLevel, int currentExp, int addedExp) {
+        int totalExp = currentExp + addedExp;
+        int newLevel = currentLevel;
+
+        while (newLevel < 100) {
+            int expRequired = LevelExp.getExpRequired(newLevel);
+            if (totalExp >= expRequired) {
+                totalExp -= expRequired;
+                newLevel++;
+            } else {
+                break;
+            }
+        }
+
+        return new LevelInfo(newLevel, totalExp);
     }
 }
