@@ -82,7 +82,7 @@ public class MemberController {
     }
 
     @Operation(summary = "게스트 로그인")
-    @GetMapping("/guestlogin")
+    @PostMapping("/guestlogin")
     public ResponseEntity<?> guestLogin(HttpServletRequest request, HttpServletResponse response) {
         return memberService.guestLogin(request, response);
     }
