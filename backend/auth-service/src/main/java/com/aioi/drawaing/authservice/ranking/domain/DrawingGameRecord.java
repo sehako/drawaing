@@ -53,5 +53,37 @@ public class DrawingGameRecord {
 
     @Column(name = "last_played_at")
     private LocalDateTime lastPlayedAt;
+
+    public void updatePlayCount() {
+        this.playCount = (this.playCount == null) ? 1 : this.playCount + 1;
+    }
+
+    public void updateWinCount() {
+        this.win = (this.win == null) ? 1 : this.win + 1;
+    }
+
+    public void updateLoseCount() {
+        this.lose = (this.lose == null) ? 1 : this.lose + 1;
+    }
+
+    public void updateDrawCount() {
+        this.draw = (this.draw == null) ? 1 : this.draw + 1;
+    }
+
+    public void addRankScore(Integer score) {
+        this.rankScore = (this.rankScore == null) ? score : this.rankScore + score;
+    }
+
+    public void updateMaximumScore(Integer score) {
+        this.maximumScore = score;
+    }
+
+    public void updateAchievedAt() {
+        this.achievedAt = LocalDateTime.now();
+    }
+
+    public void updateLastPlayedAt() {
+        this.lastPlayedAt = LocalDateTime.now();
+    }
 }
 

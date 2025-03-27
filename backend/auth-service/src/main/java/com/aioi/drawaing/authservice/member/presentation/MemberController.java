@@ -3,6 +3,7 @@ package com.aioi.drawaing.authservice.member.presentation;
 import com.aioi.drawaing.authservice.common.code.ErrorCode;
 import com.aioi.drawaing.authservice.common.response.ApiResponseEntity;
 import com.aioi.drawaing.authservice.member.application.MemberService;
+import com.aioi.drawaing.authservice.member.presentation.request.MemberExpUpdateRequest;
 import com.aioi.drawaing.authservice.member.presentation.request.MemberReqDto;
 import com.aioi.drawaing.authservice.member.presentation.request.MemberUpdateRequest;
 import io.swagger.v3.oas.annotations.Operation;
@@ -39,11 +40,21 @@ public class MemberController {
 
     @Operation(summary = "회원 정보 수정")
     @PatchMapping()
-    public ResponseEntity<?> update(
+    public ResponseEntity<?> infoUpdate(
             HttpServletRequest request,
             @RequestBody MemberUpdateRequest memberUpdateRequest) {
         Long memberId = Long.parseLong(request.getParameter("member-id"));
-        return ApiResponseEntity.onSuccess(memberService.update(memberUpdateRequest, memberId));
+        return ApiResponseEntity.onSuccess(memberService.infoUpdate(memberUpdateRequest, memberId));
+    }
+
+    @Operation(summary = "회원 경험치 추가")
+    @PatchMapping("/exp")
+    public ResponseEntity<?> expUpdate(
+            HttpServletRequest request,
+            @RequestBody MemberExpUpdateRequest memberExpUpdateRequest) {
+        Long memberId = Long.parseLong(request.getParameter("member-id"));
+        memberService.expUpdate(memberExpUpdateRequest, memberId);
+        return ApiResponseEntity.onSuccess("경험치, 포인트 저장 완료");
     }
 
     @Operation(summary = "회원 탈퇴")
@@ -55,7 +66,7 @@ public class MemberController {
         return ApiResponseEntity.onSuccess("회원 탈퇴에 성공하였습니다.");
     }
 
-    @Operation(summary = "회원가입")
+    @Operation(summary = "회원 가입")
     @PostMapping("/signup")
     public ResponseEntity<?> signUp(@RequestBody @Validated MemberReqDto.SignUp signUp
             , Errors errors) {
