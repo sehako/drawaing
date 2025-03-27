@@ -1,7 +1,9 @@
 package com.aioi.drawaing.authservice.ranking.presentation.request;
 
+import com.aioi.drawaing.authservice.ranking.presentation.RankingController.GameStatus;
+
 public record GameResultRequest(
-        String win,
-        String score
+        GameStatus status,
+        Integer score
 ) {
 }
