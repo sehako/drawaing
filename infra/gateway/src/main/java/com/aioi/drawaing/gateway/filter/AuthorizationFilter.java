@@ -1,21 +1,18 @@
-package com.aioi.drawaing.gateway.config;
+package com.aioi.drawaing.gateway.filter;
 
-import com.aioi.drawaing.gateway.config.AuthorizationFilter.Config;
-import com.aioi.drawaing.gateway.exception.AuthenticationExceptionResponse;
+import com.aioi.drawaing.gateway.dto.MemberInfo;
+import com.aioi.drawaing.gateway.exception.AuthExceptionResponse;
 import com.aioi.drawaing.gateway.exception.FailureCode;
+import com.aioi.drawaing.gateway.exception.NoAccessTokenException;
+import com.aioi.drawaing.gateway.exception.NoRefreshTokenException;
+import com.aioi.drawaing.gateway.filter.AuthorizationFilter.Config;
 import com.aioi.drawaing.gateway.jwt.BearerParser;
 import com.aioi.drawaing.gateway.jwt.JwtProvider;
-import java.nio.charset.StandardCharsets;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
-import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.server.reactive.ServerHttpRequest;
-import org.springframework.http.server.reactive.ServerHttpResponse;
-import org.springframework.integration.json.SimpleJsonSerializer;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
@@ -23,8 +20,9 @@ import reactor.core.publisher.Mono;
 @Slf4j
 @Component
 public class AuthorizationFilter extends AbstractGatewayFilterFactory<Config> {
-    private static final String REFRESH_TOKEN = "refresh-token";
+    private static final String REFRESH_TOKEN = "refresh_token";
     private final JwtProvider jwtProvider;
+    private FailureCode failureCode = FailureCode.UNAUTHORIZED_TOKEN;
 
     public AuthorizationFilter(JwtProvider jwtProvider) {
         super(AuthorizationFilter.Config.class);
@@ -41,11 +39,16 @@ public class AuthorizationFilter extends AbstractGatewayFilterFactory<Config> {
                 String accessToken = resolveAccessToken(exchange);
                 String refreshToken = resolveRefreshToken(exchange);
 
-                String userId = jwtProvider.getUserId(accessToken, refreshToken);
+                MemberInfo memberFromJwt = jwtProvider.getMemberInfo(accessToken, refreshToken);
+
+                String role = memberFromJwt.role();
+                String requestPath = exchange.getRequest().getURI().getPath();
+
+                log.info("Member Info = {}", memberFromJwt);
 
                 // 기존 요청에서 새로운 요청 생성 후 헤더 추가
                 ServerHttpRequest mutatedRequest = exchange.getRequest().mutate()
-                        .header("user-id", userId)
+                        .header("member-id", memberFromJwt.memberId())
                         .build();
 
                 // 새로운 요청을 포함한 exchange로 체인 진행
@@ -57,11 +60,10 @@ public class AuthorizationFilter extends AbstractGatewayFilterFactory<Config> {
                         .then(Mono.fromRunnable(() -> {
                         }));
             } catch (Exception e) {
-                return unauthorizedResponse(exchange);
+                return AuthExceptionResponse.response(exchange, failureCode);
             }
         };
     }
-
 
     private String resolveAccessToken(ServerWebExchange exchange) {
         String accessToken = exchange
@@ -71,7 +73,10 @@ public class AuthorizationFilter extends AbstractGatewayFilterFactory<Config> {
 
         log.info("access token = {}", accessToken);
 
-        assert accessToken != null;
+        if (accessToken == null || accessToken.isEmpty()) {
+            failureCode = FailureCode.NO_ACCESS_TOKEN;
+            throw new NoAccessTokenException("no access token");
+        }
         return BearerParser.parse(accessToken);
     }
 
@@ -83,23 +88,11 @@ public class AuthorizationFilter extends AbstractGatewayFilterFactory<Config> {
 
         log.info("refresh_token = {}", refreshToken);
 
-        assert refreshToken != null;
+        if (refreshToken == null || refreshToken.isEmpty()) {
+            failureCode = FailureCode.NO_REFRESH_TOKEN;
+            throw new NoRefreshTokenException("no refresh token");
+        }
         return BearerParser.parse(refreshToken);
-    }
-
-
-    private Mono<Void> unauthorizedResponse(ServerWebExchange exchange) {
-        ServerHttpResponse response = exchange.getResponse();
-        response.setStatusCode(HttpStatus.UNAUTHORIZED);
-        response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
-
-        String errorJson = SimpleJsonSerializer
-                .toJson(AuthenticationExceptionResponse.onFailure(FailureCode.UNAUTHORIZED_TOKEN));
-
-        DataBuffer buffer = response.bufferFactory()
-                .wrap(errorJson.getBytes(StandardCharsets.UTF_8));
-
-        return response.writeWith(Mono.just(buffer));
     }
 
     public static class Config {

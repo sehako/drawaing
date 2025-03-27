@@ -1,5 +1,6 @@
 package com.aioi.drawaing.gateway.jwt;
 
+import com.aioi.drawaing.gateway.dto.MemberInfo;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
@@ -21,22 +22,20 @@ public class JwtProvider {
             @Value("${jwt.secret}") String secretKey,
             RedisTokenService redisTokenService
     ) {
-//        this.secretKey = Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
-        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
-        this.secretKey = Keys.hmacShaKeyFor(keyBytes);
+        this.secretKey = Keys.hmacShaKeyFor(Decoders.BASE64.decode(secretKey));
         this.redisTokenService = redisTokenService;
     }
 
-    public String getUserId(String accessToken, String refreshToken) {
-//        validateTokens(accessToken, refreshToken);
+    public MemberInfo getMemberInfo(String accessToken, String refreshToken) {
+        validateTokens(accessToken, refreshToken);
 
-//        if (redisTokenService.getToken(refreshToken) == null) {
-//            throw new RuntimeException();
-//        }
-        
-        String email = parseToken(accessToken).getSubject();
+        if (redisTokenService.getToken(refreshToken) == null) {
+            throw new RuntimeException();
+        }
+
+        String memberId = parseToken(accessToken).getSubject();
         String role = parseToken(accessToken).get(AUTHORITIES_KEY, String.class);
-        return email;
+        return new MemberInfo(memberId, role);
     }
 
     private Claims parseToken(String token) {
