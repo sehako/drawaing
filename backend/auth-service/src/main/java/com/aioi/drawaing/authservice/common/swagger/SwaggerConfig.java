@@ -1,28 +1,30 @@
 package com.aioi.drawaing.authservice.common.swagger;
 
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
+import io.swagger.v3.oas.models.servers.Server;
+import java.util.List;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+@OpenAPIDefinition
 @Configuration
 public class SwaggerConfig {
-    @Bean
-    public OpenAPI openAPI(){
-        return new OpenAPI()
-                .info(new Info().title("Demo API")
-                        .description("This is Demo API")
-                        .version("v0.0.1"))
-                .addSecurityItem(new SecurityRequirement().addList("JWT"))
-                .components(new Components().addSecuritySchemes("JWT", createAPIKeyScheme()));
-    }
 
-    private SecurityScheme createAPIKeyScheme() {
-        return new SecurityScheme().type(SecurityScheme.Type.HTTP)
-                .bearerFormat("JWT")
-                .scheme("bearer");
+    @Bean
+    public OpenAPI customOpenAPI(@Value("${openapi.service.url}") String url) {
+        return new OpenAPI()
+                .servers(List.of(new Server().url(url)))
+                .components(new Components().addSecuritySchemes("Bearer",
+                        new SecurityScheme().type(SecurityScheme.Type.HTTP).scheme("bearer").bearerFormat("JWT")))
+                .addSecurityItem(new SecurityRequirement().addList("Bearer"))
+                .info(new Info().title("✩ 특화 프로젝트")
+                        .description("유저 관련 API")
+                        .version("v0.1.0"));
     }
 }
