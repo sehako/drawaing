@@ -15,6 +15,7 @@ import com.aioi.drawaing.authservice.common.util.CookieUtil;
 import com.aioi.drawaing.authservice.common.util.HeaderUtil;
 import com.aioi.drawaing.authservice.member.application.response.MemberLoginResponse;
 import com.aioi.drawaing.authservice.member.domain.Member;
+import com.aioi.drawaing.authservice.member.domain.NicknameCategory;
 import com.aioi.drawaing.authservice.member.exception.MemberException;
 import com.aioi.drawaing.authservice.member.infrastructure.repository.MemberRepository;
 import com.aioi.drawaing.authservice.member.presentation.request.MemberReqDto.Login;
@@ -23,16 +24,15 @@ import com.aioi.drawaing.authservice.member.presentation.request.MemberUpdateReq
 import com.aioi.drawaing.authservice.member.presentation.response.MemberResponse;
 import com.aioi.drawaing.authservice.oauth.domain.entity.ProviderType;
 import com.aioi.drawaing.authservice.oauth.domain.entity.RoleType;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.hibernate.QueryTimeoutException;
-import org.springframework.data.redis.RedisConnectionFailureException;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -115,29 +115,26 @@ public class MemberService {
             if (member.getProviderType() != ProviderType.LOCAL) {
                 return ApiResponseEntity.onFailure(ErrorCode.NOT_SUPPORT_PROVIDER);
             }
-            // 토큰 생성
-            TokenInfo tokenInfo = jwtTokenProvider.generateToken(member.getId(), RoleType.ROLE_USER.name());
-            // Redis에 RefreshToken 저장
-            storeRefreshTokenInRedis(member.getId(), tokenInfo);
 
-            log.info("로그인 토큰 생성 Access Token: " + tokenInfo.getAccessToken());
-            log.info("로그인 토큰 생성 Refresh Token: " + tokenInfo.getRefreshToken());
-            // 쿠키에 Refresh Token 저장
-            CookieUtil.addCookie(response, REFRESH_TOKEN, tokenInfo.getRefreshToken(),
-                    getRefreshTokenExpireTimeCookie());
+            return ApiResponseEntity.onSuccess(processLogin(member, response));
+        } catch (Exception e) {
+            log.error("Login failed: {}", e.getMessage());
+            return ApiResponseEntity.onFailure(ErrorCode.SERVER_ERROR);
+        }
+    }
 
-            MemberLoginResponse memberLoginResponse = MemberLoginResponse.of(member, tokenInfo.getAccessToken());
+    @Transactional
+    public ResponseEntity<?> guestLogin(HttpServletRequest request, HttpServletResponse response) {
+        try {
+            String refreshToken = CookieUtil.getCookie(request, REFRESH_TOKEN).map(Cookie::getValue).orElse(null);
+            log.info("Refresh token: {}", refreshToken);
 
-            return ApiResponseEntity.onSuccess(memberLoginResponse);
-        } catch (BadCredentialsException e) {
-            log.error("Login failed: Invalid credentials - {}", e.getMessage());
-            return ApiResponseEntity.onFailure(ErrorCode.INVALID_PASSWORD);
-        } catch (RedisConnectionFailureException e) {
-            log.error("Login failed: Redis connection error - {}", e.getMessage());
-            return ApiResponseEntity.onFailure(ErrorCode.REDIS_CONNECTION_FAILURE);
-        } catch (QueryTimeoutException e) {
-            log.error("Login failed: Redis timeout error - {}", e.getMessage());
-            return ApiResponseEntity.onFailure(ErrorCode.REDIS_TIMEOUT);
+            Member member = processGuestSignUp(refreshToken);
+
+            return ApiResponseEntity.onSuccess(processLogin(member, response));
+        } catch (Exception e) {
+            log.error("GuestLogin failed: {}", e.getMessage());
+            return ApiResponseEntity.onFailure(ErrorCode.SERVER_ERROR);
         }
     }
 
@@ -174,6 +171,50 @@ public class MemberService {
         return member;
     }
 
+    private Member guestSignUp() {
+        String randomNickname = generateUniqueNickname();
+        log.info("nickname: {}", randomNickname);
+        Member member = Member.builder()
+                .nickname(randomNickname)
+                .role(RoleType.ROLE_GUEST)
+                .providerType(ProviderType.GUEST)
+                // 기본 캐릭터 이미지 넣어줄 예정
+                .build();
+        memberRepository.save(member);
+        return member;
+    }
+
+    public MemberLoginResponse processLogin(Member member, HttpServletResponse response) {
+        // 토큰 생성
+        TokenInfo tokenInfo = jwtTokenProvider.generateToken(member.getId(), RoleType.ROLE_USER.name());
+        // Redis에 RefreshToken 저장
+        storeRefreshTokenInRedis(member.getId(), tokenInfo);
+        log.info("로그인 토큰 생성 Access Token: " + tokenInfo.getAccessToken());
+        log.info("로그인 토큰 생성 Refresh Token: " + tokenInfo.getRefreshToken());
+        // 쿠키에 Refresh Token 저장
+        CookieUtil.addCookie(response, REFRESH_TOKEN, tokenInfo.getRefreshToken(),
+                getRefreshTokenExpireTimeCookie());
+
+        return MemberLoginResponse.of(member, tokenInfo.getAccessToken());
+    }
+
+    private Member processGuestSignUp(String refreshToken) {
+        // 토큰이 없거나 만료되었으면 회원가입 진행
+        if (refreshToken == null || !jwtTokenProvider.validateToken(refreshToken)) {
+            return guestSignUp();
+        }
+        Member member = findMemberByToken(refreshToken);
+        if (member.getRole() != RoleType.ROLE_GUEST) {
+            return guestSignUp();
+        }
+        return member;
+    }
+
+    private Member findMemberByToken(String refreshToken) {
+        Long memberId = jwtTokenProvider.extractIdFromToken(refreshToken);
+        return memberRepository.findMemberById(memberId).orElseThrow();
+    }
+
     private void storeRefreshTokenInRedis(Long memberId, TokenInfo tokenInfo) {
         redisTemplate.opsForValue().set(
                 "RT:" + memberId,
@@ -182,5 +223,15 @@ public class MemberService {
                 TimeUnit.MILLISECONDS
         );
         log.info("Redis refresh token stored: RT:{}", memberId);
+    }
+
+    private String generateUniqueNickname() {
+        UUID uuid = UUID.randomUUID();
+        String adjective = NicknameCategory.ADJECTIVE.getWord(uuid.getLeastSignificantBits());
+        String noun = NicknameCategory.NOUN.getWord(uuid.getMostSignificantBits());
+
+        String randomNumber = String.format("%04d", Math.abs(uuid.hashCode() % 10000));
+
+        return adjective + noun + randomNumber;
     }
 }

@@ -81,6 +81,12 @@ public class MemberController {
         return memberService.login(response, login);
     }
 
+    @Operation(summary = "게스트 로그인")
+    @GetMapping("/guestlogin")
+    public ResponseEntity<?> guestLogin(HttpServletRequest request, HttpServletResponse response) {
+        return memberService.guestLogin(request, response);
+    }
+
     @Operation(summary = "로그아웃")
     @PostMapping("/logout")
     public ResponseEntity<?> logout(
