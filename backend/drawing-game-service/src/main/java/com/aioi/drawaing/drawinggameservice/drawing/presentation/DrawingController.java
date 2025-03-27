@@ -23,8 +23,6 @@ public class DrawingController {
     @MessageMapping("/session.draw/{roomId}/{sessionId}")
     public void send(@DestinationVariable String roomId, @DestinationVariable String sessionId, @Payload List<DrawInfo> drawInfo) {
         log.info("send message: {}", drawInfo.toString());
-//        System.out.println("send message: " + message + " " + roomId + " " + sessionId);
-
         simpMessagingTemplate.convertAndSend("/topic/session.draw/" + roomId + "/" + sessionId, drawInfo);
     }
 
@@ -40,7 +38,7 @@ public class DrawingController {
 
     @MessageMapping("/session.correct/{roomId}/{sessionId}")
     public void win(@DestinationVariable String roomId, @DestinationVariable String sessionId, @Payload WinParticipantInfo winParticipantInfo) {
-        System.out.println(sessionId);
+        log.info(sessionId);
         drawingService.win(roomId, sessionId, winParticipantInfo);
     }
 
