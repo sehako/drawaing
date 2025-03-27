@@ -12,6 +12,7 @@ import com.aioi.drawaing.drawinggameservice.drawing.presentation.dto.AddSessionP
 import com.aioi.drawaing.drawinggameservice.drawing.presentation.dto.WinParticipantInfo;
 import com.aioi.drawaing.drawinggameservice.room.application.dto.AddRoomParticipantInfo;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -21,6 +22,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class DrawingService {
@@ -37,13 +39,13 @@ public class DrawingService {
     private final int MAX_PARTICIPANT_NUMBER = 4;
     //세션 시작
     //세션 시작할 때, 게임 제시어 주기
-    //세션 시작할 때, 타이머 시작 + 전달
+    //세션 시작할 때, 타이머 시작 + 전달v
     //세션 시작할 때, 게임 어떻게 할건지 의논 필요
 
 
     public void startSession(String roomId, String sessionId, List<AddRoomParticipantInfo> addParticipantInfos) {
         List<String> words = extractWords(DEFAULT_WORD_COUNT);
-        System.out.println("startSession: "+sessionId);
+        log.info("startSession: {}", sessionId);
         Session session = findSession(sessionId);
 
         session.updateSessionStartInfo(words, addParticipantInfos);
@@ -119,7 +121,7 @@ public class DrawingService {
 
     private void endSession(String roomId, String sessionId){
         Session session = findSession(sessionId);
-        System.out.println("endSession: "+sessionId);
+        log.info("endSession: {}", sessionId);
         drawMessagePublisher.publishGameResult("/topic/session.result/"+roomId+"/"+sessionId, session.toParticipantScoreInfo());
     }
 
