@@ -23,6 +23,8 @@ public class CorsConfig {
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/auth/**", config);
+        source.registerCorsConfiguration("/game/api/v1/drawing/room/**", config);
+        source.registerCorsConfiguration("/game-test/api/v1/drawing/room/**", config);
         return new CorsWebFilter(source);
     }
 }
