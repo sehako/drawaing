@@ -29,18 +29,16 @@ public class DrawingService {
     private final Map<String, ScheduledFuture<?>> scheduledFutures=new ConcurrentHashMap<>(); //type(session, draw)+sessionId
     private final ScheduledExecutorService schedule;
     private final KeywordRepository keywordRepository;
-    private final RoomSesseionRepository roomSesseionRepository;
     private final SessionRepository sessionRepository;
     private final int DEFAULT_WORD_COUNT = 30;
-    private final int DEFAULT_SESSION_TIMER = 10;
-    private final int DEFAULT_DRAW_TIMER = 5;
+    private final int DEFAULT_SESSION_TIMER = 600;
+    private final int DEFAULT_DRAW_TIMER = 20;
     private final int MAX_PARTICIPANT_NUMBER = 4;
+
     //세션 시작
     //세션 시작할 때, 게임 제시어 주기
     //세션 시작할 때, 타이머 시작 + 전달
     //세션 시작할 때, 게임 어떻게 할건지 의논 필요
-
-
     public void startSession(String roomId, String sessionId, List<AddRoomParticipantInfo> addParticipantInfos) {
         List<String> words = extractWords(DEFAULT_WORD_COUNT);
         System.out.println("startSession: "+sessionId);
