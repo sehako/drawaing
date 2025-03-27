@@ -15,6 +15,7 @@ import com.aioi.drawaing.authservice.common.util.CookieUtil;
 import com.aioi.drawaing.authservice.common.util.HeaderUtil;
 import com.aioi.drawaing.authservice.member.application.response.MemberLoginResponse;
 import com.aioi.drawaing.authservice.member.domain.Member;
+import com.aioi.drawaing.authservice.member.domain.NicknameCategory;
 import com.aioi.drawaing.authservice.member.exception.MemberException;
 import com.aioi.drawaing.authservice.member.infrastructure.repository.MemberRepository;
 import com.aioi.drawaing.authservice.member.presentation.request.MemberReqDto.Login;
@@ -30,11 +31,8 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.hibernate.QueryTimeoutException;
-import org.springframework.data.redis.RedisConnectionFailureException;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,9 +47,6 @@ public class MemberService {
     private final JwtTokenProvider jwtTokenProvider;
     private final RedisTemplate<String, String> redisTemplate;
     private final VerificationCodeCacheRepository verificationCodeCacheRepository;
-
-    private static final String[] ADJECTIVES = {"행복한", "즐거운", "신나는", "멋진", "용감한"};
-    private static final String[] NOUNS = {"호랑이", "독수리", "사자", "펭귄", "코끼리", "병아리", "족제비"};
 
     public MemberResponse get(long memberId) {
         return MemberResponse.of(memberRepository.findMemberById(memberId).orElseThrow());
@@ -122,15 +117,9 @@ public class MemberService {
             }
 
             return ApiResponseEntity.onSuccess(processLogin(member, response));
-        } catch (BadCredentialsException e) {
-            log.error("Login failed: Invalid credentials - {}", e.getMessage());
-            return ApiResponseEntity.onFailure(ErrorCode.INVALID_PASSWORD);
-        } catch (RedisConnectionFailureException e) {
-            log.error("Login failed: Redis connection error - {}", e.getMessage());
-            return ApiResponseEntity.onFailure(ErrorCode.REDIS_CONNECTION_FAILURE);
-        } catch (QueryTimeoutException e) {
-            log.error("Login failed: Redis timeout error - {}", e.getMessage());
-            return ApiResponseEntity.onFailure(ErrorCode.REDIS_TIMEOUT);
+        } catch (Exception e) {
+            log.error("Login failed: {}", e.getMessage());
+            return ApiResponseEntity.onFailure(ErrorCode.SERVER_ERROR);
         }
     }
 
@@ -139,23 +128,13 @@ public class MemberService {
         try {
             String refreshToken = CookieUtil.getCookie(request, REFRESH_TOKEN).map(Cookie::getValue).orElse(null);
             log.info("Refresh token: {}", refreshToken);
-            Member member;
-            // 토큰이 없거나 만료되었으면 회원가입 진행
-            if (refreshToken == null || !jwtTokenProvider.validateToken(refreshToken)) {
-                member = guestSignUp();
-            } else {
-                //토큰에서 멤버 가져옴
-                Long memberId = jwtTokenProvider.extractIdFromToken(refreshToken);
-                member = memberRepository.findMemberById(memberId).orElseThrow();
-            }
+
+            Member member = processGuestSignUp(refreshToken);
 
             return ApiResponseEntity.onSuccess(processLogin(member, response));
-        } catch (RedisConnectionFailureException e) {
-            log.error("Login failed: Redis connection error - {}", e.getMessage());
-            return ApiResponseEntity.onFailure(ErrorCode.REDIS_CONNECTION_FAILURE);
-        } catch (QueryTimeoutException e) {
-            log.error("Login failed: Redis timeout error - {}", e.getMessage());
-            return ApiResponseEntity.onFailure(ErrorCode.REDIS_TIMEOUT);
+        } catch (Exception e) {
+            log.error("GuestLogin failed: {}", e.getMessage());
+            return ApiResponseEntity.onFailure(ErrorCode.SERVER_ERROR);
         }
     }
 
@@ -217,8 +196,23 @@ public class MemberService {
                 getRefreshTokenExpireTimeCookie());
 
         return MemberLoginResponse.of(member, tokenInfo.getAccessToken());
+    }
 
+    private Member processGuestSignUp(String refreshToken) {
+        // 토큰이 없거나 만료되었으면 회원가입 진행
+        if (refreshToken == null || !jwtTokenProvider.validateToken(refreshToken)) {
+            return guestSignUp();
+        }
+        Member member = findMemberByToken(refreshToken);
+        if (member.getRole() != RoleType.ROLE_GUEST) {
+            return guestSignUp();
+        }
+        return member;
+    }
 
+    private Member findMemberByToken(String refreshToken) {
+        Long memberId = jwtTokenProvider.extractIdFromToken(refreshToken);
+        return memberRepository.findMemberById(memberId).orElseThrow();
     }
 
     private void storeRefreshTokenInRedis(Long memberId, TokenInfo tokenInfo) {
@@ -233,12 +227,11 @@ public class MemberService {
 
     private String generateUniqueNickname() {
         UUID uuid = UUID.randomUUID();
-
-        int adjectiveIndex = Math.abs((int) (uuid.getLeastSignificantBits() % ADJECTIVES.length));
-        int nounIndex = Math.abs((int) (uuid.getMostSignificantBits() % NOUNS.length));
+        String adjective = NicknameCategory.ADJECTIVE.getWord(uuid.getLeastSignificantBits());
+        String noun = NicknameCategory.NOUN.getWord(uuid.getMostSignificantBits());
 
         String randomNumber = String.format("%04d", Math.abs(uuid.hashCode() % 10000));
 
-        return ADJECTIVES[adjectiveIndex] + NOUNS[nounIndex] + randomNumber;
+        return adjective + noun + randomNumber;
     }
 }
