@@ -40,7 +40,7 @@ public class RankingService {
     private DrawingGameRecord getOrCreateRecord(Long memberId) {
         return recordRepository.findById(memberId)
                 .orElseGet(() -> DrawingGameRecord.builder()
-                        .memberId(memberId)
+                        .id(memberId)
                         .playCount(0)
                         .win(0)
                         .draw(0)
@@ -50,7 +50,7 @@ public class RankingService {
     }
 
     private void updateMaximumScore(DrawingGameRecord record, Integer score) {
-        if (record.getMaximumScore() == null || score > record.getMaximumScore()) {
+        if (score > record.getMaximumScore()) {
             record.updateMaximumScore(score);
             record.updateAchievedAt();
         }
