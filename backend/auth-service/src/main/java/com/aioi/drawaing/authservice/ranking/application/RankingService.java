@@ -2,7 +2,7 @@ package com.aioi.drawaing.authservice.ranking.application;
 
 import com.aioi.drawaing.authservice.ranking.domain.DrawingGameRecord;
 import com.aioi.drawaing.authservice.ranking.infrastructure.repository.DrawingGameRecordRepository;
-import com.aioi.drawaing.authservice.ranking.presentation.RankingController.GameStatus;
+import com.aioi.drawaing.authservice.ranking.presentation.request.GameResultRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,21 +14,22 @@ public class RankingService {
     private final DrawingGameRecordRepository recordRepository;
 
     @Transactional
-    public DrawingGameRecord updateGameRecord(Long memberId, GameStatus status, Integer score) {
-        DrawingGameRecord record = getOrCreateRecord(memberId);
+    public DrawingGameRecord updateGameRecord(GameResultRequest req) {
+
+        DrawingGameRecord record = getOrCreateRecord(req.memberId());
 
         record.updatePlayCount();
         record.updateLastPlayedAt();
-        record.addRankScore(score);
+        record.addRankScore(req.score());
 
-        switch (status) {
+        switch (req.status()) {
             case WIN -> {
                 record.updateWinCount();
-                updateMaximumScore(record, score);
+                updateMaximumScore(record, req.score());
             }
             case DRAW -> {
                 record.updateDrawCount();
-                updateMaximumScore(record, score);
+                updateMaximumScore(record, req.score());
             }
             case LOSE -> record.updateLoseCount();
             default -> throw new IllegalArgumentException("Invalid game status");

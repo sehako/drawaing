@@ -4,7 +4,6 @@ import com.aioi.drawaing.authservice.common.response.ApiResponseEntity;
 import com.aioi.drawaing.authservice.ranking.application.RankingService;
 import com.aioi.drawaing.authservice.ranking.presentation.request.GameResultRequest;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -25,11 +24,9 @@ public class RankingController {
 
     @PatchMapping()
     public ResponseEntity<?> updateRecord(
-            HttpServletRequest request,
             @RequestBody GameResultRequest gameResultRequest) {
-        Long memberId = Long.parseLong(request.getParameter("member-id"));
         return ApiResponseEntity.onSuccess(
-                rankingService.updateGameRecord(memberId, gameResultRequest.status(), gameResultRequest.score())
+                rankingService.updateGameRecord(gameResultRequest)
         );
     }
 }
