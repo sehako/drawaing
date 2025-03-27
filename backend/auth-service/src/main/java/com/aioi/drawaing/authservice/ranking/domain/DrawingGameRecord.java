@@ -1,15 +1,9 @@
 package com.aioi.drawaing.authservice.ranking.domain;
 
-import com.aioi.drawaing.authservice.member.domain.Member;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.MapsId;
-import jakarta.persistence.OneToOne;
 import java.time.LocalDateTime;
-import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -19,59 +13,56 @@ import lombok.NoArgsConstructor;
 @Getter
 @Builder
 @AllArgsConstructor
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor
 public class DrawingGameRecord {
+
     @Id
-    @Column(name = "member_id")
-    private Long memberId;
+    @Column(name = "drawing_game_record_id")
+    private Long id;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @MapsId
-    @JoinColumn(name = "member_id")
-    private Member member;
+    @Column(name = "maximum_score", nullable = false, columnDefinition = "INT DEFAULT 0")
+    private int maximumScore;
 
-    @Column(name = "maximum_score")
-    private Integer maximumScore;
-
-    @Column(name = "achieved_at")
+    @Column(name = "achieved_at", nullable = false, columnDefinition = "DATETIME DEFAULT CURRENT_TIMESTAMP")
     private LocalDateTime achievedAt;
 
-    @Column(name = "rank_score")
-    private Integer rankScore;
+    @Column(name = "rank_score", nullable = false, columnDefinition = "INT DEFAULT 0")
+    private int rankScore;
 
-    @Column(name = "play_count")
-    private Integer playCount;
+    @Column(name = "play_count", nullable = false, columnDefinition = "INT DEFAULT 0")
+    private int playCount;
 
-    @Column(name = "win")
-    private Integer win;
+    @Column(nullable = false, columnDefinition = "INT DEFAULT 0")
+    private int win;
 
-    @Column(name = "draw")
-    private Integer draw;
+    @Column(nullable = false, columnDefinition = "INT DEFAULT 0")
+    private int draw;
 
-    @Column(name = "lose")
-    private Integer lose;
+    @Column(nullable = false, columnDefinition = "INT DEFAULT 0")
+    private int lose;
 
-    @Column(name = "last_played_at")
+    @Column(name = "last_played_at", nullable = false,
+            columnDefinition = "DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
     private LocalDateTime lastPlayedAt;
 
     public void updatePlayCount() {
-        this.playCount = (this.playCount == null) ? 1 : this.playCount + 1;
+        this.playCount++;
     }
 
     public void updateWinCount() {
-        this.win = (this.win == null) ? 1 : this.win + 1;
+        this.win++;
     }
 
     public void updateLoseCount() {
-        this.lose = (this.lose == null) ? 1 : this.lose + 1;
+        this.lose++;
     }
 
     public void updateDrawCount() {
-        this.draw = (this.draw == null) ? 1 : this.draw + 1;
+        this.draw++;
     }
 
     public void addRankScore(Integer score) {
-        this.rankScore = (this.rankScore == null) ? score : this.rankScore + score;
+        this.rankScore += score;
     }
 
     public void updateMaximumScore(Integer score) {

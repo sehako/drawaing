@@ -27,7 +27,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 @Getter
 @Builder(toBuilder = true)
 @AllArgsConstructor
-@NoArgsConstructor(access = lombok.AccessLevel.PROTECTED)
+@NoArgsConstructor
 public class Member extends BaseEntity implements UserDetails {
     @Id
     @Column(name = "member_id")

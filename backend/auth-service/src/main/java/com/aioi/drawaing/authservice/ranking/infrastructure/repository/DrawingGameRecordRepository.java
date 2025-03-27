@@ -13,7 +13,7 @@ public interface DrawingGameRecordRepository extends JpaRepository<DrawingGameRe
     List<DrawingGameRecord> findTop10ByOrderByRankScoreDesc();
 
     // 특정 멤버의 최근 게임 기록을 가져오는 메서드
-    Optional<DrawingGameRecord> findFirstByMemberIdOrderByLastPlayedAtDesc(Long memberId);
+    Optional<DrawingGameRecord> findFirstByIdOrderByLastPlayedAtDesc(Long memberId);
 
     // 특정 기간 동안 플레이한 기록이 있는 멤버들의 기록을 가져오는 메서드
     List<DrawingGameRecord> findByLastPlayedAtBetween(LocalDateTime start, LocalDateTime end);
