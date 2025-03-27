@@ -1,4 +1,4 @@
 package com.aioi.drawaing.drawinggameservice.room.application.dto;
 
-public record CreateRoomResponse(String code, RoomInfo roomInfo) {
+public record RoomInfo(String roomId, String roomCode) {
 }

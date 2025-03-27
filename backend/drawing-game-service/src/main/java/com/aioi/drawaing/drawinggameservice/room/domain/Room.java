@@ -19,6 +19,7 @@ public class Room {
     private String id;
     private Long hostId;
     private String title;
+    private String code;
     private String sessionId;
     private String status;
     @Builder.Default
@@ -28,6 +29,7 @@ public class Room {
         Room room = Room.builder()
             .title(title)
             .hostId(addRoomParticipantInfo.memberId())
+            .code(RandomCodeGenerator.generateRandomCode(6))
             .status(RoomStatus.READY.name())
             .build();
         room.getParticipants().put(addRoomParticipantInfo.memberId(), RoomParticipant.createRoomParticipant(addRoomParticipantInfo.nickname(), addRoomParticipantInfo.characterUrl()));
