@@ -73,8 +73,8 @@ public class MemberService {
     }
 
     @Transactional
-    public void expUpdate(MemberExpUpdateRequest req, Long memberId) {
-        Member member = getMember(memberId);
+    public void expUpdate(MemberExpUpdateRequest req) {
+        Member member = getMember(req.memberId());
         LevelInfo newLevel = calculateNewLevel(member.getLevel(), member.getExp(), req.exp());
         Member updated = memberRepository.saveAndFlush(member.toBuilder()
                 .level(newLevel.level())

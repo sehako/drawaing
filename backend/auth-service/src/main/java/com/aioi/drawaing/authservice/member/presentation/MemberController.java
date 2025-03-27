@@ -50,10 +50,8 @@ public class MemberController {
     @Operation(summary = "회원 경험치 추가")
     @PatchMapping("/exp")
     public ResponseEntity<?> expUpdate(
-            HttpServletRequest request,
             @RequestBody MemberExpUpdateRequest memberExpUpdateRequest) {
-        Long memberId = Long.parseLong(request.getParameter("member-id"));
-        memberService.expUpdate(memberExpUpdateRequest, memberId);
+        memberService.expUpdate(memberExpUpdateRequest);
         return ApiResponseEntity.onSuccess("경험치, 포인트 저장 완료");
     }
 
