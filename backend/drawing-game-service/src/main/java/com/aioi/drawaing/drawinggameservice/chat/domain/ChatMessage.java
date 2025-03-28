@@ -1,6 +1,9 @@
 package com.aioi.drawaing.drawinggameservice.chat.domain;
 
+import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
+
+import com.aioi.drawaing.drawinggameservice.chat.presentation.dto.ChatMessageDto;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -24,6 +27,14 @@ public class ChatMessage {
     private String roomId; // 방 번호
     private String message; // 채팅 메시지
     @CreatedDate
-    private ZonedDateTime createdAt;
+    private LocalDateTime createdAt;
+
+    public static ChatMessage createMessage(ChatMessageDto messageDto) {
+        return ChatMessage.builder()
+                .senderId(messageDto.senderId())
+                .roomId(messageDto.roomId())
+                .message(messageDto.message())
+                .build();
+    }
 }
 
