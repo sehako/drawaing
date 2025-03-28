@@ -4,5 +4,5 @@ import com.aioi.drawaing.drawinggameservice.room.domain.RoomParticipant;
 
 import java.util.Map;
 
-public record RoomInfoResponse(String sessionId, Map<Long, RoomParticipant> participants) {
+public record RoomInfoResponse(String sessionId, Long hostId, Map<Long, RoomParticipant> participants) {
 }
