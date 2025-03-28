@@ -1,0 +1,9 @@
+fastAPI에 onnx 쓰면서 필요없어진듯. 다만 변형할때는 쓰인다
+pip install --pre torch --index-url https://download.pytorch.org/whl/nightly/cu121
+pip install --pre torchvision --index-url https://download.pytorch.org/whl/nightly/cu121
+pip install --pre torchaudio --index-url https://download.pytorch.org/whl/nightly/cu121
+
+그리고 onnx 문제 때문에 가상환경 설정함.
+cmd에서 
+.\fa_env\Scripts\Activate 하고 실행해볼 것.
+
