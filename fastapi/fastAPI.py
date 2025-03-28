@@ -1,85 +1,77 @@
 from fastapi import FastAPI, File, UploadFile
-import torch
-import torchvision.transforms as transforms
+import onnxruntime as ort
+import numpy as np
 from PIL import Image
 from io import BytesIO
-from model.network import DrawAingCNN  # 모델 클래스 임포트. 필요하다니 불러옴...
 from fastapi.middleware.cors import CORSMiddleware
-import base64  # 추가
+import base64  # Base64 변환 추가
 
 app = FastAPI()
 
-
+# CORS 설정 (프론트엔드와 연동을 위해 필요)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 모든 도메인 허용 (필요에 따라 수정 가능)
+    allow_origins=["*"],  # 모든 도메인 허용 (보안상 필요하면 특정 도메인만 허용)
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# GPU가 있다면 GPU 사용, 없다면 CPU 사용
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# ✅ ONNX 모델 로드 및 최적화 설정
+onnx_model_path = "draw_classify_model1.onnx"  # 변환된 ONNX 모델 경로
+sess_options = ort.SessionOptions()
+sess_options.intra_op_num_threads = 2  # CPU 연산 최적화
+sess_options.execution_mode = ort.ExecutionMode.ORT_SEQUENTIAL  # 순차 실행
+sess_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL  # 그래프 최적화 활성화
 
-# 모델 로드 (사전에 학습된 CNN 모델)
-model = DrawAingCNN(num_classes=30)  # 클래스 수를 맞춰서 초기화
-model.load_state_dict(torch.load("draw_classify_model1.pth", map_location=device))
-model.to(device)  # 모델을 GPU 또는 CPU로 이동
-model.eval()
+ort_session = ort.InferenceSession(onnx_model_path, sess_options)
 
-# 클래스 라벨 리스트 (실제 학습 데이터에 맞게 수정)
-class_labels = ['airplane', 'ant', 'apple', 'axe', 'banana', 
-                'barn', 'basket', 'bat', 'bear', 'bed', 
-                'bee', 'bird', 'bread', 'broccoli', 'broom', 
+# ✅ 클래스 라벨 리스트
+class_labels = ['ant', 'apple', 'axe', 'backpack', 'banana', 
+                'barn', 'basket', 'bear', 'bed', 'bee', 
+                'bench', 'bread', 'bridge', 'broccoli', 'broom', 
                 'bucket', 'bush', 'butterfly', 'carrot', 'cat', 
-                'chair', 'clock', 'cloud', 'cow', 'cup', 
-                'dog', 'door', 'duck', 'eyeglasses', 'feather', 
-                'fence', 'fish', 'flower', 'frog', 'garden hose', 
-                'grapes', 'grass', 'hammer', 'hedgehog', 'horse', 
-                'house', 'key', 'ladder', 'leaf', 'light bulb', 
-                'moon', 'mosquito', 'mountain', 'mouse', 'mushroom', 
-                'onion', 'peanut', 'pear', 'peas', 'pencil', 
-                'pig', 'pineapple', 'potato', 'rabbit', 'raccoon', 
-                'rain', 'rainbow', 'rake', 'river', 'sandwich', 
-                'saw', 'sheep', 'shovel', 'snail', 'snake', 
-                'snowflake', 'snowman', 'spider', 'star', 'strawberry', 
-                'sun', 'swan', 'table', 'tractor', 'tree', 
-                'truck', 'umbrella', 'watermelon', 'windmill']
+                'chair', 'cloud', 'cow', 'cup', 'dog', 
+                'donut', 'door', 'duck', 'feather', 'fence']
 
-# 이미지 변환 함수
+# ✅ 이미지 전처리 함수 (ONNX 모델 입력 형식에 맞게 변환)
 def transform_image(image_bytes):
-    image = Image.open(BytesIO(image_bytes)).convert('RGB')  # RGBA나 RGB 이미지를 먼저 불러온 후
-    print(f"Original Image Size: {image.size}")  # 이미지 크기 확인
+    image = Image.open(BytesIO(image_bytes)).convert("RGB")  # RGB 변환
+    print(f"Original Image Size: {image.size}")  # 디버깅용 출력
 
-    transform = transforms.Compose([
-        transforms.Resize((64, 64)),
-        transforms.Grayscale(num_output_channels=1),  # 흑백 이미지로 변환
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.5], std=[0.5])  # 학습 시 사용된 정규화 값 맞추기
-    ])
+    image = image.resize((64, 64))  # ONNX 모델 입력 크기에 맞게 조정
+    image = image.convert("L")  # 흑백 변환 (Grayscale)
+    
+    image_array = np.array(image, dtype=np.float32) / 255.0  # 0~1 정규화
+    image_array = (image_array - 0.5) / 0.5  # -1~1 정규화
+    image_array = np.expand_dims(image_array, axis=(0, 1))  # (1, 1, 64, 64) 형태로 변환 (배치 차원 포함)
 
-    image_tensor = transform(image).unsqueeze(0)
-    print(f"Transformed Image Tensor Shape: {image_tensor.shape}")  # 변환된 텐서 크기 확인
-
-    return image_tensor
+    print(f"Transformed Image Shape: {image_array.shape}")  # 디버깅용 출력
+    return image_array
 
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
     image_bytes = await file.read()
-    image_tensor = transform_image(image_bytes).to(device)
+    image_array = transform_image(image_bytes)  # ✅ numpy array 반환
 
-    with torch.no_grad():
-        outputs = model(image_tensor)
-        probabilities = torch.nn.functional.softmax(outputs, dim=1)  # 확률 변환
-        top_probs, top_indices = torch.topk(probabilities, 10, dim=1)  # 상위 10개 예측
+    # ✅ ONNX 모델 실행
+    inputs = {ort_session.get_inputs()[0].name: image_array}
+    outputs = ort_session.run(None, inputs)
+    
+    probabilities = np.exp(outputs[0]) / np.sum(np.exp(outputs[0]))  # 소프트맥스 적용
+    top_indices = np.argsort(probabilities[0])[::-1][:10]  # 상위 10개 인덱스
 
     top_predictions = [
-        {"class": class_labels[idx.item()], "probability": round(prob.item(), 4)}  # 확률값을 포함
-        for idx, prob in zip(top_indices[0], top_probs[0])
+        {"class": class_labels[idx], "probability": float(probabilities[0][idx])}
+        for idx in top_indices
     ]
+
+    # ✅ 이미지를 Base64로 변환해 클라이언트에서 표시할 수 있도록 함
+    image_base64 = base64.b64encode(image_bytes).decode()
 
     return {
         "predictions": top_predictions,
+        "image": f"data:image/png;base64,{image_base64}"
     }
 
 if __name__ == "__main__":

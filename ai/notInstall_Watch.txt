@@ -1,4 +1,0 @@
-onnx 문제 때문에 가상환경 설정함.
-cmd에서 
-.\fa_env\Scripts\Activate 하고 실행해볼 것.
-

@@ -1,0 +1,14 @@
+pandas
+numpy
+tqdm
+onnx
+onnxruntime
+torch
+torchvision
+torchaudio
+
+# 여기는 fastAPI용
+fastapi 
+uvicorn 
+pillow 
+python-multipart
