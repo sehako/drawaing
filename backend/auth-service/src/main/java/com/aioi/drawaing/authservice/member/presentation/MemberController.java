@@ -4,8 +4,8 @@ import com.aioi.drawaing.authservice.common.code.ErrorCode;
 import com.aioi.drawaing.authservice.common.response.ApiResponseEntity;
 import com.aioi.drawaing.authservice.member.application.MemberService;
 import com.aioi.drawaing.authservice.member.presentation.request.MemberExpUpdateRequest;
+import com.aioi.drawaing.authservice.member.presentation.request.MemberInfoUpdateRequest;
 import com.aioi.drawaing.authservice.member.presentation.request.MemberReqDto;
-import com.aioi.drawaing.authservice.member.presentation.request.MemberUpdateRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
@@ -42,18 +42,16 @@ public class MemberController {
     @PatchMapping()
     public ResponseEntity<?> infoUpdate(
             HttpServletRequest request,
-            @RequestBody MemberUpdateRequest memberUpdateRequest) {
+            @RequestBody MemberInfoUpdateRequest memberInfoUpdateRequest) {
         Long memberId = Long.parseLong(request.getParameter("member-id"));
-        return ApiResponseEntity.onSuccess(memberService.infoUpdate(memberUpdateRequest, memberId));
+        return ApiResponseEntity.onSuccess(memberService.infoUpdate(memberInfoUpdateRequest, memberId));
     }
 
     @Operation(summary = "회원 경험치 추가")
     @PatchMapping("/exp")
     public ResponseEntity<?> expUpdate(
-            HttpServletRequest request,
             @RequestBody MemberExpUpdateRequest memberExpUpdateRequest) {
-        Long memberId = Long.parseLong(request.getParameter("member-id"));
-        memberService.expUpdate(memberExpUpdateRequest, memberId);
+        memberService.expUpdate(memberExpUpdateRequest);
         return ApiResponseEntity.onSuccess("경험치, 포인트 저장 완료");
     }
 
