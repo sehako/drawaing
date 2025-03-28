@@ -1,10 +1,11 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import ColorPicker from './ColorPicker';
 import chick from '../../assets/Common/chick.gif'
 import CustomModal from '../common/CustomModal';
 import axios from 'axios';
 import pen_sound from '../../assets/Sound/drawing_sound.mp3';
 import { Howl } from 'howler';
+import drawingService, { DrawPoint } from '../../api/drawingService';
 
 
 interface CanvasSectionProps {
@@ -34,6 +35,9 @@ interface CanvasSectionProps {
   activeDrawerIndex: number;
   handleCanvasSubmit: (blob: Blob) => Promise<any>;
   setPredictions: React.Dispatch<React.SetStateAction<any[]>>;
+  roomId: string;  // 추가
+  sessionId: string | null;  // 추가
+  
 }
 
 // 그림 데이터 저장을 위한 인터페이스
@@ -43,8 +47,6 @@ interface DrawingData {
 }
 
 const CanvasSection: React.FC<CanvasSectionProps> = ({
-  canvasRef,
-  context,
   isDrawing,
   setIsDrawing,
   lastPoint,
@@ -69,11 +71,16 @@ const CanvasSection: React.FC<CanvasSectionProps> = ({
   activeDrawerIndex,
   handleCanvasSubmit, 
   setPredictions,
+  roomId,
+  sessionId,
+  canvasRef,
+  context,
 }) => {
   const penSoundRef = useRef<Howl | null>(null);
   const [isPlayingSound, setIsPlayingSound] = useState(false);
 
   const [isMouseButtonDown, setIsMouseButtonDown] = useState(false);
+  const [drawingPoints, setDrawingPoints] = useState<Array<{x: number, y: number}>>([]);
 
 
   const [lastSoundTime, setLastSoundTime] = useState(0);
@@ -100,8 +107,146 @@ const CanvasSection: React.FC<CanvasSectionProps> = ({
   // 현재 라운드에서 각 플레이어가 그림을 그렸는지 추적
   const [hasDrawnInRound, setHasDrawnInRound] = useState<boolean[]>([false, false, false]);
   
+  // 서버에서 받은 그리기 포인트를 저장할 상태
+  const [receivedDrawingPoints, setReceivedDrawingPoints] = useState<Array<{x: number, y: number}>>([]);
+  
   // 현재 플레이어가 이미 그림을 그렸는지 확인
   const hasCurrentPlayerDrawn = hasDrawnInRound[activeDrawerIndex];
+  const lastSendTimeRef = useRef<number>(Date.now());
+
+  const handleReceivedDrawingPoints = useCallback((points: Array<{x: number, y: number}>) => {
+    console.log('서버에서 받은 그리기 포인트:', points);
+    setReceivedDrawingPoints(prevPoints => [...prevPoints, ...points]);
+  }, []);
+
+    // 웹소켓 구독 및 초기화 useEffect
+    useEffect(() => {
+      // roomId와 sessionId 유효성 검사
+      if (!roomId || !sessionId) {
+        console.warn('roomId 또는 sessionId가 유효하지 않습니다.');
+        return;
+      }
+  
+      // 웹소켓 설정 및 구독 함수
+      const setupWebSocket = async () => {
+        try {
+          // STOMP 클라이언트 초기화
+          await drawingService.initializeClient(roomId, sessionId);
+  
+          // 그리기 포인트 구독
+          const unsubscribe = drawingService.subscribeToDrawingPoints(
+            roomId, 
+            sessionId, 
+            (points: DrawPoint[]) => {
+              // 받은 포인트를 상태에 추가
+              setReceivedDrawingPoints(prevPoints => [...prevPoints, ...points]);
+            }
+          );
+  
+          // 컴포넌트 언마운트 시 구독 해제
+          return unsubscribe;
+        } catch (error) {
+          console.error('웹소켓 설정 중 오류:', error);
+        }
+      };
+  
+      // 웹소켓 설정 실행
+      const unsubscribePromise = setupWebSocket();
+  
+      // 컴포넌트 언마운트 시 정리
+      return () => {
+        // 구독 해제
+        unsubscribePromise.then(unsubscribe => unsubscribe?.());
+        
+        // 연결 종료
+        drawingService.disconnect();
+      };
+    }, [roomId, sessionId]);
+  
+    // 받은 그리기 포인트 렌더링 useEffect
+    useEffect(() => {
+      // 캔버스, 컨텍스트, 받은 포인트 유효성 검사
+      if (!context || !canvasRef.current || receivedDrawingPoints.length === 0) return;
+  
+      // 현재 그리기 상태가 아닐 때만 서버에서 받은 포인트 그리기
+      if (!isDrawing) {
+        receivedDrawingPoints.forEach((point, index) => {
+          // 개별 점 그리기
+          context.beginPath();
+          context.arc(point.x, point.y, 2, 0, Math.PI * 2);
+          context.fillStyle = 'blue'; // 서버에서 받은 포인트는 파란색
+          context.fill();
+  
+          // 연속된 점들을 선으로 연결
+          if (index > 0) {
+            const prevPoint = receivedDrawingPoints[index - 1];
+            context.beginPath();
+            context.moveTo(prevPoint.x, prevPoint.y);
+            context.lineTo(point.x, point.y);
+            context.strokeStyle = 'blue';
+            context.lineWidth = 5;
+            context.lineCap = 'round';
+            context.stroke();
+          }
+        });
+  
+        // 그린 후 포인트 초기화
+        setReceivedDrawingPoints([]);
+      }
+    }, [receivedDrawingPoints, context, isDrawing, canvasRef]);
+  
+    // 그리기 포인트 전송 함수
+    const sendDrawingPoints = useCallback((points: DrawPoint[]) => {
+      // roomId, sessionId, 포인트 유효성 검사
+      if (!roomId || !sessionId || points.length === 0) {
+        console.log('전송 취소: 좌표 없음 또는 roomId/sessionId 없음');
+        return false;
+      }
+      
+      // 그리기 포인트 전송 로그
+      console.log(`전송 시도: ${points.length}개 좌표, roomId=${roomId}, sessionId=${sessionId}`);
+      
+      // drawingService를 통한 포인트 전송
+      return drawingService.sendDrawingPoints(roomId, sessionId, points);
+    }, [roomId, sessionId]);
+    
+  // STOMP 클라이언트 초기화
+  useEffect(() => {
+    if (!roomId || !sessionId) return;
+    
+    const initializeClient = async () => {
+      try {
+        await drawingService.initializeClient(roomId, sessionId);
+        console.log('그림 전송 서비스 초기화 완료');
+        
+      } catch (error) {
+        console.error('그림 전송 서비스 초기화 실패:', error);
+      }
+    };
+    
+    initializeClient();
+    
+    return () => {
+      drawingService.disconnect();
+    };
+  }, [roomId, sessionId]);
+
+// sendDrawingData 함수 내에 로그 추가
+const sendDrawingData = useCallback(() => {
+  if (!roomId || !sessionId || drawingPoints.length === 0) {
+    console.log('전송 취소: 좌표 없음 또는 roomId/sessionId 없음');
+    return;
+  }
+  
+  console.log(`전송 시도: ${drawingPoints.length}개 좌표, roomId=${roomId}, sessionId=${sessionId}`);
+  const success = drawingService.sendDrawingPoints(roomId, sessionId, drawingPoints);
+  console.log(`전송 결과: ${success ? '성공' : '실패'}`);
+  
+  if (success) {
+    setDrawingPoints([]);
+  }
+}, [drawingPoints, roomId, sessionId]);
+
 
   const saveCurrentDrawing = async () => {
     if (!canvasRef.current || !context) return;
@@ -158,17 +303,34 @@ const CanvasSection: React.FC<CanvasSectionProps> = ({
     });
   };
   
-  // 현재 플레이어의 그림만 삭제 (그리기 상태는 변경 없음)
-  const clearCurrentDrawing = () => {
-    if (!canvasRef.current || !context) return;
-    
-    // 현재 플레이어의 그림을 히스토리에서 제거
-    const updatedHistory = drawingHistory.filter(drawing => drawing.drawerIndex !== activeDrawerIndex);
-    setDrawingHistory(updatedHistory);
-    
-    // 캔버스를 다시 그림
-    renderAllDrawings();
-  };
+// 현재 플레이어의 그림만 삭제
+const clearCurrentDrawing = () => {
+  if (!canvasRef.current || !context) return;
+  
+  // 현재 플레이어의 그림을 히스토리에서 제거
+  const updatedHistory = drawingHistory.filter(drawing => drawing.drawerIndex !== activeDrawerIndex);
+  setDrawingHistory(updatedHistory);
+  
+  // 캔버스 초기화 - 흰색으로 채우기
+  context.fillStyle = 'white';
+  context.fillRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+  
+  // 남은 다른 플레이어들의 그림만 다시 그리기
+  updatedHistory.forEach(drawing => {
+    if (drawing.imageData) {
+      context.putImageData(drawing.imageData, 0, 0);
+    }
+  });
+  
+  // 현재 플레이어가 그림을 그리지 않았음을 표시
+  const newHasDrawnInRound = [...hasDrawnInRound];
+  newHasDrawnInRound[activeDrawerIndex] = false;
+  setHasDrawnInRound(newHasDrawnInRound);
+  
+  // 그림 완료 상태 초기화하여 다시 그릴 수 있게 함
+  setHasCompleted(false);
+  sendDrawingData();
+}
 
   // 커서 위치 업데이트 및 그리기 함수
   const updateCursorPosition = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -238,10 +400,30 @@ const CanvasSection: React.FC<CanvasSectionProps> = ({
     const dx = x - lastPoint.x;
     const dy = y - lastPoint.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
-  
+
+    if (isDrawing && !hasCurrentPlayerDrawn && !hasCompleted) {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      
+      // 좌표 계산...
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const x = (e.clientX - rect.left - 1) * scaleX;
+      const y = (e.clientY - rect.top - 1) * scaleY;
+      
+      // 좌표 저장
+      setDrawingPoints(prev => {
+        const newPoints = [...prev, {x, y}];
+        console.log(`좌표 추가: (${x}, ${y}), 총 ${newPoints.length}개`);
+        return newPoints;
+      });
+    }
+
     // 빠른 움직임 감지 (거리가 큰 경우)
     if (distance > 10) { // 10픽셀 이상 떨어진 경우
       // 두 점 사이를 부드럽게 보간
+      sendDrawingData();
       const steps = Math.max(Math.floor(distance / 5), 5); // 최소 5개 점
       
       for (let i = 1; i <= steps; i++) {
