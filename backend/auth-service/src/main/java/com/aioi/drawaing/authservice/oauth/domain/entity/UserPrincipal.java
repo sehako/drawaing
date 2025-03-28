@@ -1,7 +1,6 @@
 package com.aioi.drawaing.authservice.oauth.domain.entity;
 
 import com.aioi.drawaing.authservice.member.domain.Member;
-import jakarta.persistence.Column;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;

@@ -8,10 +8,13 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.aioi.drawaing.authservice.member.application.MemberService;
+import com.aioi.drawaing.authservice.member.domain.Member;
 import com.aioi.drawaing.authservice.ranking.domain.DrawingGameRecord;
 import com.aioi.drawaing.authservice.ranking.infrastructure.repository.DrawingGameRecordRepository;
 import com.aioi.drawaing.authservice.ranking.presentation.RankingController.GameStatus;
 import com.aioi.drawaing.authservice.ranking.presentation.request.GameResultRequest;
+import com.aioi.drawaing.authservice.ranking.presentation.response.GameRecordResponse;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -26,6 +29,9 @@ class RankingServiceTest {
     @Mock
     private DrawingGameRecordRepository recordRepository;
 
+    @Mock
+    private MemberService memberService;
+
     @InjectMocks
     private RankingService rankingService;
 
@@ -34,9 +40,12 @@ class RankingServiceTest {
     void updateGameRecord_NewRecord_Win() {
         // given
         Long memberId = 1L;
+        Member mockMember = Member.builder()
+                .id(memberId)
+                .build();
         GameResultRequest request = new GameResultRequest(memberId, GameStatus.WIN, 20);
         DrawingGameRecord existingRecord = DrawingGameRecord.builder()
-                .id(memberId)
+                .member(mockMember)
                 .playCount(0)
                 .win(0)
                 .draw(0)
@@ -48,16 +57,16 @@ class RankingServiceTest {
         when(recordRepository.save(any((DrawingGameRecord.class)))).thenReturn(existingRecord);
 
         // when
-        DrawingGameRecord result = rankingService.updateGameRecord(request);
+        GameRecordResponse result = rankingService.updateGameRecord(request);
 
         // then
         assertNotNull(result);
-        assertEquals(1, result.getPlayCount());
-        assertEquals(1, result.getWin());
-        assertEquals(0, result.getDraw());
-        assertEquals(0, result.getLose());
-        assertEquals(20, result.getRankScore());
-        assertEquals(20, result.getMaximumScore());
+        assertEquals(1, result.playCount());
+        assertEquals(1, result.win());
+        assertEquals(0, result.draw());
+        assertEquals(0, result.lose());
+        assertEquals(20, result.rankScore());
+        assertEquals(20, result.maximumScore());
 
         // verify
         verify(recordRepository, times(1)).findById(memberId);
@@ -69,9 +78,12 @@ class RankingServiceTest {
     void updateGameRecord_ExistingRecord_Draw() {
         // given
         Long memberId = 1L;
+        Member mockMember = Member.builder()
+                .id(memberId)
+                .build();
         GameResultRequest request = new GameResultRequest(memberId, GameStatus.DRAW, 10);
         DrawingGameRecord existingRecord = DrawingGameRecord.builder()
-                .id(memberId)
+                .member(mockMember)
                 .playCount(5)
                 .win(2)
                 .draw(1)
@@ -84,16 +96,16 @@ class RankingServiceTest {
         when(recordRepository.save(any(DrawingGameRecord.class))).thenReturn(existingRecord);
 
         // when
-        DrawingGameRecord result = rankingService.updateGameRecord(request);
+        GameRecordResponse result = rankingService.updateGameRecord(request);
 
         // then
         assertNotNull(result);
-        assertEquals(6, result.getPlayCount());
-        assertEquals(2, result.getWin());
-        assertEquals(2, result.getDraw());
-        assertEquals(2, result.getLose());
-        assertEquals(210, result.getRankScore());
-        assertEquals(210, result.getMaximumScore());
+        assertEquals(6, result.playCount());
+        assertEquals(2, result.win());
+        assertEquals(2, result.draw());
+        assertEquals(2, result.lose());
+        assertEquals(210, result.rankScore());
+        assertEquals(210, result.maximumScore());
 
         // verify
         verify(recordRepository, times(1)).findById(memberId);
@@ -105,9 +117,12 @@ class RankingServiceTest {
     void updateGameRecord_ExistingRecord_Lose() {
         // given
         Long memberId = 1L;
+        Member mockMember = Member.builder()
+                .id(memberId)
+                .build();
         GameResultRequest request = new GameResultRequest(memberId, GameStatus.LOSE, -10);
         DrawingGameRecord existingRecord = DrawingGameRecord.builder()
-                .id(memberId)
+                .member(mockMember)
                 .playCount(10)
                 .win(5)
                 .draw(3)
@@ -120,16 +135,16 @@ class RankingServiceTest {
         when(recordRepository.save(any(DrawingGameRecord.class))).thenReturn(existingRecord);
 
         // when
-        DrawingGameRecord result = rankingService.updateGameRecord(request);
+        GameRecordResponse result = rankingService.updateGameRecord(request);
 
         // then
         assertNotNull(result);
-        assertEquals(11, result.getPlayCount());
-        assertEquals(5, result.getWin());
-        assertEquals(3, result.getDraw());
-        assertEquals(3, result.getLose());
-        assertEquals(490, result.getRankScore());
-        assertEquals(530, result.getMaximumScore());
+        assertEquals(11, result.playCount());
+        assertEquals(5, result.win());
+        assertEquals(3, result.draw());
+        assertEquals(3, result.lose());
+        assertEquals(490, result.rankScore());
+        assertEquals(530, result.maximumScore());
 
         // verify
         verify(recordRepository, times(1)).findById(memberId);
