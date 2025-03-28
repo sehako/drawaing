@@ -47,6 +47,7 @@ dependencies {
 
 	implementation 'com.fasterxml.jackson.core:jackson-databind' // json
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'io.micrometer:micrometer-registry-prometheus'
 
 	if (project.hasProperty("profile") && project.profile == "prod") {
 		implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
