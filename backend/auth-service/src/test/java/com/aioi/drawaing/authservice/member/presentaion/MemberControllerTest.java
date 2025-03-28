@@ -1,14 +1,16 @@
-package com.aioi.drawaing.authservice.ranking.presentation;
+package com.aioi.drawaing.authservice.member.presentaion;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.aioi.drawaing.authservice.ranking.application.RankingService;
-import com.aioi.drawaing.authservice.ranking.domain.DrawingGameRecord;
-import com.aioi.drawaing.authservice.ranking.presentation.request.GameResultRequest;
+import com.aioi.drawaing.authservice.member.application.MemberService;
+import com.aioi.drawaing.authservice.member.presentation.MemberController;
+import com.aioi.drawaing.authservice.member.presentation.request.MemberExpUpdateRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -23,50 +25,43 @@ import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 @ExtendWith(MockitoExtension.class)
-class RankingControllerTest {
+public class MemberControllerTest {
 
     @Mock
-    private RankingService rankingService;
+    private MemberService memberService;
 
     @InjectMocks
-    private RankingController rankingController;
+    private MemberController memberController;
 
     private MockMvc mockMvc;
 
     @BeforeEach
     public void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(rankingController).build();
+        mockMvc = MockMvcBuilders.standaloneSetup(memberController).build();
     }
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Test
-    @DisplayName("성공: 게임 결과 업데이트")
-    void updateRecord_Success() throws Exception {
+    @DisplayName("성공: 경험치 업데이트")
+    void expUpdate_Success() throws Exception {
         // given
-        Long memberId = 1L;
-        GameResultRequest request = new GameResultRequest(memberId, RankingController.GameStatus.WIN, 100);
-        DrawingGameRecord mockRecord = DrawingGameRecord.builder()
-                .id(memberId)
-                .win(1)
-                .rankScore(100)
-                .build();
+        MemberExpUpdateRequest request = new MemberExpUpdateRequest(1L, 100, 50);
 
-        doReturn(mockRecord).when(rankingService).updateGameRecord(any(GameResultRequest.class));
+        doNothing().when(memberService).expUpdate(any(MemberExpUpdateRequest.class));
 
-        //when
-        ResultActions resultActions = mockMvc.perform(patch("/api/v1/ranking")
+        // when
+        ResultActions resultActions = mockMvc.perform(patch("/api/v1/member/exp")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)));
 
-        // then
+        //then
         resultActions.andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("SUCCESS"))
                 .andExpect(jsonPath("$.message").value("성공했습니다."))
-                .andExpect(jsonPath("$.data.id").value(memberId))
-                .andExpect(jsonPath("$.data.win").value(1))
-                .andExpect(jsonPath("$.data.rankScore").value(100));
+                .andExpect(jsonPath("$.data").value("경험치, 포인트 저장 완료"));
+
+        //verify
+        verify(memberService, times(1)).expUpdate(any(MemberExpUpdateRequest.class));
     }
-
 }
-

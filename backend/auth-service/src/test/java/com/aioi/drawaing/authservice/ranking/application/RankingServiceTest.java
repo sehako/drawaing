@@ -29,10 +29,10 @@ class RankingServiceTest {
     @InjectMocks
     private RankingService rankingService;
 
-    @DisplayName("승리 결과 저장")
+    @DisplayName("성공: 승리 결과 업데이트")
     @Test
     void updateGameRecord_NewRecord_Win() {
-        //given
+        // given
         Long memberId = 1L;
         GameResultRequest request = new GameResultRequest(memberId, GameStatus.WIN, 20);
         DrawingGameRecord existingRecord = DrawingGameRecord.builder()
@@ -44,13 +44,13 @@ class RankingServiceTest {
                 .rankScore(0)
                 .build();
 
-        //when
         when(recordRepository.findById(memberId)).thenReturn(Optional.of(existingRecord));
         when(recordRepository.save(any((DrawingGameRecord.class)))).thenReturn(existingRecord);
 
-        //then
+        // when
         DrawingGameRecord result = rankingService.updateGameRecord(request);
 
+        // then
         assertNotNull(result);
         assertEquals(1, result.getPlayCount());
         assertEquals(1, result.getWin());
@@ -59,14 +59,15 @@ class RankingServiceTest {
         assertEquals(20, result.getRankScore());
         assertEquals(20, result.getMaximumScore());
 
+        // verify
         verify(recordRepository, times(1)).findById(memberId);
         verify(recordRepository, times(1)).save(any(DrawingGameRecord.class));
     }
 
-    @DisplayName("무승부 결과 저장")
+    @DisplayName("성공: 무승부 결과 업데이트")
     @Test
     void updateGameRecord_ExistingRecord_Draw() {
-        //given
+        // given
         Long memberId = 1L;
         GameResultRequest request = new GameResultRequest(memberId, GameStatus.DRAW, 10);
         DrawingGameRecord existingRecord = DrawingGameRecord.builder()
@@ -79,13 +80,13 @@ class RankingServiceTest {
                 .maximumScore(200)
                 .build();
 
-        //when
         when(recordRepository.findById(memberId)).thenReturn(Optional.of(existingRecord));
         when(recordRepository.save(any(DrawingGameRecord.class))).thenReturn(existingRecord);
 
-        //then
+        // when
         DrawingGameRecord result = rankingService.updateGameRecord(request);
 
+        // then
         assertNotNull(result);
         assertEquals(6, result.getPlayCount());
         assertEquals(2, result.getWin());
@@ -94,14 +95,15 @@ class RankingServiceTest {
         assertEquals(210, result.getRankScore());
         assertEquals(210, result.getMaximumScore());
 
-        verify(recordRepository).findById(memberId);
-        verify(recordRepository).save(any(DrawingGameRecord.class));
+        // verify
+        verify(recordRepository, times(1)).findById(memberId);
+        verify(recordRepository, times(1)).save(any(DrawingGameRecord.class));
     }
 
-    @DisplayName("패배 결과 저장")
+    @DisplayName("성공: 패배 결과 업데이트")
     @Test
     void updateGameRecord_ExistingRecord_Lose() {
-        //given
+        // given
         Long memberId = 1L;
         GameResultRequest request = new GameResultRequest(memberId, GameStatus.LOSE, -10);
         DrawingGameRecord existingRecord = DrawingGameRecord.builder()
@@ -114,13 +116,13 @@ class RankingServiceTest {
                 .maximumScore(530)
                 .build();
 
-        //when
         when(recordRepository.findById(memberId)).thenReturn(Optional.of(existingRecord));
         when(recordRepository.save(any(DrawingGameRecord.class))).thenReturn(existingRecord);
 
-        //then
+        // when
         DrawingGameRecord result = rankingService.updateGameRecord(request);
 
+        // then
         assertNotNull(result);
         assertEquals(11, result.getPlayCount());
         assertEquals(5, result.getWin());
@@ -129,18 +131,19 @@ class RankingServiceTest {
         assertEquals(490, result.getRankScore());
         assertEquals(530, result.getMaximumScore());
 
-        verify(recordRepository).findById(memberId);
-        verify(recordRepository).save(any(DrawingGameRecord.class));
+        // verify
+        verify(recordRepository, times(1)).findById(memberId);
+        verify(recordRepository, times(1)).save(any(DrawingGameRecord.class));
     }
 
-    @DisplayName("Status 가 null 인 경우")
+    @DisplayName("실패: Status null 에러")
     @Test
     void updateGameRecord_InvalidGameStatus() {
-        //given
+        // given
         Long memberId = 1L;
         GameResultRequest request = new GameResultRequest(memberId, null, 100);
-        //when
-        //then
+
+        // when & then
         assertThrows(NullPointerException.class, () -> rankingService.updateGameRecord(request));
     }
 }

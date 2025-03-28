@@ -3,6 +3,7 @@ package com.aioi.drawaing.authservice.ranking.presentation;
 import com.aioi.drawaing.authservice.common.response.ApiResponseEntity;
 import com.aioi.drawaing.authservice.ranking.application.RankingService;
 import com.aioi.drawaing.authservice.ranking.presentation.request.GameResultRequest;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +23,7 @@ public class RankingController {
 
     public enum GameStatus {WIN, LOSE, DRAW}
 
+    @Operation(summary = "게임 결과 업데이트")
     @PatchMapping()
     public ResponseEntity<?> updateRecord(
             @RequestBody GameResultRequest gameResultRequest) {

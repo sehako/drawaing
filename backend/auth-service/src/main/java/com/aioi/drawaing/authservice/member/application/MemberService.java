@@ -21,9 +21,9 @@ import com.aioi.drawaing.authservice.member.domain.NicknameCategory;
 import com.aioi.drawaing.authservice.member.exception.MemberException;
 import com.aioi.drawaing.authservice.member.infrastructure.repository.MemberRepository;
 import com.aioi.drawaing.authservice.member.presentation.request.MemberExpUpdateRequest;
+import com.aioi.drawaing.authservice.member.presentation.request.MemberInfoUpdateRequest;
 import com.aioi.drawaing.authservice.member.presentation.request.MemberReqDto.Login;
 import com.aioi.drawaing.authservice.member.presentation.request.MemberReqDto.SignUp;
-import com.aioi.drawaing.authservice.member.presentation.request.MemberUpdateRequest;
 import com.aioi.drawaing.authservice.member.presentation.response.MemberResponse;
 import com.aioi.drawaing.authservice.oauth.domain.entity.ProviderType;
 import com.aioi.drawaing.authservice.oauth.domain.entity.RoleType;
@@ -56,32 +56,19 @@ public class MemberService {
     }
 
     @Transactional
-    public MemberResponse infoUpdate(MemberUpdateRequest memberUpdateRequest, Long memberId) {
+    public MemberResponse infoUpdate(MemberInfoUpdateRequest memberInfoUpdateRequest, Long memberId) {
         Member member = getMember(memberId);
-
-        Member updated = memberRepository.saveAndFlush(member.toBuilder()
-                .nickname(memberUpdateRequest.nickname() == null
-                        ? member.getNickname() : memberUpdateRequest.nickname())
-                .characterImage(memberUpdateRequest.characterImageUrl() == null
-                        ? member.getCharacterImage() : memberUpdateRequest.characterImageUrl())
-                .password(memberUpdateRequest.password() == null
-                        ? member.getPassword() : passwordEncoder.encode(memberUpdateRequest.password()))
-                .build());
-
-        memberRepository.saveAndFlush(updated);
-        return MemberResponse.of(updated);
+        member.infoUpdate(memberInfoUpdateRequest);
+        memberRepository.saveAndFlush(member);
+        return MemberResponse.of(member);
     }
 
     @Transactional
     public void expUpdate(MemberExpUpdateRequest req) {
         Member member = getMember(req.memberId());
         LevelInfo newLevel = calculateNewLevel(member.getLevel(), member.getExp(), req.exp());
-        Member updated = memberRepository.saveAndFlush(member.toBuilder()
-                .level(newLevel.level())
-                .exp(newLevel.exp())
-                .point(member.getPoint() + req.point())
-                .build());
-        memberRepository.saveAndFlush(updated);
+        member.expUpdate(newLevel.level(), newLevel.exp(), member.getPoint() + req.point());
+        //memberRepository.saveAndFlush(member);
     }
 
     @Transactional

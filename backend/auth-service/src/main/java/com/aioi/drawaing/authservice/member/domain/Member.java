@@ -1,6 +1,7 @@
 package com.aioi.drawaing.authservice.member.domain;
 
 import com.aioi.drawaing.authservice.common.auditing.BaseEntity;
+import com.aioi.drawaing.authservice.member.presentation.request.MemberInfoUpdateRequest;
 import com.aioi.drawaing.authservice.oauth.domain.entity.ProviderType;
 import com.aioi.drawaing.authservice.oauth.domain.entity.RoleType;
 import jakarta.persistence.Column;
@@ -97,5 +98,20 @@ public class Member extends BaseEntity implements UserDetails {
     @Override
     public boolean isEnabled() {
         return UserDetails.super.isEnabled();
+    }
+
+    public void infoUpdate(MemberInfoUpdateRequest memberInfoUpdateRequest) {
+        this.nickname = memberInfoUpdateRequest.nickname() == null
+                ? this.nickname : memberInfoUpdateRequest.nickname();
+        this.characterImage = memberInfoUpdateRequest.characterImageUrl() == null
+                ? this.characterImage : memberInfoUpdateRequest.characterImageUrl();
+        this.password = memberInfoUpdateRequest.password() == null
+                ? this.password : memberInfoUpdateRequest.password();
+    }
+
+    public void expUpdate(int level, int exp, int point) {
+        this.level = level;
+        this.exp = exp;
+        this.point = point;
     }
 }
