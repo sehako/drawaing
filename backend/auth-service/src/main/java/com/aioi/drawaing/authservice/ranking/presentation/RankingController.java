@@ -23,7 +23,7 @@ public class RankingController {
 
     public enum GameStatus {WIN, LOSE, DRAW}
 
-    @Operation(summary = "게임 결과 업데이트")
+    @Operation(summary = "랭킹 점수 업데이트")
     @PatchMapping()
     public ResponseEntity<?> updateRecord(
             @RequestBody GameResultRequest gameResultRequest) {

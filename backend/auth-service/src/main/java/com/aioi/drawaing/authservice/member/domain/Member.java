@@ -109,9 +109,9 @@ public class Member extends BaseEntity implements UserDetails {
                 ? this.password : memberInfoUpdateRequest.password();
     }
 
-    public void expUpdate(int level, int exp, int point) {
+    public void expUpdate(int level, int exp, int addPoint) {
         this.level = level;
         this.exp = exp;
-        this.point = point;
+        this.point += addPoint;
     }
 }

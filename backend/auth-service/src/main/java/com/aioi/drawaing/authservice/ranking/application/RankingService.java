@@ -18,10 +18,7 @@ public class RankingService {
 
         DrawingGameRecord record = getOrCreateRecord(req.memberId());
 
-        record.updatePlayCount();
-        record.updateLastPlayedAt();
-        record.addRankScore(req.score());
-        updateMaximumScore(record, record.getRankScore());
+        record.updateRecord(req.score());
 
         switch (req.status()) {
             case WIN -> record.updateWinCount();
@@ -43,12 +40,5 @@ public class RankingService {
                         .lose(0)
                         .rankScore(0)
                         .build());
-    }
-
-    private void updateMaximumScore(DrawingGameRecord record, Integer score) {
-        if (score > record.getMaximumScore()) {
-            record.updateMaximumScore(score);
-            record.updateAchievedAt();
-        }
     }
 }

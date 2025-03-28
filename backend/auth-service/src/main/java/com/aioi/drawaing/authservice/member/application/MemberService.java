@@ -67,8 +67,8 @@ public class MemberService {
     public void expUpdate(MemberExpUpdateRequest req) {
         Member member = getMember(req.memberId());
         LevelInfo newLevel = calculateNewLevel(member.getLevel(), member.getExp(), req.exp());
-        member.expUpdate(newLevel.level(), newLevel.exp(), member.getPoint() + req.point());
-        //memberRepository.saveAndFlush(member);
+        member.expUpdate(newLevel.level(), newLevel.exp(), req.point());
+        memberRepository.saveAndFlush(member);
     }
 
     @Transactional
@@ -243,6 +243,7 @@ public class MemberService {
         int totalExp = currentExp + addedExp;
         int newLevel = currentLevel;
 
+        // 최대 레벨 = 100
         while (newLevel < 100) {
             int expRequired = LevelExp.getExpRequired(newLevel);
             if (totalExp >= expRequired) {
