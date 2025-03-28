@@ -14,7 +14,7 @@ public class RoomMessagePublisher {
     public void publishRoomState(Room room) {
         simpMessagingTemplate.convertAndSend(
                 "/topic/room/" + room.getId(),
-                new RoomInfoResponse(room.getSessionId(), room.getParticipants())
+                new RoomInfoResponse(room.getSessionId(), room.getHostId(), room.getParticipants())
         );
     }
 }
