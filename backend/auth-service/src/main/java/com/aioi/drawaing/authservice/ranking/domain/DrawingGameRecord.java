@@ -45,10 +45,6 @@ public class DrawingGameRecord {
             columnDefinition = "DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
     private LocalDateTime lastPlayedAt;
 
-    public void updatePlayCount() {
-        this.playCount++;
-    }
-
     public void updateWinCount() {
         this.win++;
     }
@@ -61,20 +57,15 @@ public class DrawingGameRecord {
         this.draw++;
     }
 
-    public void addRankScore(Integer score) {
-        this.rankScore += score;
-    }
-
-    public void updateMaximumScore(Integer score) {
-        this.maximumScore = score;
-    }
-
-    public void updateAchievedAt() {
-        this.achievedAt = LocalDateTime.now();
-    }
-
-    public void updateLastPlayedAt() {
+    public void updateRecord(int addScore) {
+        this.playCount++;
         this.lastPlayedAt = LocalDateTime.now();
+        this.rankScore = Math.max(0, this.rankScore + addScore);
+        if (this.maximumScore < this.rankScore) {
+            this.maximumScore = this.rankScore;
+            this.achievedAt = LocalDateTime.now();
+        }
     }
+
 }
 
