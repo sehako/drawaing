@@ -104,142 +104,176 @@ const LandingPage: React.FC = () => {
     }
   };
 
-  // 방 만들기 핸들러 - API 연결로 수정
-  const handleCreateRoom = async () => {
-    try {
-      // 방 제목 입력 받기
-      const title = prompt('방 제목을 입력하세요:', '새로운 게임');
-      if (!title) {
-        // 취소하거나 빈 값 입력 시 중단
-        return;
-      }
-      
-      setRoomTitle(title);
-      
-      // user 객체가 없는 경우 처리
-      if (!user || !user.memberId) {
-        alert('로그인 정보가 없습니다. 다시 로그인해주세요.');
-        return;
-      }
-      
-      // API 요청 데이터 구성
-      const requestData = {
-        title: title,
-        addRoomParticipantInfo: {
-          memberId: user.memberId,
-          nickname: user.nickname,
-          characterUrl: user.characterImage || 'default_character'
-        }
-      };
-      
-      // 인증 토큰 가져오기
-      const token = getAuthToken();
-      if (!token) {
-        alert('인증 토큰이 없습니다. 다시 로그인해주세요.');
-        return;
-      }
-      
-      // API 호출
-      const response = await fetch('https://www.drawaing.site/service/game/api/v1/drawing/room', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(requestData)
-      });
-      
-      if (!response.ok) {
-        throw new Error(`방 생성 실패: ${response.status}`);
-      }
-      
-      // 응답 데이터 파싱
-      const data = await response.json();
-      
-      console.log('방 생성 성공:', data);
-      console.log(data.code)
-      console.log(data.result)
-      if (data.code === "CREATED_ROOM" && data.result) {
-        const roomId = data.result.roomId;
-        const roomCode = data.result.roomCode;
-        
-        // 로컬 스토리지나 상태에 방 코드 저장
-        localStorage.setItem('roomCode', roomCode);
-        
-        console.log('생성된 방 ID:', roomId);
-        console.log('생성된 방 코드:', roomCode);
-        
-        // 생성된 roomId를 이용해 대기실 페이지로 이동
-        navigate(`/waiting-room/${roomCode}`, {
-          state: { roomCode: roomCode }  // 라우터 state로도 전달
-        });
-      } else {
-        throw new Error('방 생성 응답 형식이 올바르지 않습니다.');
-      }
-      
-    } catch (error) {
-      console.error('방 생성 중 오류:', error);
-      alert('방을 생성하는 데 실패했습니다.');
-    }
-  };
-
-  const handleJoinRoom = async (inputRoomCode?: string) => {
-    const codeToJoin = inputRoomCode || roomCode;
-    if (!codeToJoin) {
-      alert('방 코드를 입력해주세요.');
+  // 방 만들기 함수 수정
+const handleCreateRoom = async () => {
+  try {
+    // 방 제목 입력 받기
+    const title = prompt('방 제목을 입력하세요:', '새로운 게임');
+    if (!title) {
+      // 취소하거나 빈 값 입력 시 중단
       return;
     }
-  
-    try {
-      // user 객체가 없는 경우 처리
-      if (!user || !user.memberId) {
-        alert('로그인 정보가 없습니다. 다시 로그인해주세요.');
-        return;
+    
+    setRoomTitle(title);
+    
+    // user 객체가 없는 경우 처리
+    if (!user || !user.memberId) {
+      alert('로그인 정보가 없습니다. 다시 로그인해주세요.');
+      return;
+    }
+    
+    // API 요청 데이터 구성
+    const requestData = {
+      title: title,
+      addRoomParticipantInfo: {
+        memberId: user.memberId,
+        nickname: user.nickname,
+        characterUrl: user.characterImage || 'default_character'
       }
+    };
+    
+    // 인증 토큰 가져오기
+    const token = getAuthToken();
+    if (!token) {
+      alert('인증 토큰이 없습니다. 다시 로그인해주세요.');
+      return;
+    }
+    
+    // API 호출
+    const response = await fetch('https://www.drawaing.site/service/game/api/v1/drawing/room', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(requestData)
+    });
+    
+    if (!response.ok) {
+      throw new Error(`방 생성 실패: ${response.status}`);
+    }
+    
+    // 응답 데이터 파싱
+    const data = await response.json();
+    
+    console.log('방 생성 성공:', data);
+    
+    if (data.code === "CREATED_ROOM" && data.result) {
+      const roomId = data.result.roomId; // 웹소켓용 ID
+      const roomCode = data.result.roomCode; // 표시용 코드
       
-      // 인증 토큰 가져오기
-      const token = getAuthToken();
-      if (!token) {
-        alert('인증 토큰이 없습니다. 다시 로그인해주세요.');
-        return;
-      }
+      console.log('생성된 방 ID(웹소켓용):', roomId);
+      console.log('생성된 방 코드(표시용):', roomCode);
       
-      // API 요청으로 특정 방 코드의 방 정보 조회
-      const response = await fetch(`https://www.drawaing.site/service/game/api/v1/drawing/room?code=${codeToJoin}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+      // 로컬 스토리지에 방 코드와 ID 모두 저장 (명확히 구분)
+      localStorage.setItem('roomCode', roomCode);
+      localStorage.setItem('roomId', roomId);
+      
+      // 생성된 roomId를 이용해 대기실 페이지로 이동
+      // 중요: 여기서 state에 roomId를 전달해야 합니다!
+      navigate(`/waiting-room/${roomCode}`, {
+        state: { 
+          roomCode: roomCode,
+          roomId: roomId, // 이 부분이 중요합니다!
+          roomTitle: title
         }
       });
-      
-      if (!response.ok) {
-        throw new Error(`방을 찾을 수 없습니다: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log('방 정보 조회 성공:', data);
-      console.log(codeToJoin)
-      if (data.result && data.result.roomId) {
-        // 방 정보에서 roomId를 가져와 로컬 스토리지에 코드 저장
-        localStorage.setItem('roomCode', data.result.roomId);
-        
-        // 대기실 페이지로 이동
-        navigate(`/waiting-room/${codeToJoin}`, {
-          state: { 
-            roomCode: data.result.roomCode,
-            roomTitle: data.result.title || '새로운 게임방',
-            isDirectJoin: true  // 직접 입장했음을 표시
-          }
-        })
-      } else {
-        throw new Error('유효한 방 정보를 받지 못했습니다.');
-      }
-    } catch (error) {
-      console.error('방 입장 중 오류:', error);
-      alert('방에 입장할 수 없습니다. 방 코드를 확인해주세요.');
+    } else {
+      throw new Error('방 생성 응답 형식이 올바르지 않습니다.');
     }
-  };
+    
+  } catch (error) {
+    console.error('방 생성 중 오류:', error);
+    alert('방을 생성하는 데 실패했습니다.');
+  }
+};
+
+// 방 참가 함수 수정
+const handleJoinRoom = async (inputRoomCode?: string) => {
+  const codeToJoin = inputRoomCode || roomCode;
+  if (!codeToJoin) {
+    alert('방 코드를 입력해주세요.');
+    return;
+  }
+
+  try {
+    // user 객체가 없는 경우 처리
+    if (!user || !user.memberId) {
+      alert('로그인 정보가 없습니다. 다시 로그인해주세요.');
+      return;
+    }
+    
+    // 인증 토큰 가져오기
+    const token = getAuthToken();
+    if (!token) {
+      alert('인증 토큰이 없습니다. 다시 로그인해주세요.');
+      return;
+    }
+    
+    // API 요청으로 특정 방 코드의 방 정보 조회
+    const response = await fetch(`https://www.drawaing.site/service/game/api/v1/drawing/room?code=${codeToJoin}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`방을 찾을 수 없습니다: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    console.log('방 정보 조회 성공:', data);
+    
+    if (data.result && data.result.roomId) {
+      // 서버 내부용 roomId와 표시용 roomCode 구분
+      const actualRoomId = data.result.roomId; // 웹소켓 연결용 ID
+      
+      console.log('실제 웹소켓용 roomId:', actualRoomId);
+      console.log('표시용 roomCode:', codeToJoin);
+      
+      // // 중요: 방 참가 요청을 먼저 보내기
+      // const joinResponse = await fetch(`https://www.drawaing.site/service/game/api/v1/drawing/room?code=${codeToJoin}`, {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //     'Authorization': `Bearer ${token}`
+      //   },
+      //   body: JSON.stringify({
+      //     memberId: user.memberId,
+      //     nickname: user.nickname,
+      //     characterUrl: user.characterImage || 'default_character'
+      //   })
+      // });
+      
+      // if (!joinResponse.ok) {
+      //   throw new Error(`방 참가에 실패했습니다: ${joinResponse.status}`);
+      // }
+      
+      console.log('방 참가 요청 성공');
+      
+      // 로컬 스토리지에 방 코드와 ID 모두 저장 (명확히 구분)
+      localStorage.setItem('roomCode', codeToJoin);
+      localStorage.setItem('roomId', actualRoomId);
+      
+      // 대기실 페이지로 이동 - URL에는 roomCode를 사용
+      navigate(`/waiting-room/${codeToJoin}`, {
+        state: { 
+          roomCode: codeToJoin,
+          roomId: actualRoomId, // 웹소켓 연결용 ID 전달
+          roomTitle: data.result.title || '새로운 게임방',
+          isDirectJoin: true
+        }
+      });
+    } else {
+      throw new Error('유효한 방 정보를 받지 못했습니다.');
+    }
+  } catch (error) {
+    console.error('방 입장 중 오류:', error);
+    alert('방에 입장할 수 없습니다. 방 코드를 확인해주세요.');
+  }
+};
 
 
   // ChickenCharacters 컴포넌트 (기존 코드 그대로)
