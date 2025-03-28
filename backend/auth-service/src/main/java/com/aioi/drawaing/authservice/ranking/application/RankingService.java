@@ -21,16 +21,11 @@ public class RankingService {
         record.updatePlayCount();
         record.updateLastPlayedAt();
         record.addRankScore(req.score());
+        updateMaximumScore(record, record.getRankScore());
 
         switch (req.status()) {
-            case WIN -> {
-                record.updateWinCount();
-                updateMaximumScore(record, req.score());
-            }
-            case DRAW -> {
-                record.updateDrawCount();
-                updateMaximumScore(record, req.score());
-            }
+            case WIN -> record.updateWinCount();
+            case DRAW -> record.updateDrawCount();
             case LOSE -> record.updateLoseCount();
             default -> throw new IllegalArgumentException("Invalid game status");
         }
