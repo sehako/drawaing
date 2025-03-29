@@ -22,6 +22,8 @@ interface AISectionProps {
   setIsEmptyGuess?: React.Dispatch<React.SetStateAction<boolean>>;
   isWrongGuess?: boolean;
   setIsWrongGuess?: React.Dispatch<React.SetStateAction<boolean>>;
+  guessSubmitCount?: number; // 추가: 현재까지 사용한 제출 횟수
+  maxGuessSubmitCount?: number; // 추가: 최대 제출 가능 횟수
 }
 
 const AISection: React.FC<AISectionProps> = ({
@@ -43,6 +45,8 @@ const AISection: React.FC<AISectionProps> = ({
   setIsEmptyGuess = () => {},
   isWrongGuess = false,
   setIsWrongGuess = () => {},
+  guessSubmitCount = 0,
+  maxGuessSubmitCount = 3, // 기본값 3으로 설정
 }) => {
   const [isPassModalOpen, setIsPassModalOpen] = useState(false);
   const [isCorrectModalOpen, setIsCorrectModalOpen] = useState(false);
@@ -174,7 +178,7 @@ useEffect(() => {
               }`}
           >
             {canPass 
-              ? `PASS (${3 - passCount}회 남음)` 
+              ? `PASS (${3 - passCount}회)` 
               : '패스'}
           </button>
           <button 
@@ -182,9 +186,16 @@ useEffect(() => {
               e.preventDefault();
               handleGuessSubmit(e as unknown as React.FormEvent);
             }}
-            className="h-[52px] w-full bg-green-500 text-white font-medium hover:bg-green-600 rounded-[10px]"
+            disabled={guessSubmitCount >= maxGuessSubmitCount}
+            className={`h-[52px] w-full text-white font-medium rounded-[10px] 
+              ${guessSubmitCount < maxGuessSubmitCount 
+                ? 'bg-green-500 hover:bg-green-600' 
+                : 'bg-green-500 opacity-50 cursor-not-allowed'
+              }`}
           >
-            제출
+            {guessSubmitCount < maxGuessSubmitCount 
+              ? `제출 (${maxGuessSubmitCount - guessSubmitCount}회)` 
+              : '제출 횟수 소진'}
           </button>
         </div>
       </div>
