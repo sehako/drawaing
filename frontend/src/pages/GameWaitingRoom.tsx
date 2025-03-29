@@ -21,7 +21,12 @@ const GameWaitingRoom: React.FC = () => {
   const [showInstructionModal, setShowInstructionModal] = useState<boolean>(false);
   const { isAuthenticated, user } = useAuth();
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [localReady, setLocalReady] = useState<boolean>(false);
+  const [userChangedReady, setUserChangedReady] = useState<boolean>(false);
   
+  // 방장 상태 관리 개선
+  const [isLocalHost, setIsLocalHost] = useState<boolean>(location.state?.isHost || false);
+
   // MusicContext 가져오기
   const { setPlaying } = useMusic();
   
@@ -42,6 +47,15 @@ const GameWaitingRoom: React.FC = () => {
     isLoading
   });
 
+  // 디버깅을 위한 로그 추가
+  useEffect(() => {
+    console.log("==== 실시간 상태 확인 로그 ====");
+    console.log("현재 플레이어:", currentUser);
+    console.log("isLocalHost 상태:", isLocalHost);
+    console.log("플레이어 목록:", players);
+    console.log("연결 상태:", isConnected);
+  }, [currentUser, isLocalHost, players, isConnected]);
+
   // 실제 사용할 roomId 결정
   useEffect(() => {
     // roomId 확인 로깅
@@ -50,16 +64,33 @@ const GameWaitingRoom: React.FC = () => {
     // state에서 전달된 추가 정보 확인
     const stateRoomId = location.state?.roomId;
     const stateRoomCode = location.state?.roomCode;
+    const stateIsHost = location.state?.isHost === true;
     
     console.log('state에서 전달된 roomId:', stateRoomId);
     console.log('state에서 전달된 roomCode:', stateRoomCode);
+    console.log('state에서 전달된 isHost:', stateIsHost);
+    
+    // 방장 여부 설정
+    if (stateIsHost) {
+      console.log('state에서 방장 정보 확인: 방장임');
+      setIsLocalHost(true);
+      localStorage.setItem('isHost', 'true');
+    }
     
     // 로컬 스토리지에서도 확인
     const storedRoomId = localStorage.getItem('roomId'); // 웹소켓용 ID
     const storedRoomCode = localStorage.getItem('roomCode'); // 표시용 코드
+    const storedIsHost = localStorage.getItem('isHost') === 'true';
     
     console.log('저장된 웹소켓용 roomId:', storedRoomId);
     console.log('저장된 표시용 roomCode:', storedRoomCode);
+    console.log('저장된 isHost:', storedIsHost);
+    
+    // 방장 정보 로컬 스토리지에서 가져오기
+    if (storedIsHost && !stateIsHost) {
+      console.log('로컬 스토리지에서 방장 정보 확인: 방장임');
+      setIsLocalHost(true);
+    }
     
     // 방 정보 설정
     if (location.state?.roomTitle) {
@@ -140,6 +171,42 @@ const GameWaitingRoom: React.FC = () => {
     checkAuthStatus();
   }, [isAuthenticated, user, navigate]);
   
+  // currentUser가 업데이트되면 방장 여부 확인
+  useEffect(() => {
+    if (currentUser) {
+      console.log('currentUser 업데이트 감지:', currentUser);
+      console.log('currentUser.isHost 값:', currentUser.isHost);
+      
+      // 서버로부터 받은 isHost 값이 true인 경우 로컬 상태 및 스토리지 업데이트
+      if (currentUser.isHost === true) {
+        console.log('서버에서 방장으로 지정됨');
+        setIsLocalHost(true);
+        localStorage.setItem('isHost', 'true');
+      }
+      // 서버로부터 받은 isHost 값이 명확하게 false인 경우만 업데이트
+      else if (currentUser.isHost === false) {
+        // 로컬 스토리지나 state에서 방장으로 지정된 경우가 아니라면
+        const storedIsHost = localStorage.getItem('isHost') === 'true';
+        const stateIsHost = location.state?.isHost === true;
+        
+        if (!storedIsHost && !stateIsHost) {
+          console.log('서버, 로컬 스토리지, state 모두에서 방장이 아님');
+          setIsLocalHost(false);
+          localStorage.setItem('isHost', 'false');
+        } else {
+          console.log('서버에서는 방장이 아니지만, 로컬 스토리지나 state에서 방장으로 지정됨');
+        }
+      }
+    }
+  }, [currentUser, location.state]);
+  
+  // currentUser가 업데이트되면 localReady도 업데이트
+  useEffect(() => {
+    if (currentUser && !userChangedReady) {
+      setLocalReady(currentUser.isReady);
+    }
+  }, [currentUser, userChangedReady]);
+    
   // 게임 설명 모달 관련 함수들
   const handleShowInstructions = () => {
     setShowInstructionModal(true);
@@ -157,28 +224,61 @@ const GameWaitingRoom: React.FC = () => {
     }
   };
   
+  // 플레이어 최대 인원
+  const MAX_PLAYERS = 4;
+
   // 모든 플레이어가 준비 상태인지 확인
-  const allPlayersReady = players.every(player => player.isHost || player.isReady);
+  const allPlayersReady = players.length === MAX_PLAYERS && players.every(player => 
+    player.isHost || player.isReady
+  );
   
+  // 디버깅을 위한 로그 추가
+  console.log('현재 플레이어 수:', players.length);
+  console.log('모든 플레이어 준비 상태:', allPlayersReady);
+  console.log('플레이어 목록:', players);
+  console.log('방장 여부(isLocalHost):', isLocalHost);
+
   // 준비 상태 토글 - 웹소켓 메시지 전송
   const toggleReady = () => {
     if (!currentUser || !stompClient || !isConnected || !actualRoomId) return;
     
-    const newReadyStatus = !currentUser.isReady;
+    // 로컬 상태를 즉시 반영 (UI 즉시 업데이트)
+    const newReadyStatus = !localReady;
+    setLocalReady(newReadyStatus);
     
+    // 사용자가 직접 변경했음을 표시
+    setUserChangedReady(true);
+
     // 준비 상태 변경 메시지 전송
     sendReadyStatusMessage(stompClient, currentUser.memberId!, newReadyStatus, actualRoomId);
   };
   
   // 게임 시작 - 웹소켓 메시지 전송
   const startGame = () => {
-    if (!allPlayersReady || !stompClient || !isConnected || !actualRoomId || !currentUser?.isHost) {
-      alert('모든 플레이어가 준비 상태여야 게임을 시작할 수 있습니다.');
+    if (!isLocalHost || !stompClient || !isConnected || !actualRoomId || !currentUser?.memberId) {
+      console.error('게임을 시작할 수 없습니다:', {
+        isLocalHost,
+        hasStompClient: !!stompClient, 
+        isConnected, 
+        actualRoomId,
+        currentUserMemberId: currentUser?.memberId
+      });
+      
+      if (!allPlayersReady) {
+        alert('모든 플레이어가 준비 상태여야 게임을 시작할 수 있습니다.');
+      } else {
+        alert('게임을 시작할 수 없습니다. 연결 상태를 확인해주세요.');
+      }
       return;
     }
     
+    console.log('게임 시작 메시지 전송:', {
+      memberId: currentUser.memberId,
+      roomId: actualRoomId
+    });
+    
     // 게임 시작 메시지 전송
-    sendGameStartMessage(stompClient, currentUser.memberId!, actualRoomId);
+    sendGameStartMessage(stompClient, currentUser.memberId, actualRoomId);
   };
   
   // 방 나가기 함수
@@ -214,6 +314,7 @@ const GameWaitingRoom: React.FC = () => {
             // 로컬 스토리지에서 방 정보 제거
             localStorage.removeItem('roomId');
             localStorage.removeItem('roomCode');
+            localStorage.removeItem('isHost');
             
             // 웹소켓 연결 해제
             stompClient.deactivate();
@@ -228,6 +329,7 @@ const GameWaitingRoom: React.FC = () => {
           // 연결이 없는 경우 바로 페이지 이동
           localStorage.removeItem('roomId');
           localStorage.removeItem('roomCode');
+          localStorage.removeItem('isHost');
           navigate('/');
         }
       }, 10);
@@ -346,6 +448,10 @@ const GameWaitingRoom: React.FC = () => {
               allPlayersReady={allPlayersReady}
               onToggleReady={toggleReady}
               onStartGame={startGame}
+              customReadyState={localReady}
+              customIsHost={isLocalHost}
+              playerCount={players.length}
+              maxPlayers={MAX_PLAYERS}
             />
           </div>
         </div>

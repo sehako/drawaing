@@ -54,91 +54,103 @@ const useGameWebSocket = ({
   const [isLeaving, setIsLeaving] = useState<boolean>(false);
   const componentMountedRef = useRef(true);
 
-  // 웹소켓 데이터 처리 함수들
-  const updatePlayersList = useCallback((playerData: any) => {
-    console.log('===== 플레이어 데이터 처리 시작 =====');
-    console.log('원본 데이터:', playerData);
+  // updatePlayersList 함수 수정 - 방장 상태 더 확실하게 처리
+
+const updatePlayersList = useCallback((playerData: any) => {
+  console.log('===== 플레이어 데이터 처리 시작 =====');
+  console.log('원본 데이터:', playerData);
+  
+  // 데이터 형식 정규화 (hostId 정보 포함)
+  const { normalizedData, hostId } = normalizePlayerData(playerData);
+  console.log('정규화된 데이터:', normalizedData);
+  console.log('서버 지정 방장 ID:', hostId);
+  
+  // 빈 객체나 유효하지 않은 형식인 경우 처리 중단
+  if (!normalizedData || typeof normalizedData !== 'object' || Object.keys(normalizedData).length === 0) {
+    console.warn('유효한 플레이어 데이터가 아닙니다.');
+    return;
+  }
+  
+  // 플레이어 ID 목록
+  const playerIds = Object.keys(normalizedData);
+  console.log('플레이어 ID 목록:', playerIds);
+  
+  if (playerIds.length === 0) {
+    console.warn('플레이어 목록이 비어 있습니다.');
+    return;
+  }
+  
+  // 방장 ID 결정 (서버에서 제공한 hostId 사용, 없으면 첫 번째 플레이어)
+  const hostPlayerId = determineHostId(playerIds, hostId);
+  console.log('결정된 방장 ID:', hostPlayerId);
+  
+  // hostId가 있으면 localStorage에 저장
+  if (hostId !== null) {
+    // 현재 사용자가 방장인지 확인
+    const isCurrentUserHost = user?.memberId === hostId;
+    localStorage.setItem('isHost', isCurrentUserHost ? 'true' : 'false');
+    console.log('방장 여부 localStorage 저장:', isCurrentUserHost);
+  }
+  
+  // 객체를 배열로 변환하여 처리
+  const updatedPlayers = Object.entries(normalizedData).map(([id, data]: [string, any]) => {
+    // 방장 설정: hostId와 일치하는 플레이어를 방장으로
+    const isHost = hostPlayerId ? id === hostPlayerId : false;
     
-    // 데이터 형식 정규화 (hostId 정보 포함)
-    const { normalizedData, hostId } = normalizePlayerData(playerData);
-    console.log('정규화된 데이터:', normalizedData);
-    console.log('서버 지정 방장 ID:', hostId);
+    return {
+      id: id,
+      memberId: parseInt(id),
+      nickname: data.nickname || '알 수 없음',
+      isReady: data.ready || false,  // 서버에서는 ready로 전송됨
+      isHost: isHost, // 명확하게 방장 여부 설정
+      character: data.characterUrl || 'https://placehold.co/400/gray/white?text=Unknown',
+      characterUrl: data.characterUrl || 'https://placehold.co/400/gray/white?text=Unknown'
+    };
+  });
+
+  console.log('변환된 플레이어 목록:', updatedPlayers);
+  
+  setPlayers(updatedPlayers);
+
+  // 현재 사용자 찾기
+  if (user && user.memberId) {
+    const userIdStr = user.memberId.toString();
+    console.log('현재 사용자 ID:', userIdStr);
     
-    // 빈 객체나 유효하지 않은 형식인 경우 처리 중단
-    if (!normalizedData || typeof normalizedData !== 'object' || Object.keys(normalizedData).length === 0) {
-      console.warn('유효한 플레이어 데이터가 아닙니다.');
-      return;
-    }
+    // 내가 방장인지 확인
+    const amIHost = hostId !== null && user.memberId === hostId;
+    console.log('내가 방장인가?', amIHost);
     
-    // 플레이어 ID 목록
-    const playerIds = Object.keys(normalizedData);
-    console.log('플레이어 ID 목록:', playerIds);
+    // 방장 정보 로컬 스토리지에 저장
+    localStorage.setItem('isHost', amIHost ? 'true' : 'false');
     
-    if (playerIds.length === 0) {
-      console.warn('플레이어 목록이 비어 있습니다.');
-      return;
-    }
-    
-    // 방장 ID 결정 (서버에서 제공한 hostId 사용, 없으면 첫 번째 플레이어)
-    const hostPlayerId = determineHostId(playerIds, hostId);
-    console.log('결정된 방장 ID:', hostPlayerId);
-    
-    // 객체를 배열로 변환하여 처리
-    const updatedPlayers = Object.entries(normalizedData).map(([id, data]: [string, any]) => {
-      // 방장 설정: hostId와 일치하는 플레이어를 방장으로
-      const isHost = id === hostPlayerId;
-      
-      return {
-        id: id,
-        memberId: parseInt(id),
-        nickname: data.nickname || '알 수 없음',
-        isReady: data.ready || false,  // 서버에서는 ready로 전송됨
-        isHost: isHost,
-        character: data.characterUrl || 'https://placehold.co/400/gray/white?text=Unknown',
-        characterUrl: data.characterUrl || 'https://placehold.co/400/gray/white?text=Unknown'
+    const myInfo = updatedPlayers.find(p => p.id === userIdStr || p.memberId === user.memberId);
+    if (myInfo) {
+      // 방장 상태를 명확하게 설정
+      const updatedMyInfo = {...myInfo, isHost: amIHost};
+      console.log('내 플레이어 정보 업데이트:', updatedMyInfo);
+      setCurrentUser(updatedMyInfo);
+    } else {
+      // 사용자가 목록에 없으면, 기존 user 정보로 가상의 플레이어 객체 생성
+      const virtualUser = {
+        id: userIdStr,
+        memberId: user.memberId,
+        nickname: user.nickname || '게스트',
+        isReady: false,
+        isHost: amIHost,  // hostId에 따라 방장 여부 결정
+        character: user.characterImage || 'https://placehold.co/400/gray/white?text=Unknown',
+        characterUrl: user.characterImage || 'https://placehold.co/400/gray/white?text=Unknown'
       };
-    });
-
-    console.log('변환된 플레이어 목록:', updatedPlayers);
-    
-    setPlayers(updatedPlayers);
-
-    // 현재 사용자 찾기
-    if (user && user.memberId) {
-      const userIdStr = user.memberId.toString();
-      console.log('현재 사용자 ID:', userIdStr);
+      console.log('목록에 내 정보가 없어 가상 정보 생성:', virtualUser);
+      setCurrentUser(virtualUser);
       
-      // 내가 방장인지 확인
-      const amIHost = userIdStr === hostPlayerId;
-      console.log('내가 방장인가?', amIHost);
-      
-      const myInfo = updatedPlayers.find(p => p.id === userIdStr || p.memberId === user.memberId);
-      if (myInfo) {
-        // 방장 상태를 명확하게 설정
-        const updatedMyInfo = {...myInfo, isHost: amIHost};
-        console.log('내 플레이어 정보 업데이트:', updatedMyInfo);
-        setCurrentUser(updatedMyInfo);
-      } else {
-        // 사용자가 목록에 없으면, 기존 user 정보로 가상의 플레이어 객체 생성
-        const virtualUser = {
-          id: userIdStr,
-          memberId: user.memberId,
-          nickname: user.nickname || '게스트',
-          isReady: false,
-          isHost: amIHost,  // hostId에 따라 방장 여부 결정
-          character: user.characterImage || 'https://placehold.co/400/gray/white?text=Unknown',
-          characterUrl: user.characterImage || 'https://placehold.co/400/gray/white?text=Unknown'
-        };
-        console.log('목록에 내 정보가 없어 가상 정보 생성:', virtualUser);
-        setCurrentUser(virtualUser);
-        
-        // 플레이어 목록에 자신 추가(서버 응답에 본인이 없는 경우를 대비)
-        setPlayers([...updatedPlayers, virtualUser]);
-      }
+      // 플레이어 목록에 자신 추가(서버 응답에 본인이 없는 경우를 대비)
+      setPlayers([...updatedPlayers, virtualUser]);
     }
-    
-    console.log('===== 플레이어 데이터 처리 완료 =====');
-  }, [user]);
+  }
+  
+  console.log('===== 플레이어 데이터 처리 완료 =====');
+}, [user]);
 
   // 준비 상태 업데이트 함수
   const updatePlayerReadyStatus = useCallback((readyData: any) => {
