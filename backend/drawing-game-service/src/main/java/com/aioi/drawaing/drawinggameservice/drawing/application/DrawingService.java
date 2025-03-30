@@ -9,6 +9,7 @@ import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.RoomSesseionR
 import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.SessionRepository;
 import com.aioi.drawaing.drawinggameservice.drawing.presentation.DrawMessagePublisher;
 import com.aioi.drawaing.drawinggameservice.drawing.presentation.dto.AddSessionParticipantInfo;
+import com.aioi.drawaing.drawinggameservice.drawing.presentation.dto.DrawInfo;
 import com.aioi.drawaing.drawinggameservice.drawing.presentation.dto.WinParticipantInfo;
 import com.aioi.drawaing.drawinggameservice.room.application.dto.AddRoomParticipantInfo;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
@@ -55,6 +57,10 @@ public class DrawingService {
     public Session createSession(String roomId) {
         Session session = Session.createSession(roomId);
         return sessionRepository.save(session);
+    }
+
+    public void sendDraw(String roomId, String sessionId, HashMap<Long, List<DrawInfo>> drawInfo){
+        drawMessagePublisher.publishDraw("/topic/session.draw/" + roomId + "/" + sessionId, drawInfo);
     }
 
 //    private void startTimers(String roomId, String sessionId) {
