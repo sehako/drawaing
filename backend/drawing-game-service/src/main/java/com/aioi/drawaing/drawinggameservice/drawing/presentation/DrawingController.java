@@ -24,7 +24,7 @@ public class DrawingController {
     @MessageMapping("/session.draw/{roomId}/{sessionId}")
     public void send(@DestinationVariable String roomId, @DestinationVariable String sessionId, @Payload HashMap<Long, List<DrawInfo>> drawInfo) {
         log.info("send message: {}", drawInfo.toString());
-        simpMessagingTemplate.convertAndSend("/topic/session.draw/" + roomId + "/" + sessionId, drawInfo);
+        drawingService.sendDraw(roomId, sessionId, drawInfo);
     }
 
     @MessageMapping("/session.end/{roomId}/{sessionId}")
