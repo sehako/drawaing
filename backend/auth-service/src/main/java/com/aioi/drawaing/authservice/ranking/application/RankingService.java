@@ -2,7 +2,7 @@ package com.aioi.drawaing.authservice.ranking.application;
 
 import com.aioi.drawaing.authservice.ranking.domain.DrawingGameRecord;
 import com.aioi.drawaing.authservice.ranking.infrastructure.repository.DrawingGameRecordRepository;
-import com.aioi.drawaing.authservice.ranking.presentation.RankingController.GameStatus;
+import com.aioi.drawaing.authservice.ranking.presentation.request.GameResultRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,22 +14,15 @@ public class RankingService {
     private final DrawingGameRecordRepository recordRepository;
 
     @Transactional
-    public DrawingGameRecord updateGameRecord(Long memberId, GameStatus status, Integer score) {
-        DrawingGameRecord record = getOrCreateRecord(memberId);
+    public DrawingGameRecord updateGameRecord(GameResultRequest req) {
 
-        record.updatePlayCount();
-        record.updateLastPlayedAt();
-        record.addRankScore(score);
+        DrawingGameRecord record = getOrCreateRecord(req.memberId());
 
-        switch (status) {
-            case WIN -> {
-                record.updateWinCount();
-                updateMaximumScore(record, score);
-            }
-            case DRAW -> {
-                record.updateDrawCount();
-                updateMaximumScore(record, score);
-            }
+        record.updateRecord(req.score());
+
+        switch (req.status()) {
+            case WIN -> record.updateWinCount();
+            case DRAW -> record.updateDrawCount();
             case LOSE -> record.updateLoseCount();
             default -> throw new IllegalArgumentException("Invalid game status");
         }
@@ -47,12 +40,5 @@ public class RankingService {
                         .lose(0)
                         .rankScore(0)
                         .build());
-    }
-
-    private void updateMaximumScore(DrawingGameRecord record, Integer score) {
-        if (score > record.getMaximumScore()) {
-            record.updateMaximumScore(score);
-            record.updateAchievedAt();
-        }
     }
 }
