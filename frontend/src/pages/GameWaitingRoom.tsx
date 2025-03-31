@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useMusic } from '../contexts/MusicContext'; // MusicContext의 useMusic 훅 임포트
+import GameInstructionModal from '../components/Game/GameInstructionModal';
 
 // 타입 정의
 interface Player {
@@ -20,10 +21,41 @@ const GameWaitingRoom: React.FC = () => {
   const [chatMessages, setChatMessages] = useState<string[]>([]);
   const [chatInput, setChatInput] = useState<string>('');
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const [showInstructionModal, setShowInstructionModal] = useState<boolean>(false);
   
   // MusicContext 가져오기
   const { setPlaying, currentTrack } = useMusic();
   
+  // 컴포넌트 마운트 시 항상 모달 표시
+  useEffect(() => {
+    // 로컬 스토리지에서 '다시 보지 않기' 설정 확인
+    const dontShowAgain = localStorage.getItem('gameInstructionDontShowAgain');
+    
+    // '다시 보지 않기'를 선택한 경우에만 모달을 표시하지 않음
+    if (dontShowAgain === 'true') {
+      setShowInstructionModal(false);
+    } else {
+      setShowInstructionModal(true);
+    }
+  }, []);
+  
+  // 게임 설명 모달 관련 함수들
+  const handleShowInstructions = () => {
+    setShowInstructionModal(true);
+  };
+  
+  // 모달 닫기 함수
+  const closeInstructionModal = () => {
+    setShowInstructionModal(false);
+  };
+
+  // 다시 보지 않기 설정 함수
+  const setDontShowAgain = (value: boolean) => {
+    if (value) {
+      localStorage.setItem('gameInstructionDontShowAgain', 'true');
+    }
+  };
+
   // 현재 경로에 따라 음악이 자동으로 변경되도록 MusicContext를 수정해야 합니다
   // 다음은 이 컴포넌트에서 Music3.mp3를 임시로 재생하는 코드입니다
   // useEffect(() => {
@@ -150,10 +182,21 @@ const GameWaitingRoom: React.FC = () => {
     }
   });
 
- // GameWaitingRoom.tsx 파일의 return 부분만 수정
-
  return (
   <div className="relative w-full min-h-screen bg-amber-50">
+    {/* 게임 설명 모달 - 최상위 z-index로 설정 */}
+    {showInstructionModal && (
+      <div className="fixed inset-0 flex items-center justify-center z-50">
+        <div className="absolute inset-0 bg-black bg-opacity-50"></div>
+        <div className="relative z-50">
+          <GameInstructionModal 
+            onClose={closeInstructionModal} 
+            onDontShowAgain={setDontShowAgain}
+          />
+        </div>
+      </div>
+    )}
+    
     {/* 배경 이미지 - fixed 속성 추가 및 배경 처리 */}
     <div className="fixed inset-0 w-full h-full z-0">
       <img 
@@ -195,12 +238,25 @@ const GameWaitingRoom: React.FC = () => {
             <div className="absolute -bottom-2 -right-1 w-4 h-4 bg-gray-600 rounded-full border-2 border-gray-800"></div>
           </div>
         </div>
-        <button 
-          onClick={leaveRoom}
-          className="px-1 sm:px-2 md:px-4 py-1 md:py-2 bg-red-500 rounded-full flex items-center justify-center border-2 sm:border-4 border-black shadow-[2px_2px_0_0_rgba(0,0,0,1)] sm:shadow-[4px_4px_0_0_rgba(0,0,0,1)] hover:shadow-[4px_4px_0_0_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 text-white text-xs sm:text-sm md:text-base font-bold transition-all duration-200"
-        >
-          방 나가기
-        </button>
+        
+        {/* 버튼 그룹 */}
+        <div className="flex space-x-2">
+          {/* 게임 설명 버튼 */}
+          <button 
+            onClick={handleShowInstructions}
+            className="px-1 sm:px-2 md:px-4 py-1 md:py-2 bg-blue-500 rounded-full flex items-center justify-center border-2 sm:border-4 border-black shadow-[2px_2px_0_0_rgba(0,0,0,1)] sm:shadow-[4px_4px_0_0_rgba(0,0,0,1)] hover:shadow-[4px_4px_0_0_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 text-white text-xs sm:text-sm md:text-base font-bold transition-all duration-200"
+          >
+            게임 설명
+          </button>
+          
+          {/* 방 나가기 버튼 */}
+          <button 
+            onClick={leaveRoom}
+            className="px-1 sm:px-2 md:px-4 py-1 md:py-2 bg-red-500 rounded-full flex items-center justify-center border-2 sm:border-4 border-black shadow-[2px_2px_0_0_rgba(0,0,0,1)] sm:shadow-[4px_4px_0_0_rgba(0,0,0,1)] hover:shadow-[4px_4px_0_0_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 text-white text-xs sm:text-sm md:text-base font-bold transition-all duration-200"
+          >
+            방 나가기
+          </button>
+        </div>
       </div>
       
       {/* 플레이어 슬롯 컨테이너 - 높이 조정 */}
