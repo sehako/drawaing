@@ -9,18 +9,22 @@ import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.RoomSesseionR
 import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.SessionRepository;
 import com.aioi.drawaing.drawinggameservice.drawing.presentation.DrawMessagePublisher;
 import com.aioi.drawaing.drawinggameservice.drawing.presentation.dto.AddSessionParticipantInfo;
+import com.aioi.drawaing.drawinggameservice.drawing.presentation.dto.DrawInfo;
 import com.aioi.drawaing.drawinggameservice.drawing.presentation.dto.WinParticipantInfo;
 import com.aioi.drawaing.drawinggameservice.room.application.dto.AddRoomParticipantInfo;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class DrawingService {
@@ -29,21 +33,19 @@ public class DrawingService {
     private final Map<String, ScheduledFuture<?>> scheduledFutures=new ConcurrentHashMap<>(); //type(session, draw)+sessionId
     private final ScheduledExecutorService schedule;
     private final KeywordRepository keywordRepository;
-    private final RoomSesseionRepository roomSesseionRepository;
     private final SessionRepository sessionRepository;
     private final int DEFAULT_WORD_COUNT = 30;
-    private final int DEFAULT_SESSION_TIMER = 10;
-    private final int DEFAULT_DRAW_TIMER = 5;
+    private final int DEFAULT_SESSION_TIMER = 600;
+    private final int DEFAULT_DRAW_TIMER = 20;
     private final int MAX_PARTICIPANT_NUMBER = 4;
+
     //세션 시작
     //세션 시작할 때, 게임 제시어 주기
-    //세션 시작할 때, 타이머 시작 + 전달
+    //세션 시작할 때, 타이머 시작 + 전달v
     //세션 시작할 때, 게임 어떻게 할건지 의논 필요
-
-
     public void startSession(String roomId, String sessionId, List<AddRoomParticipantInfo> addParticipantInfos) {
         List<String> words = extractWords(DEFAULT_WORD_COUNT);
-        System.out.println("startSession: "+sessionId);
+        log.info("startSession: {}", sessionId);
         Session session = findSession(sessionId);
 
         session.updateSessionStartInfo(words, addParticipantInfos);
@@ -55,6 +57,10 @@ public class DrawingService {
     public Session createSession(String roomId) {
         Session session = Session.createSession(roomId);
         return sessionRepository.save(session);
+    }
+
+    public void sendDraw(String roomId, String sessionId, HashMap<Long, List<DrawInfo>> drawInfo){
+        drawMessagePublisher.publishDraw("/topic/session.draw/" + roomId + "/" + sessionId, drawInfo);
     }
 
 //    private void startTimers(String roomId, String sessionId) {
@@ -91,7 +97,7 @@ public class DrawingService {
             int sessionTime = remainTime.get(sessionKey).decrementAndGet();
             int drawTime = remainTime.get(drawKey).decrementAndGet();
 
-            System.out.println("sessionTime: "+sessionTime+" drawTime: "+drawTime);
+            log.info("sessionTime: {} drawTime: {}", sessionTime, drawTime);
 
             if(sessionTime<=0){
                 remainTime.remove(sessionKey);
@@ -119,7 +125,7 @@ public class DrawingService {
 
     private void endSession(String roomId, String sessionId){
         Session session = findSession(sessionId);
-        System.out.println("endSession: "+sessionId);
+        log.info("endSession: {}", sessionId);
         drawMessagePublisher.publishGameResult("/topic/session.result/"+roomId+"/"+sessionId, session.toParticipantScoreInfo());
     }
 
@@ -127,7 +133,7 @@ public class DrawingService {
         session.addParticipant(addSessionParticipantInfo.id(), Participant.createParticipant(addSessionParticipantInfo.nickname(), addSessionParticipantInfo.characterUrl()));
     }
 
-    private Session findSession(String sessionId) {
+    public Session findSession(String sessionId) {
         return sessionRepository.findById(sessionId).orElseThrow(()->new RuntimeException("session id가 잘못됐습니다."));
     }
 

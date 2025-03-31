@@ -60,6 +60,14 @@ public class Session {
         this.roundCount++;
     }
 
+    public int getChanceCount(Long userId){
+        return this.participants.get(userId).getChanceCount();
+    }
+
+    public void decrementParticipantChanceCount(Long userId){
+        this.participants.get(userId).decrementChanceCount();
+    }
+
     public Map<Long, ParticipantScoreInfo> toParticipantScoreInfo(){
         return participants.entrySet().stream()
                 .collect(Collectors.toMap(

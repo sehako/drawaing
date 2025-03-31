@@ -21,14 +21,12 @@ public class ChatController {
     private final ChatService chatService;
     private final SimpMessagingTemplate simpMessagingTemplate;
 
-    @MessageMapping("/chat.message/{roomId}")
-    public void handleChatMessage(@DestinationVariable String roomId, @Payload ChatMessage message) {
-        ChatMessage savedMessage = chatService.saveMessage(ChatMessageDto.of(message));
-        log.info("savedMessage = {}", savedMessage.toString());
-        simpMessagingTemplate.convertAndSend("/topic/chat.message/" + roomId, savedMessage);
+    @MessageMapping("/chat.message/{roomId}/{sessionId}")
+    public void handleChatMessage(@DestinationVariable String roomId, @DestinationVariable String sessionId, @Payload ChatMessageDto message) {
+        chatService.publishChat(roomId, sessionId, message);
     }
-    @MessageMapping("/chat.emoji/{roomId}")
-    public void handleChatEmoji(@DestinationVariable String roomId, @Payload ChatEmoji message) {
+    @MessageMapping("/chat.emoji/{roomId}/{sessionId}")
+    public void handleChatEmoji(@DestinationVariable String roomId, @DestinationVariable String sessionId, @Payload ChatEmoji message) {
         ChatEmoji savedEmoji = chatService.saveEmoji(ChatEmojiDto.of(message));
         log.info("savedEmoji = {}", savedEmoji.toString());
         simpMessagingTemplate.convertAndSend("/topic/chat.emoji/" + roomId, savedEmoji);
