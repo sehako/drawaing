@@ -10,6 +10,8 @@ import RoundTransition from '../components/Game/RoundTransition';
 import useGameWebSocket from '../hooks/useGameWebSocket';
 import useGameTimer from '../hooks/useGameTimer'; // 타이머 훅 추가
 import gameTimerService from '../api/gameTimerService';
+import chatService from '../api/chatservice';
+import correctAnswerService from '../api/correctAnswerService';
 
 interface Player {
   id: number;
@@ -17,6 +19,15 @@ interface Player {
   level: number;
   avatar: string;
 }
+const getPlayerIdByNumber = (playerNumber: string): number => {
+  switch (playerNumber) {
+    case "1": return 1;
+    case "2": return 2;
+    case "3": return 3;
+    case "4": return 4;
+    default: return 1;
+  }
+};
 
 const Game: React.FC = () => {
   // URL에서 roomId 파라미터 가져오기
@@ -113,6 +124,8 @@ const Game: React.FC = () => {
   const [isEraser, setIsEraser] = useState<boolean>(false);
   const [lastPoint, setLastPoint] = useState<{ x: number; y: number } | null>(null);
 
+  const [playerMessages, setPlayerMessages] = useState<{[playerId: number]: string}>({});
+
   const [eggCount, setEggCount] = useState(10);
   const [aiAnswer, setAiAnswer] = useState<string>('');
   const [aiImages] = useState<string[]>([
@@ -125,7 +138,17 @@ const Game: React.FC = () => {
     { id: 2, name: 'Player 3', level: 25, avatar: '/avatars/angry-bird.png' },
     { id: 3, name: 'Player 4', level: 16, avatar: '/avatars/yellow-bird.png' },
   ]);
-  
+
+  const mapUserIdToPlayerId = (userId: number): number => {
+    switch(userId) {
+      case 1: return 0; // userId 1은 첫 번째 플레이어 (플레이어1)
+      case 2: return 1; // userId 2는 두 번째 플레이어 (플레이어2)
+      case 3: return 2; // userId 3은 세 번째 플레이어 (플레이어3)
+      case 4: return 3; // userId 4는 네 번째 플레이어 (플레이어4)
+      default: return 0;
+    }
+  };
+
   const [predictions, setPredictions] = useState<{ class: string; probability: number }[]>([]);
 
   // 웹소켓 훅 사용
@@ -136,6 +159,9 @@ const Game: React.FC = () => {
   
   // 웹소켓 연결 완료 후 타이머 정보 가져오기 위한 상태 추가
   const [isGameTimerReady, setIsGameTimerReady] = useState<boolean>(false);
+
+  const [chatMessages, setChatMessages] = useState<Array<{userId: number, message: string, timestamp: string}>>([]);
+
 
   // 웹소켓 연결 상태 및 세션 ID 유효 여부 체크
   useEffect(() => {
@@ -367,7 +393,8 @@ const transitionToNextRound = () => {
   }, 3000);
 };
 
-const handleGuessSubmit = (e: React.FormEvent) => {
+
+const handleGuessSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
 
   if (isGameOver) return;
@@ -383,14 +410,123 @@ const handleGuessSubmit = (e: React.FormEvent) => {
     setIsEmptyGuess(true);
     return;
   }
-    
+  
   // 제출 횟수 증가
   setGuessSubmitCount(prev => prev + 1);
 
+  // 현재 플레이어 ID 가져오기
+  const playerNumber = localStorage.getItem('playerNumber') || "1";
+  const userId = getPlayerIdByNumber(playerNumber);
+  
+  // 웹소켓으로 입력된 메시지 전송 (정답 여부와 상관없이)
+  if (roomId && sessionId) {
+    // 예시와 동일한 형식으로 메시지 객체 생성 및 로깅
+    const messageObj = {
+      "userId": userId,
+      "message": guess,
+      "createdAt": new Date().toISOString()
+    };
+    
+    // 예시와 동일한 형식으로 콘솔에 출력
+    console.log(JSON.stringify(messageObj, null, 2));
+    
+    // 메시지 전송
+    chatService.sendMessage(roomId, sessionId, userId, guess);
+    
+    // 사용자 콘솔 로그
+    console.log(`사용자 ${userId}가 메시지를 전송: ${guess}`);
+    
+    // 플레이어 메시지 상태 업데이트 (자신의 메시지도 말풍선으로 표시)
+    const playerId = mapUserIdToPlayerId(userId);
+    setPlayerMessages(prev => {
+      const updated = {
+        ...prev,
+        [playerId]: guess
+      };
+      console.log('업데이트된 playerMessages:', updated);
+      return updated;
+    });
+    
+    // 5초 후 메시지 자동 제거
+    setTimeout(() => {
+      setPlayerMessages(prev => {
+        const updated = { ...prev };
+        delete updated[playerId];
+        return updated;
+      });
+    }, 5000);
+  }
+
+  // 로컬에서 정답 여부 확인
   if (guess.trim().toLowerCase() === quizWord.toLowerCase()) {
+    // 플레이어 정답 처리
     handlePlayerCorrectAnswer();
     setIsHumanCorrect(true);
     setHumanRoundWinCount(prev => prev + 1);
+    
+    // 데이터 계산 및 로깅 (STOMP 연결 여부와 상관없이 항상 실행)
+    if (roomId && sessionId) {
+      // 직접 현재 그림을 그리는 사람의 인덱스 계산
+      let drawingPlayerIndex = 0;
+      let realIndex = 0;
+      
+      for (let i = 0; i < 4; i++) {
+        if (i !== guesserIndex) {
+          if (drawingPlayerIndex === activeDrawerIndex) {
+            realIndex = i;
+            break;
+          }
+          drawingPlayerIndex++;
+        }
+      }
+      
+      // 현재 그림을 그리는 사람의 ID 구하기
+      const drawingMemberId = realIndex + 1; // 인덱스는 0부터 시작하므로 +1
+      
+      // 정답을 맞춘 사람의 ID
+      const answerMemberId = userId;
+      
+      // 현재 그림 그리는 순서 (1, 2, 3 중 하나)
+      const drawingOrder = activeDrawerIndex + 1; // activeDrawerIndex는 0부터 시작하므로 +1
+      
+      // 전송할 데이터 객체 생성
+      const correctAnswerData = {
+        drawingMemberId,
+        answerMemberId,
+        drawingOrder
+      };
+      
+      // 데이터를 항상 로깅 (STOMP 연결 여부와 상관없이)
+      console.log('=====================================================');
+      console.log('📌 정답 맞춤 정보 (STOMP 전송 성공 여부와 무관)');
+      console.log('-----------------------------------------------------');
+      console.log(`방 ID: ${roomId}`);
+      console.log(`세션 ID: ${sessionId}`);
+      console.log(`전송 경로: /app/session.correct-answer/${roomId}/${sessionId}`);
+      console.log('-----------------------------------------------------');
+      console.log('📦 데이터 내용:');
+      console.log(JSON.stringify(correctAnswerData, null, 2));
+      console.log('=====================================================');
+      
+      // 이제 STOMP로 전송 시도
+      try {
+        // STOMP 클라이언트 초기화 시도 (연결되어 있지 않을 경우)
+        await correctAnswerService.initializeClient(roomId, sessionId);
+        
+        // 정답 정보 전송
+        const success = correctAnswerService.sendCorrectAnswer(
+          roomId,
+          sessionId,
+          drawingMemberId,
+          answerMemberId,
+          drawingOrder
+        );
+        
+        console.log('정답 정보 전송 결과:', success ? '성공' : '실패');
+      } catch (error) {
+        console.error('정답 정보 전송 중 오류:', error);
+      }
+    }
     
     // 라운드 전환 함수 호출
     transitionToNextRound();
@@ -484,6 +620,93 @@ useEffect(() => {
   return () => clearInterval(timer);
 }, [timeLeft, context, guesserIndex, activeDrawerIndex, isRoundTransitioning, isGameOver]);
 
+useEffect(() => {
+  // 웹소켓이 연결되고 세션 ID가 있을 때만 실행
+  if (!isConnected || !sessionId || !roomId) return;
+  
+  const initChatService = async () => {
+    try {
+      await chatService.initializeClient(roomId, sessionId);
+      console.log('채팅 서비스 초기화 완료');
+      
+      // 메시지 수신 구독
+      const unsubscribe = chatService.subscribeToMessages(
+        roomId,
+        sessionId,
+        (message) => {
+          console.group('🎮 게임 메시지 처리');
+          console.log('수신된 메시지:', message);
+          
+          // 현재 플레이어 ID 가져오기
+          const currentPlayerId = getPlayerIdByNumber(
+            localStorage.getItem('playerNumber') || "1"
+          );
+          
+          // 메시지를 플레이어 메시지로 변환
+          const playerId = mapUserIdToPlayerId(message.userId);
+          console.log('변환된 playerId:', playerId);
+          
+          // 플레이어 메시지 상태 업데이트
+          setPlayerMessages(prev => {
+            const updated = {
+              ...prev,
+              [playerId]: message.message
+            };
+            console.log('업데이트된 playerMessages:', updated);
+            return updated;
+          });
+          
+          // 5초 후 메시지 자동 제거
+          setTimeout(() => {
+            setPlayerMessages(prev => {
+              const updated = { ...prev };
+              delete updated[playerId];
+              console.log('메시지 제거 후 playerMessages:', updated);
+              return updated;
+            });
+          }, 5000);
+          
+          // 전체 채팅 메시지 저장
+          setChatMessages(prev => [
+            ...prev,
+            {
+              userId: message.userId,
+              message: message.message,
+              timestamp: message.createdAt || new Date().toISOString()
+            }
+          ]);
+          
+          // 정답 확인 로직
+          if (
+            message.userId !== currentPlayerId && 
+            message.message.trim().toLowerCase() === quizWord.toLowerCase()
+          ) {
+            console.log(`사용자 ${message.userId}가 정답을 맞췄습니다!`);
+            
+            if (message.userId === 999) {
+              handleAICorrectAnswer();
+            } else if (message.userId !== currentPlayerId) {
+              // 다른 플레이어 정답 처리 로직
+              console.log('다른 플레이어가 정답을 맞췄습니다.');
+            }
+          }
+          
+          console.groupEnd();
+        }
+      );
+      
+      // 컴포넌트 언마운트 시 구독 해제
+      return () => {
+        unsubscribe();
+      };
+    } catch (error) {
+      console.error('채팅 서비스 초기화 실패:', error);
+    }
+  };
+  
+  initChatService();
+  
+}, [isConnected, sessionId, roomId, quizWord]);
   
   // 게임 시간 포맷 함수
   const formatGameTime = (seconds: number): string => {
@@ -582,8 +805,9 @@ useEffect(() => {
             activeDrawerIndex={activeDrawerIndex}
             guesserIndex={guesserIndex}
             roomId={roomId}
-            playerConnections={playerConnections as any} // 타입 단언 사용
-            isConnected={isConnected} // 웹소켓 연결 상태 전달
+            playerConnections={playerConnections as any}
+            isConnected={isConnected}
+            playerMessages={playerMessages}
           />
         </div>
 

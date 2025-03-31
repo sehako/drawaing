@@ -67,18 +67,18 @@ const CustomModal: React.FC<CustomModalProps> = ({
     }
 
     // 모달 인스턴스와 미디어 소스를 로깅
-    console.log(`[CustomModal] Rendering media for modal with title "${title}":`, currentMedia);
+    // console.log(`[CustomModal] Rendering media for modal with title "${title}":`, currentMedia);
 
     // 파일 확장자 확인
     const srcString = String(currentMedia.src);
     const fileExtension = srcString.split('.').pop()?.toLowerCase();
     
-    console.log(`[CustomModal] File extension for "${title}" modal:`, fileExtension);
+    // console.log(`[CustomModal] File extension for "${title}" modal:`, fileExtension);
 
     // 미디어 타입에 따른 렌더링
     switch (currentMedia.type) {
       case 'gif':
-        console.log(`[CustomModal] Rendering GIF for "${title}" modal`);
+        // console.log(`[CustomModal] Rendering GIF for "${title}" modal`);
         return (
           <img 
             key={`gif-${title}-${Date.now()}`} // 고유한 키 생성
@@ -86,15 +86,15 @@ const CustomModal: React.FC<CustomModalProps> = ({
             alt={currentMedia.alt || 'GIF 이미지'} 
             className="max-w-full h-auto rounded-lg"
             style={{ maxHeight: '300px' }}
-            onLoad={() => console.log(`[CustomModal] GIF for "${title}" modal loaded successfully`)}
+            // onLoad={() => console.log(`[CustomModal] GIF for "${title}" modal loaded successfully`)}
             onError={(e) => {
-              console.error(`[CustomModal] GIF for "${title}" modal 로딩 실패:`, e);
+              // console.error(`[CustomModal] GIF for "${title}" modal 로딩 실패:`, e);
             }}
           />
         );
         
       case 'image':
-        console.log(`[CustomModal] Rendering image for "${title}" modal`);
+        // console.log(`[CustomModal] Rendering image for "${title}" modal`);
         return (
           <img 
             key={`img-${title}-${Date.now()}`}
