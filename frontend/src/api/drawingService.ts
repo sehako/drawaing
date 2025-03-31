@@ -45,13 +45,13 @@ class DrawingWebSocket {
           passcode: ''
         },
         debug: (str) => {
-          console.log('STOMP 그림 서비스:', str);
+          // console.log('STOMP 그림 서비스:', str);
         },
         reconnectDelay: 5000,
       });
 
       client.onConnect = () => {
-        console.log('STOMP 그림 서비스 연결 성공');
+        // console.log('STOMP 그림 서비스 연결 성공');
         this.stompClient = client;
         
         // 모든 등록된 방에 대해 구독 재설정
@@ -64,7 +64,7 @@ class DrawingWebSocket {
       };
 
       client.onStompError = (frame) => {
-        console.error('STOMP 그림 서비스 오류:', frame);
+        // console.error('STOMP 그림 서비스 오류:', frame);
         reject(new Error(`STOMP 연결 오류: ${frame.headers?.message || 'Unknown error'}`));
       };
 
@@ -79,7 +79,7 @@ class DrawingWebSocket {
     callback: DrawPointCallback
   ): () => void {
     if (!this.stompClient || !this.stompClient.connected) {
-      console.warn('STOMP 클라이언트가 연결되지 않았습니다.');
+      // console.warn('STOMP 클라이언트가 연결되지 않았습니다.');
       return () => {};
     }
 
@@ -95,23 +95,23 @@ class DrawingWebSocket {
             const drawingData: DrawingData = JSON.parse(message.body);
             
             // 상세 로깅 추가
-            console.group('🎨 웹소켓 그림 데이터 수신');
-            console.log('원본 메시지:', message.body);
-            console.log('파싱된 데이터:', JSON.stringify(drawingData, null, 2));
-            console.log('수신 데이터 구조:', Object.keys(drawingData));
+            // console.group('🎨 웹소켓 그림 데이터 수신');
+            // console.log('원본 메시지:', message.body);
+            // console.log('파싱된 데이터:', JSON.stringify(drawingData, null, 2));
+            // console.log('수신 데이터 구조:', Object.keys(drawingData));
             // console.log('첫 번째 데이터 포인트 개수:', 
             //   drawingData[Object.keys(drawingData)[0]]?.length || 0
             // );
-            console.groupEnd();
+            // console.groupEnd();
 
             callback(drawingData);
           } catch (error) {
-            console.error('그림 데이터 파싱 오류:', error);
+            // console.error('그림 데이터 파싱 오류:', error);
           }
         }
       );
 
-      console.log(`그리기 포인트 구독 성공: ${roomId}/${sessionId}`);
+      // console.log(`그리기 포인트 구독 성공: ${roomId}/${sessionId}`);
 
       // 구독 취소 함수 반환
       return () => {
@@ -119,7 +119,7 @@ class DrawingWebSocket {
         this.drawPointCallbacks.delete(key);
       };
     } catch (error) {
-      console.error('그리기 포인트 구독 중 오류:', error);
+      // console.error('그리기 포인트 구독 중 오류:', error);
       return () => {};
     }
   }
@@ -132,7 +132,7 @@ class DrawingWebSocket {
     points: DrawPoint[]
   ): boolean {
     if (!this.stompClient || !this.stompClient.connected) {
-      console.warn('STOMP 클라이언트가 연결되지 않았습니다.');
+      // console.warn('STOMP 클라이언트가 연결되지 않았습니다.');
       return false;
     }
 
@@ -143,23 +143,23 @@ class DrawingWebSocket {
       };
       
       // 상세 로깅 추가
-      console.group('🖌️ 웹소켓 그림 데이터 전송');
-      console.log('전송 대상 방 ID:', roomId);
-      console.log('세션 ID:', sessionId);
-      console.log('사용자 ID:', userId);
-      console.log('전송 데이터:', JSON.stringify(drawingData, null, 2));
-      console.log('전송 포인트 개수:', points.length);
-      console.groupEnd();
+      // console.group('🖌️ 웹소켓 그림 데이터 전송');
+      // console.log('전송 대상 방 ID:', roomId);
+      // console.log('세션 ID:', sessionId);
+      // console.log('사용자 ID:', userId);
+      // console.log('전송 데이터:', JSON.stringify(drawingData, null, 2));
+      // console.log('전송 포인트 개수:', points.length);
+      // console.groupEnd();
 
       this.stompClient.publish({
         destination: `/app/session.draw/${roomId}/${sessionId}`,
         body: JSON.stringify(drawingData)
       });
 
-      console.log(`그림 데이터 전송: 사용자 ${userId}, ${points.length}개 포인트`);
+      // console.log(`그림 데이터 전송: 사용자 ${userId}, ${points.length}개 포인트`);
       return true;
     } catch (error) {
-      console.error('그림 데이터 전송 오류:', error);
+      // console.error('그림 데이터 전송 오류:', error);
       return false;
     }
   }
@@ -170,7 +170,7 @@ class DrawingWebSocket {
       this.stompClient.deactivate();
       this.stompClient = null;
       this.drawPointCallbacks.clear();
-      console.log('STOMP 그림 서비스 연결 종료');
+      // console.log('STOMP 그림 서비스 연결 종료');
     }
   }
 }
