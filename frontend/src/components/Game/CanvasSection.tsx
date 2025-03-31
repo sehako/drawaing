@@ -42,8 +42,14 @@ interface CanvasSectionProps {
 
 // 그림 데이터 저장을 위한 인터페이스
 interface DrawingData {
+  [userId: number]: DrawPoint[]; // userId를 key로, 좌표 배열을 value로 갖는 객체
+}
+
+interface StoredDrawingData {
   drawerIndex: number;
+  userId: number;
   imageData: ImageData | null;
+  points: DrawPoint[];
 }
 
 const CanvasSection: React.FC<CanvasSectionProps> = ({
@@ -99,7 +105,7 @@ const CanvasSection: React.FC<CanvasSectionProps> = ({
   const cursorCanvasRef = useRef<HTMLCanvasElement | null>(null);
   
   // 각 플레이어의 그림 데이터 저장
-  const [drawingHistory, setDrawingHistory] = useState<DrawingData[]>([]);
+  const [drawingHistory, setDrawingHistory] = useState<StoredDrawingData[]>([]);
   
   // 현재 플레이어의 그림 저장용 캔버스
   const tempCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -114,11 +120,18 @@ const CanvasSection: React.FC<CanvasSectionProps> = ({
   const hasCurrentPlayerDrawn = hasDrawnInRound[activeDrawerIndex];
   const lastSendTimeRef = useRef<number>(Date.now());
 
+  const userIds = [1, 2, 3, 4]; // 하드코딩된 사용자 ID 배열 (4명의 사용자)
+  
+  const currentUserId = userIds[activeDrawerIndex];
+  const [allDrawingData, setAllDrawingData] = useState<DrawingData>({});
+  const [receivedDrawingData, setReceivedDrawingData] = useState<DrawingData>({});
+
   const handleReceivedDrawingPoints = useCallback((points: Array<{x: number, y: number}>) => {
     console.log('서버에서 받은 그리기 포인트:', points);
     setReceivedDrawingPoints(prevPoints => [...prevPoints, ...points]);
   }, []);
-
+  
+  const previousUserIdsRef = useRef<Set<number>>(new Set());
     // 웹소켓 구독 및 초기화 useEffect
     useEffect(() => {
       // roomId와 sessionId 유효성 검사
@@ -126,33 +139,109 @@ const CanvasSection: React.FC<CanvasSectionProps> = ({
         console.warn('roomId 또는 sessionId가 유효하지 않습니다.');
         return;
       }
-  
+      
       // 웹소켓 설정 및 구독 함수
       const setupWebSocket = async () => {
         try {
           // STOMP 클라이언트 초기화
           await drawingService.initializeClient(roomId, sessionId);
-  
+          
           // 그리기 포인트 구독
           const unsubscribe = drawingService.subscribeToDrawingPoints(
             roomId, 
             sessionId, 
-            (points: DrawPoint[]) => {
-              // 받은 포인트를 상태에 추가
-              setReceivedDrawingPoints(prevPoints => [...prevPoints, ...points]);
+            (drawingData: DrawingData) => {
+              console.log('서버에서 받은 그림 데이터:', drawingData);
+              
+              // 현재 메시지에 포함된 사용자 ID 목록
+              const currentUserIds = new Set(Object.keys(drawingData).map(id => parseInt(id)));
+              
+              // 이전에 있었지만 현재 메시지에 없는 사용자 ID 목록 확인
+              const deletedUserIds = Array.from(previousUserIdsRef.current)
+                .filter(id => !currentUserIds.has(id));
+              
+              // 지우기 작업이 있는지 확인 (빈 배열이 있는지)
+              let hasEraseOperation = false;
+              let erasedUserId: number | null = null;
+              
+              Object.entries(drawingData).forEach(([userIdStr, points]) => {
+                if (points.length === 0) {
+                  hasEraseOperation = true;
+                  erasedUserId = parseInt(userIdStr);
+                  console.log(`사용자 ${userIdStr}의 그림 지우기 이벤트 감지됨 (빈 배열)`);
+                }
+              });
+              
+              // 지우기 이벤트 처리 - 빈 배열이 있는 경우
+              if (hasEraseOperation && erasedUserId !== null) {
+                console.log(`사용자 ${erasedUserId}의 그림 지우기 이벤트 처리 중...`);
+                
+                // 해당 사용자의 그림을 히스토리에서 제거
+                setDrawingHistory(prevHistory => {
+                  // 지울 그림과 유지할 그림 분리
+                  const erasedUserDrawings = prevHistory.filter(d => d.userId === erasedUserId);
+                  const otherDrawings = prevHistory.filter(d => d.userId !== erasedUserId);
+                  
+                  console.log(`지울 그림 수: ${erasedUserDrawings.length}, 유지할 그림 수: ${otherDrawings.length}`);
+                  
+                  // 캔버스 초기화하고 유지할 그림만 다시 그리기
+                  if (canvasRef.current && context) {
+                    context.fillStyle = 'white';
+                    context.fillRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+                    
+                    otherDrawings.forEach(drawing => {
+                      if (drawing.imageData) {
+                        context.putImageData(drawing.imageData, 0, 0);
+                      }
+                    });
+                  }
+                  
+                  return otherDrawings;
+                });
+                
+                // 그림을 그리지 않은 상태로 설정 (해당 사용자가 현재 활성 사용자인 경우)
+                if (erasedUserId === currentUserId) {
+                  setHasCompleted(false);
+                  setHasDrawnInRound(prev => {
+                    const updated = [...prev];
+                    updated[activeDrawerIndex] = false;
+                    return updated;
+                  });
+                }
+              }
+              // 일반 그리기 데이터 처리
+              else {
+                Object.entries(drawingData).forEach(([userIdStr, points]) => {
+                  if (points.length > 0) {
+                    const userId = parseInt(userIdStr);
+                    
+                    setReceivedDrawingData(prev => {
+                      const newData = { ...prev };
+                      if (!newData[userId]) {
+                        newData[userId] = [];
+                      }
+                      newData[userId] = [...newData[userId], ...points];
+                      return newData;
+                    });
+                  }
+                });
+              }
+              
+              // 사용자 ID 목록 업데이트 (현재 그리기 데이터 기준)
+              // 주: 지우기 이벤트를 처리한 후에 목록 업데이트
+              previousUserIdsRef.current = currentUserIds;
             }
           );
-  
-          // 컴포넌트 언마운트 시 구독 해제
+          
           return unsubscribe;
         } catch (error) {
           console.error('웹소켓 설정 중 오류:', error);
         }
       };
-  
+      
       // 웹소켓 설정 실행
       const unsubscribePromise = setupWebSocket();
-  
+      
       // 컴포넌트 언마운트 시 정리
       return () => {
         // 구독 해제
@@ -161,39 +250,48 @@ const CanvasSection: React.FC<CanvasSectionProps> = ({
         // 연결 종료
         drawingService.disconnect();
       };
-    }, [roomId, sessionId]);
+    }, [roomId, sessionId, context, canvasRef, currentUserId, activeDrawerIndex]);
   
     // 받은 그리기 포인트 렌더링 useEffect
     useEffect(() => {
-      // 캔버스, 컨텍스트, 받은 포인트 유효성 검사
-      if (!context || !canvasRef.current || receivedDrawingPoints.length === 0) return;
-  
-      // 현재 그리기 상태가 아닐 때만 서버에서 받은 포인트 그리기
+      if (!context || !canvasRef.current || Object.keys(receivedDrawingData).length === 0) return;
+    
       if (!isDrawing) {
-        receivedDrawingPoints.forEach((point, index) => {
-          // 개별 점 그리기
-          context.beginPath();
-          context.arc(point.x, point.y, 2, 0, Math.PI * 2);
-          context.fillStyle = 'blue'; // 서버에서 받은 포인트는 파란색
-          context.fill();
-  
-          // 연속된 점들을 선으로 연결
-          if (index > 0) {
-            const prevPoint = receivedDrawingPoints[index - 1];
-            context.beginPath();
-            context.moveTo(prevPoint.x, prevPoint.y);
-            context.lineTo(point.x, point.y);
-            context.strokeStyle = 'blue';
-            context.lineWidth = 5;
-            context.lineCap = 'round';
-            context.stroke();
+        Object.entries(receivedDrawingData).forEach(([userIdStr, points]) => {
+          const userId = parseInt(userIdStr);
+          
+          // 빈 배열인 경우 지우기 이벤트로 처리
+          if (points.length === 0) {
+            console.log(`그림 렌더링 중 지우기 이벤트 감지: 사용자 ${userId}`);
+            return; // 건너뛰기
           }
+          
+          // 모든 사용자의 그림을 검은색으로 표시
+          points.forEach((point: DrawPoint, index: number) => {
+            // 개별 점 그리기
+            context.beginPath();
+            context.arc(point.x, point.y, 2, 0, Math.PI * 2);
+            context.fillStyle = 'black'; // 모든 유저 검은색으로 통일
+            context.fill();
+    
+            // 연속된 점들을 선으로 연결
+            if (index > 0) {
+              const prevPoint = points[index - 1];
+              context.beginPath();
+              context.moveTo(prevPoint.x, prevPoint.y);
+              context.lineTo(point.x, point.y);
+              context.strokeStyle = 'black'; // 모든 선 검은색
+              context.lineWidth = 5;
+              context.lineCap = 'round';
+              context.stroke();
+            }
+          });
         });
-  
+    
         // 그린 후 포인트 초기화
-        setReceivedDrawingPoints([]);
+        setReceivedDrawingData({});
       }
-    }, [receivedDrawingPoints, context, isDrawing, canvasRef]);
+    }, [receivedDrawingData, context, isDrawing, canvasRef]);
   
     // 그리기 포인트 전송 함수
     const sendDrawingPoints = useCallback((points: DrawPoint[]) => {
@@ -207,7 +305,7 @@ const CanvasSection: React.FC<CanvasSectionProps> = ({
       console.log(`전송 시도: ${points.length}개 좌표, roomId=${roomId}, sessionId=${sessionId}`);
       
       // drawingService를 통한 포인트 전송
-      return drawingService.sendDrawingPoints(roomId, sessionId, points);
+      return drawingService.sendDrawingPoints(roomId, sessionId, currentUserId, points);
     }, [roomId, sessionId]);
     
   // STOMP 클라이언트 초기화
@@ -238,14 +336,18 @@ const sendDrawingData = useCallback(() => {
     return;
   }
   
-  console.log(`전송 시도: ${drawingPoints.length}개 좌표, roomId=${roomId}, sessionId=${sessionId}`);
-  const success = drawingService.sendDrawingPoints(roomId, sessionId, drawingPoints);
-  console.log(`전송 결과: ${success ? '성공' : '실패'}`);
+  // 사용자 ID를 키로 하는 데이터 구조 생성
+  const drawingData: DrawingData = {
+    [currentUserId]: drawingPoints
+  };
+  
+  console.log(`전송 시도: ${drawingPoints.length}개 좌표, roomId=${roomId}, sessionId=${sessionId}, userId=${currentUserId}`);
+  const success = drawingService.sendDrawingPoints(roomId, sessionId, currentUserId, drawingPoints);
   
   if (success) {
     setDrawingPoints([]);
   }
-}, [drawingPoints, roomId, sessionId]);
+}, [drawingPoints, roomId, sessionId, currentUserId]);
 
 
   const saveCurrentDrawing = async () => {
@@ -260,11 +362,23 @@ const sendDrawingData = useCallback(() => {
     if (existingIndex >= 0) {
       // 기존 그림 업데이트
       const updatedHistory = [...drawingHistory];
-      updatedHistory[existingIndex] = { drawerIndex: activeDrawerIndex, imageData };
-      setDrawingHistory(updatedHistory);
+      updatedHistory[existingIndex] = {
+        drawerIndex: activeDrawerIndex,
+        userId: currentUserId,
+        imageData,
+        points: drawingPoints
+      };
+      setDrawingHistory(updatedHistory); // 중복 추가를 방지하기 위해 기존 배열 업데이트
     } else {
-      // 새 그림 추가
-      setDrawingHistory([...drawingHistory, { drawerIndex: activeDrawerIndex, imageData }]);
+      setDrawingHistory([
+        ...drawingHistory, 
+        { 
+          drawerIndex: activeDrawerIndex, 
+          userId: currentUserId,
+          imageData, 
+          points: drawingPoints 
+        }
+      ]);
     }
 
     // 현재 플레이어가 그림을 그렸음을 표시
@@ -307,8 +421,15 @@ const sendDrawingData = useCallback(() => {
 const clearCurrentDrawing = () => {
   if (!canvasRef.current || !context) return;
   
-  // 현재 플레이어의 그림을 히스토리에서 제거
-  const updatedHistory = drawingHistory.filter(drawing => drawing.drawerIndex !== activeDrawerIndex);
+  console.log("=== 지우기 작업 시작 ===");
+  console.log("지우기 전 현재 데이터:", {
+    drawingHistory: [...drawingHistory],
+    drawingHistory에서_현재유저그림: drawingHistory.filter(d => d.userId === currentUserId),
+    currentUserId
+  });
+  
+  // 현재 플레이어의 그림을 히스토리에서 제거 (userId로 구분)
+  const updatedHistory = drawingHistory.filter(drawing => drawing.userId !== currentUserId);
   setDrawingHistory(updatedHistory);
   
   // 캔버스 초기화 - 흰색으로 채우기
@@ -329,8 +450,47 @@ const clearCurrentDrawing = () => {
   
   // 그림 완료 상태 초기화하여 다시 그릴 수 있게 함
   setHasCompleted(false);
-  sendDrawingData();
-}
+  
+  // 지우기 이벤트를 웹소켓으로 전송
+  if (roomId && sessionId) {
+    // 명확한 지우기 이벤트 로깅
+    console.log("=== 지우기 이벤트 웹소켓 전송 ===");
+    console.log("전송 대상 roomId:", roomId);
+    console.log("전송 대상 sessionId:", sessionId);
+    console.log("지울 userId:", currentUserId);
+    
+    // 빈 배열 전송 - 현재 사용자의 그림 지우기 신호
+    const success = drawingService.sendDrawingPoints(roomId, sessionId, currentUserId, []);
+    
+    console.log(`웹소켓 전송 결과: ${success ? '성공' : '실패'}`);
+    console.log("=== 지우기 작업 완료 ===");
+    
+    // 그림 지운 후 상태 초기화
+    setDrawingPoints([]);
+  }
+};
+
+const handleReceivedDrawingData = useCallback((data: DrawingData) => {
+  console.log('서버에서 받은 그리기 데이터:', data);
+  
+  // 새로운 그리기 데이터를 상태에 병합
+  setReceivedDrawingData(prevData => {
+    const newData = { ...prevData };
+    
+    // 각 사용자 ID에 대해
+    Object.keys(data).forEach(userId => {
+      const numUserId = parseInt(userId);
+      if (!newData[numUserId]) {
+        newData[numUserId] = [];
+      }
+      
+      // 해당 사용자의 포인트 추가
+      newData[numUserId] = [...newData[numUserId], ...data[numUserId]];
+    });
+    
+    return newData;
+  });
+}, []);
 
   // 커서 위치 업데이트 및 그리기 함수
   const updateCursorPosition = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -618,11 +778,17 @@ const handleMouseEnter = (e: React.MouseEvent<HTMLCanvasElement>) => {
   }, [isDrawing, activeDrawerIndex, hasDrawnInRound, saveCurrentDrawing]);
 
   useEffect(() => {
-    // 라운드나 첫 번째 플레이어로 돌아왔을 때 모든 상태 초기화
-    if (currentRound > 0 && activeDrawerIndex === 0) {
+    // 로그 추가
+    console.log(`라운드 또는 활성 드로어 변경: 라운드=${currentRound}, 드로어 인덱스=${activeDrawerIndex}`);
+    
+    // 새 라운드가 시작될 때 (activeDrawerIndex === 0)
+    if (activeDrawerIndex === 0) {
+      console.log(`새 라운드 시작: ${currentRound}라운드`);
       setDrawingHistory([]);
       setHasDrawnInRound([false, false, false]);
-      setHasCompleted(false);  // 그리기 완료 상태 초기화
+      setHasCompleted(false);
+      setDrawingPoints([]);  // 그리기 포인트도 초기화
+      setAllDrawingData({}); // 전체 그리기 데이터도 초기화
       
       if (canvasRef.current && context) {
         context.fillStyle = 'white';
@@ -630,6 +796,40 @@ const handleMouseEnter = (e: React.MouseEvent<HTMLCanvasElement>) => {
       }
     }
   }, [currentRound, activeDrawerIndex]);
+
+
+  useEffect(() => {
+    if (!context || !canvasRef.current || Object.keys(receivedDrawingData).length === 0) return;
+  
+    if (!isDrawing) {
+      Object.entries(receivedDrawingData).forEach(([userIdStr, points]) => {
+        // 모든 사용자의 그림을 검은색으로 표시
+points.forEach((point: DrawPoint, index: number) => {
+          // 개별 점 그리기
+          context.beginPath();
+          context.arc(point.x, point.y, 2, 0, Math.PI * 2);
+          context.fillStyle = 'black'; // 모든 유저 검은색으로 통일
+          context.fill();
+  
+          // 연속된 점들을 선으로 연결
+          if (index > 0) {
+            const prevPoint = points[index - 1];
+            context.beginPath();
+            context.moveTo(prevPoint.x, prevPoint.y);
+            context.lineTo(point.x, point.y);
+            context.strokeStyle = 'black'; // 모든 선 검은색
+            context.lineWidth = 5;
+            context.lineCap = 'round';
+            context.stroke();
+          }
+        });
+      });
+  
+      // 그린 후 포인트 초기화
+      setReceivedDrawingData({});
+    }
+  }, [receivedDrawingData, context, isDrawing, canvasRef]);
+  
 
   useEffect(() => {
     if (showCorrectAnswer) {
