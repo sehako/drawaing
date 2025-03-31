@@ -6,14 +6,14 @@ import lombok.Builder;
 
 @Builder
 public record ChatEmojiDto(
-        String senderId,
+        Long userId,
         String roomId,
         String emoji,
         ZonedDateTime createdAt
 ) {
     public static ChatEmojiDto of(ChatEmoji chatemoji) {
         return ChatEmojiDto.builder()
-                .senderId(chatemoji.getSenderId())
+                .userId(chatemoji.getSenderId())
                 .roomId(chatemoji.getRoomId())
                 .emoji(chatemoji.getEmoji())
                 .createdAt(ZonedDateTime.now())

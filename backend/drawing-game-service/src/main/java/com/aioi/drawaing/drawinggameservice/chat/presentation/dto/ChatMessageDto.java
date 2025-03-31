@@ -8,13 +8,13 @@ import lombok.Builder;
 
 @Builder
 public record ChatMessageDto(
-        Long senderId,
+        Long userId,
         String message,
         LocalDateTime createdAt
 ) {
     public static ChatMessageDto of(ChatMessage chatMessage) {
         return ChatMessageDto.builder()
-                .senderId(chatMessage.getSenderId())
+                .userId(chatMessage.getSenderId())
                 .message(chatMessage.getMessage())
                 .createdAt(LocalDateTime.now())
                 .build();
@@ -23,7 +23,7 @@ public record ChatMessageDto(
     @Override
     public String toString() {
         return "ChatMessageDto{" +
-                "senderId='" + senderId + '\'' +
+                "senderId='" + userId + '\'' +
                 ", message='" + message + '\'' +
                 ", createdAt=" + createdAt +
                 '}';
