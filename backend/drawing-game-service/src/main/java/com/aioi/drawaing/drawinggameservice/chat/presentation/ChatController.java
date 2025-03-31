@@ -23,7 +23,7 @@ public class ChatController {
 
     @MessageMapping("/chat.message/{roomId}/{sessionId}")
     public void handleChatMessage(@DestinationVariable String roomId, @DestinationVariable String sessionId, @Payload ChatMessageDto message) {
-        chatService.publishChat(sessionId, message);
+        chatService.publishChat(roomId, sessionId, message);
     }
     @MessageMapping("/chat.emoji/{roomId}/{sessionId}")
     public void handleChatEmoji(@DestinationVariable String roomId, @DestinationVariable String sessionId, @Payload ChatEmoji message) {

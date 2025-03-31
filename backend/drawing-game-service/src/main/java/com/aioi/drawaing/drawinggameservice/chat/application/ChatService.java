@@ -24,14 +24,17 @@ public class ChatService {
     private final ChatMessagePublisher chatMessagePublisher;
     private final DrawingService drawingService;
 
-    public void publishChat(String sessionId, ChatMessageDto messageDto){
+    public void publishChat(String roomId, String sessionId, ChatMessageDto messageDto){
         log.info("{}: {}", sessionId, messageDto.toString());
 
         if(decrementParticipantChanceCount(sessionId, messageDto)){
-            ChatMessage chatMessage = ChatMessage.createMessage(messageDto);
+            ChatMessage chatMessage = ChatMessage.createMessage(sessionId, messageDto);
             log.info("{}: {}", sessionId, chatMessage);
             mongoTemplate.save(chatMessage);
-            chatMessagePublisher.publishChat("/topic/chat.message/" + messageDto.roomId()+"/"+sessionId, messageDto);
+            chatMessagePublisher.publishChat("/topic/chat.message/" + roomId +"/"+sessionId, messageDto);
+        }
+        else{
+            log.error("채팅 횟수 기회가 없습니다.");
         }
     }
 
