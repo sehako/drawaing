@@ -33,31 +33,32 @@ const GameInstructionModal: React.FC<GameInstructionModalProps> = ({ onClose }) 
           <div className="space-y-6 text-base md:text-lg">
             <div className="bg-amber-100 rounded-xl p-4 border-4 border-amber-800">
               <h3 className="text-xl font-bold mb-2">🐓 게임 목표</h3>
-              <p>AI와 유저 팀의 그림 맞추기 대결을 합니다! 주어진 제시어를 보고 그림을 그리면 다른 플레이어들이 맞춰야 합니다.</p>
+              <p>AI와 유저 팀이 캐치마인드 대결을 펼칩니다! 제한 시간 10분 동안 AI보다 더 많은 라운드를 <br />승리하면 최종 승리합니다.</p>
             </div>
             
             <div className="bg-amber-100 rounded-xl p-4 border-4 border-amber-800">
               <h3 className="text-xl font-bold mb-2">🎮 게임 방법</h3>
               <ol className="list-decimal pl-5 space-y-2">
-                <li>각 라운드마다 한 플레이어가 그림을 그리는 역할을 맡습니다.</li>
-                <li>그림을 그리는 플레이어는 제시어를 보고 그 단어를 표현하는 그림을 그립니다.</li>
-                <li>다른 플레이어들은 채팅창에 답을 입력하여 그림이 무엇인지 맞춰야 합니다.</li>
-                <li>정답을 맞춘 플레이어와 그림을 그린 플레이어 모두 점수를 얻습니다.</li>
-                <li>모든 플레이어가 한 번씩 그림을 그리면 게임이 종료됩니다.</li>
+                <li>한 라운드마다 3번의 턴이 진행됩니다.</li>
+                <p>- 1번째 유저가 그림을 그리면, 나머지 3명의 유저가 제시어를 맞힙니다.</p>
+                <p>- 2번째 유저가 1번째 유저의 그림을 이어 받아 그림을 그리면, 남은 2명의 유저가 맞힙니다.</p>
+                <p>- 3번째 유저가 2번재 유저의 그림을 보고 다시 그림을 그리면, 마지막 남은 유저가 <br />  <span className='ml-3'>      맞힙니다.</span></p>
+                <li>모든 그림은 한 붓 그리기(클릭을 한 번만 떼지 않고 그리기)로만 가능합니다.</li>
+                <li>각 유저는 라운드당 3번의 답안 제출 기회가 주어지므로 신중하게 답해주세요.</li>
               </ol>
             </div>
             
             <div className="bg-amber-100 rounded-xl p-4 border-4 border-amber-800">
               <h3 className="text-xl font-bold mb-2">⏱️ 시간 제한</h3>
-              <p>그림을 그리는 시간과 맞추는 시간은 각각 60초로 제한됩니다. 시간 내에 그림을 완성하고 정답을 맞춰보세요!</p>
+              <p>- 게임 전체 시간 : 10분</p>
+              <p>- 각 턴의 시간(그림 그리기 및 정답 맞히기) : 20초</p>
             </div>
             
             <div className="bg-amber-100 rounded-xl p-4 border-4 border-amber-800">
               <h3 className="text-xl font-bold mb-2">💯 점수 계산</h3>
               <ul className="list-disc pl-5 space-y-2">
-                <li>정답자: 빠르게 맞출수록 더 많은 점수 획득</li>
+                <li>정답자: 턴이 적게 진행되어 빠르게 맞출수록 더 많은 점수 획득</li>
                 <li>그림 작가: 다른 플레이어가 정답을 맞출 때마다 점수 획득</li>
-                <li>추가 보너스: 창의적인 그림이나 재미있는 그림에 투표받으면 보너스 점수!</li>
               </ul>
             </div>
           </div>
