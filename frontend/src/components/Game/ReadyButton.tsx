@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Player } from '../../utils/GameSocketUtils';
+import { useNavigate } from 'react-router-dom';
 
 interface ReadyButtonProps {
   currentUser: Player | null;
@@ -11,6 +12,7 @@ interface ReadyButtonProps {
   customIsHost?: boolean;
   playerCount?: number;
   maxPlayers?: number;
+  roomId?: string; // roomId 추가
 }
 
 const ReadyButton: React.FC<ReadyButtonProps> = ({
@@ -22,8 +24,11 @@ const ReadyButton: React.FC<ReadyButtonProps> = ({
   customReadyState,
   customIsHost,
   playerCount = 0,
-  maxPlayers = 4
+  maxPlayers = 4,
+  roomId, 
 }) => {
+  const navigate = useNavigate(); // useNavigate 훅 추가
+
   // 컴포넌트 내부 상태 추가 - props 변경에 즉시 반응하기 위함
   const [localIsHost, setLocalIsHost] = useState<boolean>(false);
   
@@ -66,10 +71,32 @@ const ReadyButton: React.FC<ReadyButtonProps> = ({
     console.log('customIsHost:', customIsHost);
     console.log('currentUser?.isHost:', currentUser?.isHost);
     console.log('allPlayersReady:', allPlayersReady);
-  }, [localIsHost, customIsHost, currentUser, allPlayersReady]);
+    console.log('roomId:', roomId);
+  }, [localIsHost, customIsHost, currentUser, allPlayersReady, roomId]);
 
   if (!currentUser) return null;
+    // 시작 버튼 클릭 핸들러 수정
+    const handleStartGame = () => {
+      // 기존 onStartGame 호출하여 웹소켓 메시지 전송
+      onStartGame();
+      
+      // 유효한 roomId가 있으면 해당 roomId로 게임 페이지로 이동
+      if (roomId) {
+        console.log(`게임 시작: /game/${roomId}로 이동합니다.`);
+        
+        // 약간의 지연 후 이동 (웹소켓 메시지가 전송될 시간 확보)
+        setTimeout(() => {
+          navigate(`/game/${roomId}`);
+        }, 500);
+      } else {
+        // roomId가 없으면 기본 경로로 이동
+        console.log('roomId가 없습니다. 기본 게임 페이지로 이동합니다.');
+        navigate('/game');
+      }
+    };
   
+    if (!currentUser) return null;
+
   // customReadyState가 제공되면 이를 사용, 아니면 currentUser.isReady 사용
   const isReady = customReadyState !== undefined ? customReadyState : currentUser.isReady;
   
@@ -78,7 +105,7 @@ const ReadyButton: React.FC<ReadyButtonProps> = ({
       {localIsHost ? (
         // 방장인 경우: 시작 버튼만 표시
         <button
-          onClick={onStartGame}
+          onClick={handleStartGame}
           disabled={!allPlayersReady || !isConnected || playerCount < 2}
           className={`w-full h-16 sm:h-24 rounded-full flex items-center justify-center border-4 border-black shadow-[8px_8px_0_0_rgba(0,0,0,1)] hover:shadow-[10px_10px_0_0_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 text-2xl sm:text-4xl font-bold font-['Press_Start_2P'] transition-all duration-200 ${
             allPlayersReady && isConnected && playerCount >= 2
