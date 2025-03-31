@@ -322,7 +322,9 @@ const Game: React.FC = () => {
 const transitionToNextRound = () => {
   // 라운드 전환 시작을 표시
   setIsRoundTransitioning(true);
-  
+
+  setTimeLeft(0);
+
   // 3초 뒤에 실행 (RoundTransition 모달의 카운트다운 시간과 일치)
   setTimeout(() => {
     setCurrentRound(prev => prev + 1);
@@ -343,7 +345,9 @@ const transitionToNextRound = () => {
     setHasCompleted(false);
     setGuessSubmitCount(0);
     setShowCorrectAnswer(false);
-    
+
+    setTimeLeft(20);
+
     // 라운드 전환 완료 표시
     setIsRoundTransitioning(false);
     
@@ -445,19 +449,26 @@ const handlePass = () => {
       throw error;
     }
   };
+  
 // 그림 그리기 타이머 효과 - 개선된 버전
 useEffect(() => {
   // 게임이 종료됐거나 라운드 전환 중이면 타이머를 멈춤
   if (isGameOver || isRoundTransitioning) return;
 
+  // 타이머가 0이 되었을 때
   if (timeLeft <= 0) {
+    console.log("타이머 종료, 다음 플레이어로 전환");
+
     const nextDrawerIndex = (activeDrawerIndex + 1) % 3;
+    console.log(`현재 인덱스: ${activeDrawerIndex}, 다음 인덱스: ${nextDrawerIndex}`);
 
     if (nextDrawerIndex === 0) {
       // 세 번째 턴이 끝났을 때는 라운드 전환 함수 호출
+      console.log("세 번째 턴 종료, 라운드 전환 시작");
       transitionToNextRound();
     } else {
       // 첫 번째나 두 번째 턴이 끝났을 때는 그냥 다음 턴으로 넘어감
+      console.log(`턴 전환: ${activeDrawerIndex} -> ${nextDrawerIndex}`);
       setActiveDrawerIndex(nextDrawerIndex);
       setTimeLeft(20);
       setHasCompleted(false);

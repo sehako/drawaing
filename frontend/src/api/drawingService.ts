@@ -6,8 +6,13 @@ export interface DrawPoint {
   y: number;
 }
 
+// 사용자별 그림 데이터 인터페이스 (변경됨)
+export interface DrawingData {
+  [userId: number]: DrawPoint[];
+}
+
 // 웹소켓 콜백 타입
-export type DrawPointCallback = (points: DrawPoint[]) => void;
+export type DrawPointCallback = (drawingData: DrawingData) => void;
 
 class DrawingWebSocket {
   private static instance: DrawingWebSocket;
@@ -87,9 +92,19 @@ class DrawingWebSocket {
         `/topic/session.draw/${roomId}/${sessionId}`, 
         (message) => {
           try {
-            const points: DrawPoint[] = JSON.parse(message.body);
-            console.log('서버에서 받은 그리기 포인트:', points);
-            callback(points);
+            const drawingData: DrawingData = JSON.parse(message.body);
+            
+            // 상세 로깅 추가
+            console.group('🎨 웹소켓 그림 데이터 수신');
+            console.log('원본 메시지:', message.body);
+            console.log('파싱된 데이터:', JSON.stringify(drawingData, null, 2));
+            console.log('수신 데이터 구조:', Object.keys(drawingData));
+            // console.log('첫 번째 데이터 포인트 개수:', 
+            //   drawingData[Object.keys(drawingData)[0]]?.length || 0
+            // );
+            console.groupEnd();
+
+            callback(drawingData);
           } catch (error) {
             console.error('그림 데이터 파싱 오류:', error);
           }
@@ -109,10 +124,11 @@ class DrawingWebSocket {
     }
   }
 
-  // 그리기 포인트 전송
+  // 그리기 포인트 전송 (변경됨)
   public sendDrawingPoints(
     roomId: string, 
     sessionId: string, 
+    userId: number,
     points: DrawPoint[]
   ): boolean {
     if (!this.stompClient || !this.stompClient.connected) {
@@ -121,12 +137,26 @@ class DrawingWebSocket {
     }
 
     try {
+      // 사용자 ID를 키로 하는 데이터 구조 생성
+      const drawingData: DrawingData = {
+        [userId]: points
+      };
+      
+      // 상세 로깅 추가
+      console.group('🖌️ 웹소켓 그림 데이터 전송');
+      console.log('전송 대상 방 ID:', roomId);
+      console.log('세션 ID:', sessionId);
+      console.log('사용자 ID:', userId);
+      console.log('전송 데이터:', JSON.stringify(drawingData, null, 2));
+      console.log('전송 포인트 개수:', points.length);
+      console.groupEnd();
+
       this.stompClient.publish({
         destination: `/app/session.draw/${roomId}/${sessionId}`,
-        body: JSON.stringify(points)
+        body: JSON.stringify(drawingData)
       });
 
-      console.log(`그림 데이터 전송: ${points.length}개 포인트`);
+      console.log(`그림 데이터 전송: 사용자 ${userId}, ${points.length}개 포인트`);
       return true;
     } catch (error) {
       console.error('그림 데이터 전송 오류:', error);
