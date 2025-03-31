@@ -66,6 +66,7 @@ public class Room {
 
     public void updateHostId(long hostId) {
         this.hostId = hostId;
+        this.status = RoomStatus.READY.name();
     }
 
 }
