@@ -11,6 +11,7 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
+import java.util.HashMap;
 import java.util.List;
 
 @Slf4j
@@ -21,11 +22,9 @@ public class DrawingController {
     private final DrawingService drawingService;
 
     @MessageMapping("/session.draw/{roomId}/{sessionId}")
-    public void send(@DestinationVariable String roomId, @DestinationVariable String sessionId, @Payload List<DrawInfo> drawInfo) {
+    public void send(@DestinationVariable String roomId, @DestinationVariable String sessionId, @Payload HashMap<Long, List<DrawInfo>> drawInfo) {
         log.info("send message: {}", drawInfo.toString());
-//        System.out.println("send message: " + message + " " + roomId + " " + sessionId);
-
-        simpMessagingTemplate.convertAndSend("/topic/session.draw/" + roomId + "/" + sessionId, drawInfo);
+        drawingService.sendDraw(roomId, sessionId, drawInfo);
     }
 
     @MessageMapping("/session.end/{roomId}/{sessionId}")
@@ -40,7 +39,7 @@ public class DrawingController {
 
     @MessageMapping("/session.correct/{roomId}/{sessionId}")
     public void win(@DestinationVariable String roomId, @DestinationVariable String sessionId, @Payload WinParticipantInfo winParticipantInfo) {
-        System.out.println(sessionId);
+        log.info(sessionId);
         drawingService.win(roomId, sessionId, winParticipantInfo);
     }
 
