@@ -31,14 +31,22 @@ const getPlayerIdByNumber = (playerNumber: string): number => {
 
 const Game: React.FC = () => {
   // URL에서 roomId 파라미터 가져오기
-  const params = useParams<{ roomId?: string }>();
-  const roomId = '67e3b8c70e25f60ac596bd83';
+  const { roomId: paramRoomId } = useParams<{ roomId?: string }>();
+  const [roomId, setRoomId] = useState<string | null>('');
   const navigate = useNavigate();
   
   const [passCount, setPassCount] = useState<number>(0);
   const MAX_PASS_COUNT = 3;
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  useEffect(() => {
+    // 우선순위: URL 파라미터 > localStorage
+    const storedRoomId = localStorage.getItem('roomId');    
+    const roomIdToUse = paramRoomId || storedRoomId
+    
+    console.log('Game.tsx - roomId 설정:', roomIdToUse);
+    setRoomId(roomIdToUse || ''); // null이면 빈 문자열 할당
+  }, [paramRoomId]);
 
   // roomId가 없으면 기본 방으로 리다이렉트
   useEffect(() => {
@@ -125,6 +133,7 @@ const Game: React.FC = () => {
   const [lastPoint, setLastPoint] = useState<{ x: number; y: number } | null>(null);
 
   const [playerMessages, setPlayerMessages] = useState<{[playerId: number]: string}>({});
+  const [storedSessionId, setStoredSessionId] = useState<string | null>(null);
 
   const [eggCount, setEggCount] = useState(10);
   const [aiAnswer, setAiAnswer] = useState<string>('');
@@ -152,10 +161,10 @@ const Game: React.FC = () => {
   const [predictions, setPredictions] = useState<{ class: string; probability: number }[]>([]);
 
   // 웹소켓 훅 사용
-  const { isConnected, playerConnections, sessionId, sendMessage } = useGameWebSocket({
-    roomId,
-    currentPlayer
-  });
+const { isConnected, playerConnections, sessionId, sendMessage } = useGameWebSocket({
+  roomId: roomId ?? "", // null이면 빈 문자열로 변환
+  currentPlayer
+});
   
   // 웹소켓 연결 완료 후 타이머 정보 가져오기 위한 상태 추가
   const [isGameTimerReady, setIsGameTimerReady] = useState<boolean>(false);
@@ -180,7 +189,7 @@ const Game: React.FC = () => {
     isLoading: isTimerLoading,
     error: timerError
   } = useGameTimer({
-    roomId,
+    roomId: roomId ?? "", // null이면 빈 문자열로 변환
     sessionId: sessionId || '0',
     isGameOver
   });
@@ -380,7 +389,7 @@ const transitionToNextRound = () => {
     // 여기에서 타이머 리셋 호출 (모달이 사라지는 시점)
     if (sessionId) {
       gameTimerService.resetTurnTimer(
-        roomId,
+        roomId ?? '',
         sessionId,
         {
           currentRound: currentRound + 1,
@@ -804,7 +813,7 @@ useEffect(() => {
             currentRound={currentRound}
             activeDrawerIndex={activeDrawerIndex}
             guesserIndex={guesserIndex}
-            roomId={roomId}
+            roomId={roomId || undefined}  // null일 경우 undefined로 변환
             playerConnections={playerConnections as any}
             isConnected={isConnected}
             playerMessages={playerMessages}
@@ -840,8 +849,8 @@ useEffect(() => {
           activeDrawerIndex={activeDrawerIndex}
           handleCanvasSubmit={handleCanvasSubmit}
           setPredictions={setPredictions}
-          roomId={roomId}  // 추가
-          sessionId={sessionId}  // 추가
+          roomId={roomId ?? ""}  // null이면 빈 문자열로 변환
+          sessionId={sessionId ?? ""}  // null이면 빈 문자열로 변환
         />
         </div>
 
