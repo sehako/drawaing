@@ -20,7 +20,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 public class ChatEmoji {
     @Id
     private String id;
-    private String senderId; // 보내는 사람
+    private Long senderId; // 보내는 사람
     private String roomId; // 방 번호
     private String emoji; // 감정표현
     @CreatedDate

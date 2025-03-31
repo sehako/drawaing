@@ -41,10 +41,10 @@ public class ChatService {
     private boolean decrementParticipantChanceCount(String sessionId, ChatMessageDto messageDto) {
         Session session = drawingService.findSession(sessionId);
 
-        log.info("decrementParticipantChanceCount: {}: {}", sessionId, session.getChanceCount(Long.valueOf(messageDto.senderId())));
+        log.info("decrementParticipantChanceCount: {}: {}", sessionId, session.getChanceCount(messageDto.userId()));
 
-        if(session.getChanceCount(Long.valueOf(messageDto.senderId()))>0){
-            session.decrementParticipantChanceCount(Long.valueOf(messageDto.senderId()));
+        if(session.getChanceCount(messageDto.userId())>0){
+            session.decrementParticipantChanceCount(messageDto.userId());
             mongoTemplate.save(session);
             return true;
         }
@@ -63,7 +63,7 @@ public class ChatService {
 
     public ChatEmoji saveEmoji(ChatEmojiDto emojiDto) {
         ChatEmoji chatEmoji = ChatEmoji.builder()
-                .senderId(emojiDto.senderId())
+                .senderId(emojiDto.userId())
                 .roomId(emojiDto.roomId())
                 .emoji(emojiDto.emoji())
                 .build();
