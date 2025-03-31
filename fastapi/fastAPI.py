@@ -1,6 +1,7 @@
 from fastapi import FastAPI, File, UploadFile
 import torch
 import torchvision.transforms as transforms
+import torchvision.models as models
 from PIL import Image
 from io import BytesIO
 from model.network import ModifiedShuffleNetV2  # 모델 클래스 임포트. 필요하다니 불러옴...
