@@ -133,7 +133,7 @@ public class DrawingService {
         session.addParticipant(addSessionParticipantInfo.id(), Participant.createParticipant(addSessionParticipantInfo.nickname(), addSessionParticipantInfo.characterUrl()));
     }
 
-    private Session findSession(String sessionId) {
+    public Session findSession(String sessionId) {
         return sessionRepository.findById(sessionId).orElseThrow(()->new RuntimeException("session id가 잘못됐습니다."));
     }
 
