@@ -21,6 +21,10 @@ public class Participant {
                 .build();
     }
 
+    public void decrementChanceCount(){
+        this.chanceCount--;
+    }
+
     public void incrementBonusPointsGuessing(int bonusPointsGuessing){
         this.bonusPointsGuessing += bonusPointsGuessing;
     }
