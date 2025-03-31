@@ -18,7 +18,11 @@ public class RoomParticipant {
                 .build();
     }
 
-    public void updateReady(){
+    public void toggleReady(){
         this.isReady = !this.isReady;
+    }
+
+    public void updateReady(){
+        this.isReady = true;
     }
 }
