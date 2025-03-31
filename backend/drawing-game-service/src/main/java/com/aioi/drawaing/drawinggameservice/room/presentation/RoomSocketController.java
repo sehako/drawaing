@@ -6,6 +6,7 @@ import com.aioi.drawaing.drawinggameservice.room.presentation.dto.RoomRequest;
 import java.util.Map;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -14,6 +15,7 @@ import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
+@Slf4j
 @Controller
 @RequiredArgsConstructor
 public class RoomSocketController {
@@ -34,13 +36,13 @@ public class RoomSocketController {
     @MessageMapping("/room.join/{roomId}")
     public void joinRoom(@DestinationVariable String roomId,
                            @Payload AddRoomParticipantInfo addRoomParticipantInfo) {
-        System.out.println("join: "+roomId);
+        log.info("join: {}", roomId);
         roomSocketService.joinRoom(roomId, addRoomParticipantInfo);
     }
     @MessageMapping("/room.start/{roomId}")
     public void startGame(@DestinationVariable String roomId,
                            @Payload RoomRequest request) {
-        System.out.println("start: "+request.memberId());
+        log.info("start: {}", request.memberId());
         roomSocketService.startGame(roomId, request.memberId());
     }
     @MessageMapping("/room.leave/{roomId}")
