@@ -8,7 +8,7 @@ class ModifiedShuffleNetV2(nn.Module):
         super(ModifiedShuffleNetV2, self).__init__()
         
         # ShuffleNetV2 모델 불러옴
-        shufflenet_v2 = models.shufflenet_v2_x0_5(weight=True)  # 작은 버전 사용 (0.5x)
+        shufflenet_v2 = models.shufflenet_v2_x0_5(pretrained=True)  # 작은 버전 사용 (0.5x)
         
         # 마지막 fully connected layer를 num_classes에 맞게 수정
         shufflenet_v2.fc = nn.Linear(shufflenet_v2.fc.in_features, num_classes)
