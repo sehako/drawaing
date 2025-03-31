@@ -1,519 +1,367 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { Client } from '@stomp/stompjs';
-import { useNavigate } from 'react-router-dom';
-import { 
-  createStompClient, 
-  sendJoinRoomMessage, 
-  JoinRoomRequest, 
-  Player,
-  normalizePlayerData,
-  determineHostId
-} from '../utils/GameSocketUtils';
+// hooks/useGameWebSocket.ts
+import { useState, useRef, useEffect } from 'react';
+
+interface WebSocketMessage {
+  type: string;
+  data: any;
+}
+
+// 플레이어 정보 인터페이스
+interface PlayerInfo {
+  nickname: string;
+  characterUrl: string;
+  isReady: boolean;
+  isConnected: boolean;
+}
+
+interface PlayerConnectionMap {
+  "1": PlayerInfo;
+  "2": PlayerInfo;
+  "3": PlayerInfo;
+  "4": PlayerInfo;
+  [key: string]: PlayerInfo;  // 동적 인덱스 접근을 위한 인덱스 시그니처 추가
+}
 
 interface UseGameWebSocketProps {
-  roomId: string;
-  user: {
-    memberId: number;
-    nickname: string;
-    characterImage: string | null;
-  } | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
+  roomId: string | undefined;
+  currentPlayer: string;
 }
 
 interface UseGameWebSocketReturn {
-  stompClient: Client | null;
   isConnected: boolean;
-  players: Player[];
-  currentUser: Player | null;
-  chatMessages: string[];
-  subscribeToRoom: (client: Client, roomId: string) => void;
-  joinRoom: (client: Client, userInfo: JoinRoomRequest, roomId: string) => void;
-  updatePlayersList: (playerData: any) => void;
-  updatePlayerReadyStatus: (readyData: any) => void;
-  addChatMessage: (chatData: any) => void;
-  setPlayers: React.Dispatch<React.SetStateAction<Player[]>>;
-  setChatMessages: React.Dispatch<React.SetStateAction<string[]>>;
-  setCurrentUser: React.Dispatch<React.SetStateAction<Player | null>>;
-  setIsLeaving: React.Dispatch<React.SetStateAction<boolean>>;
-  isLeaving: boolean;
+  playerConnections: PlayerConnectionMap;
+  sessionId: string | null;
+  sendMessage: (messageType: string, messageData: any) => void;
 }
 
-const useGameWebSocket = ({
-  roomId,
-  user,
-  isAuthenticated,
-  isLoading
-}: UseGameWebSocketProps): UseGameWebSocketReturn => {
-  const navigate = useNavigate();
-  const [stompClient, setStompClient] = useState<Client | null>(null);
+const useGameWebSocket = ({ roomId, currentPlayer }: UseGameWebSocketProps): UseGameWebSocketReturn => {
+  // 고정된 세션 ID
+  const FIXED_ROOM_ID = "67e3b8c70e25f60ac596bd83";
+  const FIXED_SESSION_ID = "67e3b8c70e25f60ac596bd84";
+  
   const [isConnected, setIsConnected] = useState<boolean>(false);
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [currentUser, setCurrentUser] = useState<Player | null>(null);
-  const [chatMessages, setChatMessages] = useState<string[]>([]);
-  const [isLeaving, setIsLeaving] = useState<boolean>(false);
-  const componentMountedRef = useRef(true);
-
-  // updatePlayersList 함수 수정 - 방장 상태 더 확실하게 처리
-
-const updatePlayersList = useCallback((playerData: any) => {
-  console.log('===== 플레이어 데이터 처리 시작 =====');
-  console.log('원본 데이터:', playerData);
-  
-  // 데이터 형식 정규화 (hostId 정보 포함)
-  const { normalizedData, hostId } = normalizePlayerData(playerData);
-  console.log('정규화된 데이터:', normalizedData);
-  console.log('서버 지정 방장 ID:', hostId);
-  
-  // 빈 객체나 유효하지 않은 형식인 경우 처리 중단
-  if (!normalizedData || typeof normalizedData !== 'object' || Object.keys(normalizedData).length === 0) {
-    console.warn('유효한 플레이어 데이터가 아닙니다.');
-    return;
-  }
-  
-  // 플레이어 ID 목록
-  const playerIds = Object.keys(normalizedData);
-  console.log('플레이어 ID 목록:', playerIds);
-  
-  if (playerIds.length === 0) {
-    console.warn('플레이어 목록이 비어 있습니다.');
-    return;
-  }
-  
-  // 방장 ID 결정 (서버에서 제공한 hostId 사용, 없으면 첫 번째 플레이어)
-  const hostPlayerId = determineHostId(playerIds, hostId);
-  console.log('결정된 방장 ID:', hostPlayerId);
-  
-  // hostId가 있으면 localStorage에 저장
-  if (hostId !== null) {
-    // 현재 사용자가 방장인지 확인
-    const isCurrentUserHost = user?.memberId === hostId;
-    localStorage.setItem('isHost', isCurrentUserHost ? 'true' : 'false');
-    console.log('방장 여부 localStorage 저장:', isCurrentUserHost);
-  }
-  
-  // 객체를 배열로 변환하여 처리
-  const updatedPlayers = Object.entries(normalizedData).map(([id, data]: [string, any]) => {
-    // 방장 설정: hostId와 일치하는 플레이어를 방장으로
-    const isHost = hostPlayerId ? id === hostPlayerId : false;
-    
-    return {
-      id: id,
-      memberId: parseInt(id),
-      nickname: data.nickname || '알 수 없음',
-      isReady: data.ready || false,  // 서버에서는 ready로 전송됨
-      isHost: isHost, // 명확하게 방장 여부 설정
-      character: data.characterUrl || 'https://placehold.co/400/gray/white?text=Unknown',
-      characterUrl: data.characterUrl || 'https://placehold.co/400/gray/white?text=Unknown'
-    };
+  const [sessionId, setSessionId] = useState<string | null>(FIXED_SESSION_ID);
+  const [playerConnections, setPlayerConnections] = useState<PlayerConnectionMap>({
+    "1": { 
+      nickname: "나는 주인", 
+      characterUrl: "https://upload.wikimedia.org/wikipedia/commons/e/e3/Mustela_nivalis_-British_Wildlife_Centre-4.jpg", 
+      isReady: true, 
+      isConnected: false 
+    },
+    "2": { 
+      nickname: "누누", 
+      characterUrl: "https://i.namu.wiki/i/-2JTZk-AuNWNev1bdYKRqhZH_ZypgqSrxNMVefQuvGIKYbsRno_Xdj9O_ujouwSvrlI3ky_2wruw05jN2q3zHg.webp", 
+      isReady: false, 
+      isConnected: false 
+    },
+    "3": { 
+      nickname: "룰룰", 
+      characterUrl: "https://mblogthumb-phinf.pstatic.net/MjAyMTA1MjRfMTU2/MDAxNjIxODIzODMwMzg2.LEeKaliV4oWkPeY3F0Y2jX9dkFNH73WyRNeuta77kpMg.o4PEe6AvVkSRrPHIZGQqG9wP3TpseYpN2UKXV624RjcgJPEG.gkfngkfn414/%EC%96%B4%EB%A6%B0%EC%9D%B4%EC%A7%91_%EC%9C%A0%EC%B9%98%EC%9B%90_%EB%B3%91%EC%95%84%EB%A6%AC_%EC%BA%90%EB%A6%AD%ED%84%B0_%EA%B7%B8%EB%A6%AC%EA%B8%B0_(14).jpg?type=w800", 
+      isReady: false, 
+      isConnected: false 
+    },
+    "4": { 
+      nickname: "문상", 
+      characterUrl: "https://images.khan.co.kr/article/2021/12/10/l_2021121002000571800113942.jpg", 
+      isReady: false, 
+      isConnected: false 
+    }
   });
-
-  console.log('변환된 플레이어 목록:', updatedPlayers);
   
-  setPlayers(updatedPlayers);
+  const wsRef = useRef<WebSocket | null>(null);
+  
+  // API URL 설정
+  const API_URL = import.meta.env.VITE_API_URL || 'www.drawaing.site';
+  const WS_URL = `${API_URL.replace('https://', 'wss://').replace('http://', 'ws://')}/service/game/drawing`;
 
-  // 현재 사용자 찾기
-  if (user && user.memberId) {
-    const userIdStr = user.memberId.toString();
-    console.log('현재 사용자 ID:', userIdStr);
-    
-    // 내가 방장인지 확인
-    const amIHost = hostId !== null && user.memberId === hostId;
-    console.log('내가 방장인가?', amIHost);
-    
-    // 방장 정보 로컬 스토리지에 저장
-    localStorage.setItem('isHost', amIHost ? 'true' : 'false');
-    
-    const myInfo = updatedPlayers.find(p => p.id === userIdStr || p.memberId === user.memberId);
-    if (myInfo) {
-      // 방장 상태를 명확하게 설정
-      const updatedMyInfo = {...myInfo, isHost: amIHost};
-      console.log('내 플레이어 정보 업데이트:', updatedMyInfo);
-      setCurrentUser(updatedMyInfo);
-    } else {
-      // 사용자가 목록에 없으면, 기존 user 정보로 가상의 플레이어 객체 생성
-      const virtualUser = {
-        id: userIdStr,
-        memberId: user.memberId,
-        nickname: user.nickname || '게스트',
-        isReady: false,
-        isHost: amIHost,  // hostId에 따라 방장 여부 결정
-        character: user.characterImage || 'https://placehold.co/400/gray/white?text=Unknown',
-        characterUrl: user.characterImage || 'https://placehold.co/400/gray/white?text=Unknown'
+  // 웹소켓 메시지 전송 함수
+  const sendMessage = (messageType: string, messageData: any) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      const message = {
+        type: messageType,
+        data: messageData
       };
-      console.log('목록에 내 정보가 없어 가상 정보 생성:', virtualUser);
-      setCurrentUser(virtualUser);
-      
-      // 플레이어 목록에 자신 추가(서버 응답에 본인이 없는 경우를 대비)
-      setPlayers([...updatedPlayers, virtualUser]);
-    }
-  }
-  
-  console.log('===== 플레이어 데이터 처리 완료 =====');
-}, [user]);
-
-  // 준비 상태 업데이트 함수
-  const updatePlayerReadyStatus = useCallback((readyData: any) => {
-    console.log('준비 상태 변경 데이터:', readyData);
-    
-    // readyData 형식이 { playerId: { ready: boolean } } 형태인 경우
-    if (typeof readyData === 'object' && !Array.isArray(readyData)) {
-      const entries = Object.entries(readyData);
-      if (entries.length > 0) {
-        const [playerId, playerData] = entries[0] as [string, any];
-        
-        // 플레이어 목록 업데이트
-        setPlayers(prev => prev.map(player => 
-          player.id === playerId
-            ? { ...player, isReady: playerData.ready }
-            : player
-        ));
-
-        // 현재 사용자의 준비 상태 업데이트
-        setCurrentUser(prev => 
-          prev && prev.id === playerId
-            ? { ...prev, isReady: playerData.ready }
-            : prev
-        );
-
-        // 채팅에 메시지 추가
-        const playerName = players.find(p => p.id === playerId)?.nickname || 'Unknown';
-        const readyStatus = playerData.ready ? '준비 완료' : '준비 취소';
-        const newMessage = `시스템: ${playerName}님이 ${readyStatus}했습니다.`;
-        setChatMessages(prev => [...prev, newMessage]);
-      }
+      wsRef.current.send(JSON.stringify(message));
+      console.log("메시지 전송:", message);
     } else {
-      console.error('예상치 못한 준비 상태 데이터 형식:', readyData);
+      console.warn('웹소켓이 연결되어 있지 않습니다.');
     }
-  }, [players]);
+  };
 
-  // 채팅 메시지 추가 함수
-  const addChatMessage = useCallback((chatData: any) => {
-    const newMessage = `${chatData.nickname}: ${chatData.message}`;
-    setChatMessages(prev => [...prev, newMessage]);
-  }, []);
+  // 특정 플레이어의 접속 상태 업데이트
+  const handlePlayerConnection = (playerNumber: string, isConnected: boolean) => {
+    if (playerNumber === "1" || playerNumber === "2" || playerNumber === "3" || playerNumber === "4") {
+      setPlayerConnections(prev => ({
+        ...prev,
+        [playerNumber]: {
+          ...prev[playerNumber],
+          isConnected
+        }
+      }));
+      console.log(`플레이어 ${playerNumber}(${playerConnections[playerNumber].nickname}) 접속 상태: ${isConnected}`);
+    }
+  };
 
-  // 웹소켓 방 구독 함수
-  const subscribeToRoom = useCallback((client: Client, roomId: string) => {
-    console.log(`방 이벤트 구독 시도: /topic/room/${roomId}`);
+  const updateRoomPlayers = (roomPlayersData: any) => {
+    console.log("방 플레이어 정보 업데이트:", roomPlayersData);
     
-    // 방 이벤트 구독
-    client.subscribe(`/topic/room/${roomId}`, (message) => {
-      try {
-        console.log('방 이벤트 메시지 수신:', message);
-        const data = JSON.parse(message.body);
-        console.log('방 이벤트 데이터 수신:', data);
-        
-        // 타입에 따른 처리
-        if (data.type === 'PLAYER_JOIN' || data.type === 'PLAYER_LIST') {
-          console.log('플레이어 목록 업데이트 이벤트 감지:', data.type);
-          updatePlayersList(data.payload || data);
-        } else if (data.type === 'PLAYER_READY') {
-          console.log('플레이어 준비 상태 변경 이벤트 감지');
-          updatePlayerReadyStatus(data.payload || data);
-        } else if (data.type === 'GAME_START') {
-          console.log('게임 시작 이벤트 감지');
-          navigate('/game');
-        } else if (data.participants) {
-          // participants 객체가 있는 경우 플레이어 목록 업데이트
-          console.log('participants 객체 감지, 플레이어 목록 업데이트');
-          updatePlayersList(data);
-        } else {
-          // 일반적인 플레이어 데이터로 처리
-          if (data && Object.keys(data).length > 0) {
-            console.log('일반 플레이어 정보 업데이트 감지');
-            updatePlayersList(data);
-          } else {
-            console.log('알 수 없는 메시지 형식:', data);
+    if (!roomPlayersData) return;
+    
+    // 현재 연결 상태를 복사
+    const newConnectionState = { ...playerConnections } as PlayerConnectionMap;
+    
+    // 모든 플레이어의 접속 상태 초기화
+    (["1", "2", "3", "4"] as const).forEach(key => {
+      if (newConnectionState[key]) {
+        newConnectionState[key] = {
+          ...newConnectionState[key],
+          isConnected: false
+        };
+      }
+    });
+    
+    // 서버 데이터에 따라 접속 상태 업데이트
+    try {
+      // roomPlayersData가 배열인 경우
+      if (Array.isArray(roomPlayersData)) {
+        roomPlayersData.forEach(player => {
+          const playerNumber = player.playerNumber || "";
+          if (playerNumber && newConnectionState[playerNumber]) {
+            newConnectionState[playerNumber] = {
+              ...newConnectionState[playerNumber],
+              isConnected: true
+            };
           }
-        }
-      } catch (error) {
-        console.error('이벤트 데이터 파싱 오류:', error);
-      }
-    });
-    
-    // 채팅 메시지 구독
-    client.subscribe(`/topic/room/${roomId}/chat`, (message) => {
-      try {
-        console.log('채팅 메시지 수신:', message);
-        const data = JSON.parse(message.body);
-        
-        if (data && data.nickname && data.message) {
-          addChatMessage(data);
-        }
-      } catch (error) {
-        console.error('채팅 메시지 파싱 오류:', error);
-      }
-    });
-    
-    console.log('구독 완료');
-  }, [updatePlayersList, updatePlayerReadyStatus, addChatMessage, navigate]);
-
-  // joinRoom 함수 내부를 수정합니다
-  const joinRoom = useCallback((client: Client, userInfo: JoinRoomRequest, roomId: string) => {
-    console.log('방 참가 시도 - 사용자 정보:', userInfo, '방 ID:', roomId);
-    
-    if (!client.connected) {
-      console.warn('웹소켓이 연결되지 않았습니다. 연결 후 다시 시도합니다.');
-      return;
-    }
-    
-    sendJoinRoomMessage(client, userInfo, roomId);
-    
-    // 방에 참가한 직후 자기 자신을 플레이어 목록에 추가
-    const selfPlayer: Player = {
-      id: userInfo.memberId.toString(),
-      memberId: userInfo.memberId,
-      nickname: userInfo.nickname || '게스트',
-      isReady: false,
-      // 방을 처음 만든 사람은 방장으로 설정
-      isHost: players.length === 0,
-      character: userInfo.characterUrl || 'https://placehold.co/400/gray/white?text=Unknown',
-      characterUrl: userInfo.characterUrl || 'https://placehold.co/400/gray/white?text=Unknown'
-    };
-    
-    // 자신이 플레이어 목록에 없는 경우에만 추가
-    setPlayers(prev => {
-      const exists = prev.some(p => p.id === selfPlayer.id);
-      if (!exists) {
-        console.log('내 정보를 플레이어 목록에 추가:', selfPlayer);
-        return [...prev, selfPlayer];
-      }
-      return prev;
-    });
-    
-    // 현재 사용자 정보 설정
-    setCurrentUser(selfPlayer);
-    
-    // 확인 및 재시도 로직
-    const checkRoomStatus = () => {
-      // 나가는 중이거나 연결이 끊겼으면 시도하지 않음
-      if (isLeaving || !client.connected) return;
-      
-      if (players.length === 0) {
-        console.log('플레이어 목록이 비어 있습니다. 재시도합니다.');
-        
-        // 안전하게 방 참가 메시지 재전송
-        if (client.connected) {
-          // 방 참가 메시지 재전송
-          sendJoinRoomMessage(client, userInfo, roomId);
-          
-          // 여전히 플레이어 목록이 비어있다면 자기 자신을 다시 추가
-          setPlayers(prev => {
-            if (prev.length === 0) {
-              return [selfPlayer];
+        });
+      } 
+      // roomPlayersData가 객체인 경우
+      else if (roomPlayersData && typeof roomPlayersData === 'object') {
+        // 접속 상태에 대한 정보가 있는 경우
+        if (roomPlayersData.connectedPlayers) {
+          Object.entries(roomPlayersData.connectedPlayers).forEach(([playerNumber, isConnected]) => {
+            if (newConnectionState[playerNumber]) {
+              newConnectionState[playerNumber] = {
+                ...newConnectionState[playerNumber],
+                isConnected: Boolean(isConnected)
+              };
             }
-            return prev;
           });
         }
-      } else {
-        console.log('방 참가 성공. 현재 플레이어:', players);
-        
-        
-        
-        // 플레이어 목록에 자신이 없는지 확인하고 추가
-        const iAmInList = players.some(p => p.id === selfPlayer.id);
-        if (!iAmInList) {
-          console.log('플레이어 목록에 내가 없어서 추가합니다');
-          setPlayers(prev => [...prev, selfPlayer]);
+        // 다른 형태의 데이터인 경우 (예: 실제 플레이어 데이터)
+        else {
+          Object.keys(roomPlayersData).forEach(playerNumber => {
+            if (newConnectionState[playerNumber]) {
+              newConnectionState[playerNumber] = {
+                ...newConnectionState[playerNumber],
+                isConnected: true
+              };
+            }
+          });
         }
       }
-    };
-    
-    // 3초 후 상태 확인
-    setTimeout(checkRoomStatus, 3000);
-  }, [players, isLeaving]);
-
-  // 웹소켓 연결 설정 효과
-  useEffect(() => {
-    if (isLoading || !roomId) return; // 로딩 중이거나 roomId가 없으면 실행하지 않음
-    
-    console.log('웹소켓 연결 시도 - 실제 roomId:', roomId);
-    
-    // 로그인 상태 다시 확인
-    if (!isAuthenticated || !user) {
-      console.error('로그인되지 않았습니다. 게임에 참가하려면 로그인이 필요합니다.');
-      navigate('/');
-      return;
-    }
-
-    // 사용자 정보 가져오기
-    const userInfo = {
-      memberId: user.memberId || 0,
-      nickname: user.nickname || '게스트',
-      characterUrl: user.characterImage || 'default_character'
-    };
-
-    console.log('웹소켓 연결 시도 - 사용자 정보:', userInfo);
-
-    // 기존 연결이 있다면 해제
-    let newClient: Client | null = null;
-    
-    try {
-      // 웹소켓 클라이언트 생성
-      newClient = createStompClient();
-
-      // 연결 성공 시 콜백
-      newClient.onConnect = () => {
-        setIsConnected(true);
-        console.log('WebSocket 연결 성공!');
-
-        // 해당 방의 이벤트를 먼저 구독
-        subscribeToRoom(newClient!, roomId);
-        
-        // 약간의 지연 후 방 참가 요청 (구독 설정이 완료된 후)
-        setTimeout(() => {
-          // 방 참가 요청
-          joinRoom(newClient!, userInfo, roomId);
-          console.log('접속 확인 - 방 ID:', roomId);
-        }, 500);
-      };
-
-      // 연결 에러 시 콜백
-      newClient.onStompError = (frame) => {
-        console.error('WebSocket 연결 오류:', frame);
-        setIsConnected(false);
-      };
-
-      // 연결 끊김 콜백
-      newClient.onDisconnect = () => {
-        console.log('WebSocket 연결 끊김');
-        setIsConnected(false);
-        
-        if (!isLeaving && componentMountedRef.current) {
-          // 연결 재시도 (3초 후)
-          setTimeout(() => {
-            if (newClient && !newClient.active && !isLeaving && componentMountedRef.current) {
-              console.log('WebSocket 연결 재시도...');
-              try {
-                newClient.activate();
-              } catch (error) {
-                console.error('WebSocket 재연결 오류:', error);
-              }
-            }
-          }, 3000);
-        } else {
-          console.log('나가는 중이거나 컴포넌트가 언마운트되어 재연결하지 않습니다.');
-        }
-      };
-        
-      // 연결 시작
-      newClient.activate();
-      setStompClient(newClient);
     } catch (error) {
-      console.error('WebSocket 초기화 오류:', error);
-      if (newClient) {
-        try {
-          newClient.deactivate();
-        } catch (deactivateError) {
-          console.error('WebSocket 종료 오류:', deactivateError);
-        }
-      }
+      console.error("플레이어 정보 업데이트 중 오류:", error);
     }
+    
+    // 현재 플레이어는 항상 접속 중
+    const currentPlayerNumber = localStorage.getItem('playerNumber') || "1";
+    if (newConnectionState[currentPlayerNumber]) {
+      newConnectionState[currentPlayerNumber] = {
+        ...newConnectionState[currentPlayerNumber],
+        isConnected: true
+      };
+    }
+    
+    console.log("새 접속 상태:", newConnectionState);
+    setPlayerConnections(newConnectionState);
+  };
 
-    // 컴포넌트 언마운트 시 연결 해제
-    return () => {
-      if (newClient) {
-        try {
-          console.log('WebSocket 연결 종료 중...');
-          newClient.deactivate();
-        } catch (error) {
-          console.error('WebSocket 연결 종료 오류:', error);
-        }
-      }
-    };
-  }, [roomId, user, isAuthenticated, navigate, isLoading, subscribeToRoom, joinRoom]);
-
-  // 연결 상태 모니터링
+  // 웹소켓 연결 설정
   useEffect(() => {
-    if (!stompClient || !isConnected || !roomId || isLeaving) return;
-    
-    console.log('연결 상태 모니터링 시작');
-    
-    const interval = setInterval(() => {
-      // 나가는 중이 아니고 컴포넌트가 마운트된 상태일 때만 모니터링 실행
-      if (!isLeaving && componentMountedRef.current) {
-        if (stompClient && stompClient.active) {
-          console.log('웹소켓 상태:', stompClient.active ? '활성' : '비활성');
-          console.log('현재 플레이어 수:', players.length);
-          
-          // 연결이 활성 상태이지만 플레이어가 없는 경우 재시도
-          if (players.length === 0 && user) {
-            console.log('연결은 활성 상태지만 플레이어가 없습니다. 재연결 시도...');
-            
-            // 사용자 정보
-            const userInfo = {
-              memberId: user.memberId || 0,
-              nickname: user.nickname || '게스트',
-              characterUrl: user.characterImage || 'default_character'
-            };
-            
-            // 방 참가 요청 재시도
-            joinRoom(stompClient, userInfo, roomId);
-          }
-        }
-      } else {
-        console.log('나가는 중이거나 컴포넌트가 언마운트되어 모니터링 중지');
-        clearInterval(interval);
-      }
-    }, 10000); // 10초마다 확인
-    
-    return () => {
-      console.log('모니터링 정리');
-      clearInterval(interval);
-    };
-  }, [stompClient, isConnected, roomId, players.length, user, isLeaving, joinRoom]);
+    // 항상 고정된 room ID를 사용
+    const effectiveRoomId = FIXED_ROOM_ID;
 
-  // 컴포넌트 언마운트 시 정리
-  useEffect(() => {
-    // 마운트 시 설정
-    componentMountedRef.current = true;
-    
-    // 언마운트 시 정리
-    return () => {
-      console.log('컴포넌트 언마운트 - 정리 수행');
-      componentMountedRef.current = false;
-      setIsLeaving(true);
-      
-      // 웹소켓 연결 해제 및 정리
-      if (stompClient) {
-        try {
-          // 구독 취소 시도
-          try {
-            if (roomId) {
-              stompClient.unsubscribe(`/topic/room/${roomId}`);
-              stompClient.unsubscribe(`/topic/room/${roomId}/chat`);
-            }
-          } catch (unsubError) {
-            console.error('구독 취소 중 오류:', unsubError);
+    const connectWebSocket = () => {
+      const ws = new WebSocket(WS_URL);
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        console.log("웹소켓 연결 성공 - URL:", WS_URL);
+        console.log("현재 플레이어:", currentPlayer);
+        setIsConnected(true);
+        
+        // 방에 참가 메시지 전송 (고정된 room ID 사용)
+        const joinMessage = {
+          type: "join_room",
+          data: {
+            roomId: effectiveRoomId,
+            playerName: currentPlayer,
+            playerNumber: localStorage.getItem('playerNumber') || "1" 
           }
-          
-          // 연결 해제
-          stompClient.deactivate();
-        } catch (error) {
-          console.error('언마운트 시 연결 해제 오류:', error);
+        };
+        
+        ws.send(JSON.stringify(joinMessage));
+        console.log("방 참가 메시지 전송:", joinMessage);
+        
+        // 현재 플레이어의 접속 상태 업데이트
+        const currentPlayerNumber = localStorage.getItem('playerNumber') || "1";
+        if (currentPlayerNumber === "1" || currentPlayerNumber === "2" || 
+            currentPlayerNumber === "3" || currentPlayerNumber === "4") {
+          handlePlayerConnection(currentPlayerNumber, true);
         }
+        
+        // 방의 플레이어 정보 요청
+        const getRoomPlayersMessage = {
+          type: "get_room_players",
+          data: { roomId: effectiveRoomId }
+        };
+        ws.send(JSON.stringify(getRoomPlayersMessage));
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const message: WebSocketMessage = JSON.parse(event.data);
+          
+          console.log("받은 웹소켓 메시지:", message);
+          
+          switch (message.type) {
+            case "session_created":
+              if (message.data && message.data.sessionId) {
+                setSessionId(message.data.sessionId);
+                console.log("세션 ID 설정:", message.data.sessionId);
+              }
+              break;
+              
+            case "player_connected":
+              if (message.data && message.data.playerNumber) {
+                console.log("플레이어 연결:", message.data.playerNumber);
+                handlePlayerConnection(message.data.playerNumber, true);
+              }
+              break;
+            
+            case "player_disconnected":
+              if (message.data && message.data.playerNumber) {
+                console.log("플레이어 연결 해제:", message.data.playerNumber);
+                handlePlayerConnection(message.data.playerNumber, false);
+              }
+              break;
+            
+            case "room_players":
+              if (message.data && message.data.players) {
+                console.log("방 플레이어들:", message.data.players);
+                updateRoomPlayers(message.data.players);
+              }
+              break;
+            
+            case "player_ready":
+              if (message.data && message.data.playerNumber) {
+                console.log("플레이어 준비 완료:", message.data.playerNumber);
+                setPlayerConnections(prev => {
+                  if (message.data.playerNumber === "1" || 
+                      message.data.playerNumber === "2" || 
+                      message.data.playerNumber === "3" || 
+                      message.data.playerNumber === "4") {
+                    return {
+                      ...prev,
+                      [message.data.playerNumber]: {
+                        ...prev[message.data.playerNumber],
+                        isReady: true
+                      }
+                    };
+                  }
+                  return prev;
+                });
+              }
+              break;
+              
+            default:
+              console.log("알 수 없는 메시지 타입:", message.type);
+          }
+        } catch (error) {
+          console.error("메시지 처리 중 오류 발생:", error);
+        }
+      };
+
+      ws.onclose = (event) => {
+        console.log("웹소켓 연결 종료 상세 정보:", {
+          code: event.code,
+          reason: event.reason,
+          wasClean: event.wasClean
+        });
+        
+        setIsConnected(false);
+        
+        // 현재 플레이어의 접속 상태 업데이트
+        const currentPlayerNumber = localStorage.getItem('playerNumber') || "1";
+        if (currentPlayerNumber === "1" || currentPlayerNumber === "2" || 
+            currentPlayerNumber === "3" || currentPlayerNumber === "4") {
+          handlePlayerConnection(currentPlayerNumber, false);
+        }
+        
+        // 연결이 종료되면 5초 후 재연결 시도
+        setTimeout(() => {
+          if (wsRef.current?.readyState === WebSocket.CLOSED) {
+            connectWebSocket();
+          }
+        }, 5000);
+      };
+
+      ws.onerror = (error) => {
+        console.error("웹소켓 오류:", error);
+      };
+    };
+
+    connectWebSocket();
+
+    // 컴포넌트 언마운트 시 연결 종료
+    return () => {
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        // 방에서 나가는 메시지 전송
+        const leaveMessage = {
+          type: "leave_room",
+          data: {
+            roomId: effectiveRoomId,
+            playerName: currentPlayer,
+            playerNumber: localStorage.getItem('playerNumber') || "1"
+          }
+        };
+        wsRef.current.send(JSON.stringify(leaveMessage));
+        console.log("방 나가기 메시지 전송:", leaveMessage);
+        
+        wsRef.current.close();
       }
     };
-  }, [roomId, stompClient]);
+  }, [currentPlayer, FIXED_ROOM_ID, WS_URL]);
+
+  // 하트비트 메시지 전송 (연결 유지)
+  useEffect(() => {
+    if (!isConnected) return;
+    
+    const heartbeatInterval = setInterval(() => {
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        const heartbeatMessage = {
+          type: "heartbeat",
+          data: {
+            roomId: FIXED_ROOM_ID,
+            sessionId: FIXED_SESSION_ID,
+            playerName: currentPlayer,
+            playerNumber: localStorage.getItem('playerNumber') || "1"
+          }
+        };
+        wsRef.current.send(JSON.stringify(heartbeatMessage));
+        console.log("하트비트 메시지 전송");
+      }
+    }, 30000); // 30초마다 하트비트 전송
+
+    return () => clearInterval(heartbeatInterval);
+  }, [isConnected, currentPlayer, FIXED_ROOM_ID, FIXED_SESSION_ID]);
 
   return {
-    stompClient,
     isConnected,
-    players,
-    currentUser,
-    chatMessages,
-    subscribeToRoom,
-    joinRoom,
-    updatePlayersList,
-    updatePlayerReadyStatus,
-    addChatMessage,
-    setPlayers,
-    setChatMessages,
-    setCurrentUser,
-    setIsLeaving,
-    isLeaving
+    playerConnections,
+    sessionId,
+    sendMessage
   };
-}
+};
 
 export default useGameWebSocket;

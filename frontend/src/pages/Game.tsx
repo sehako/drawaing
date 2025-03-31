@@ -7,6 +7,9 @@ import word from '../assets/Game/word.png';
 import axios from 'axios';
 import pen_sound from '../assets/Sound/drawing_sound.mp3';
 import RoundTransition from '../components/Game/RoundTransition';
+import useGameWebSocket from '../hooks/useGameWebSocket';
+import useGameTimer from '../hooks/useGameTimer'; // 타이머 훅 추가
+import gameTimerService from '../api/gameTimerService';
 
 interface Player {
   id: number;
@@ -15,26 +18,10 @@ interface Player {
   avatar: string;
 }
 
-// 플레이어 접속 상태를 추적하기 위한 맵 인터페이스 - 인덱스 시그니처 추가
-interface PlayerConnectionMap {
-  [name: string]: boolean;
-}
-
-// 웹소켓 메시지 인터페이스
-interface WebSocketMessage {
-  type: string;
-  data: any;
-}
-
-// URL 파라미터 타입 정의 수정
-interface GameParams {
-  roomId?: string;
-}
-
 const Game: React.FC = () => {
-  // URL에서 roomId 파라미터 가져오기 - 타입 수정
+  // URL에서 roomId 파라미터 가져오기
   const params = useParams<{ roomId?: string }>();
-  const roomId = params.roomId;
+  const roomId = '67e3b8c70e25f60ac596bd83';
   const navigate = useNavigate();
   
   const [passCount, setPassCount] = useState<number>(0);
@@ -75,46 +62,32 @@ const Game: React.FC = () => {
       }
     };
   }, []);
-
-  // 환경 변수에서 API URL을 가져옴
-  const API_URL = import.meta.env.VITE_API_URL || 'https://www.drawaing.site'
-  const WS_URL = `${API_URL.replace('https://', 'wss://').replace('http://', 'ws://')}/service/game/drawing`;
   
-  // 웹소켓 연결 참조
-  const wsRef = useRef<WebSocket | null>(null);
-  const [isConnected, setIsConnected] = useState<boolean>(false);
-  
-  // 현재 플레이어 이름 (로컬 스토리지에서 가져오거나 랜덤 생성)
-  const [currentPlayer, setCurrentPlayer] = useState<string>(() => {
-    const storedName = localStorage.getItem('playerName');
-    if (storedName && storedName.startsWith('플레이어')) {
-      return storedName;
-    } else {
-      // 랜덤으로 플레이어 이름 생성
-      const randomPlayer = '플레이어' + Math.floor(Math.random() * 4 + 1);
-      localStorage.setItem('playerName', randomPlayer);
-      return randomPlayer;
+  useEffect(() => {
+    if (!localStorage.getItem('playerNumber')) {
+      localStorage.setItem('playerNumber', '1'); // 초기값으로 1 설정
     }
-  });
-  
-  // 플레이어 접속 상태 맵 - 인터페이스 적용
-  const [playerConnections, setPlayerConnections] = useState<PlayerConnectionMap>({
-    "플레이어1": false,
-    "플레이어2": false,
-    "플레이어3": false,
-    "플레이어4": false
+  }, []);
+
+  // 현재 플레이어 닉네임 설정
+  const [currentPlayer, setCurrentPlayer] = useState<string>(() => {
+    const playerNumber = localStorage.getItem('playerNumber') || "1";
+    return getPlayerNickname(playerNumber);
   });
 
-  const [players, setPlayers] = useState<Player[]>([
-    { id: 0, name: 'Player 1', level: 1, avatar: '/avatars/chick.png' },
-    { id: 1, name: 'Player 2', level: 50, avatar: '/avatars/muscular.png' },
-    { id: 2, name: 'Player 3', level: 25, avatar: '/avatars/angry-bird.png' },
-    { id: 3, name: 'Player 4', level: 16, avatar: '/avatars/yellow-bird.png' },
-  ]);
+  // 플레이어 번호에 따른 닉네임 반환 함수
+  function getPlayerNickname(playerNumber: string): string {
+    switch (playerNumber) {
+      case "1": return "나는 주인";
+      case "2": return "누누";
+      case "3": return "룰루";
+      case "4": return "문상";
+      default: return "플레이어";
+    }
+  }
   
   const [currentRound, setCurrentRound] = useState<number>(1);
   const [quizWord, setQuizWord] = useState<string>('바나나');
-  const [timeLeft, setTimeLeft] = useState<number>(20); 
   const [activeDrawerIndex, setActiveDrawerIndex] = useState<number>(0);
   const [guesserIndex, setGuesserIndex] = useState<number>(3);
   const [isDrawing, setIsDrawing] = useState<boolean>(false);
@@ -129,8 +102,10 @@ const Game: React.FC = () => {
   const [isWrongGuess, setIsWrongGuess] = useState<boolean>(false);
   const [isRoundTransitioning, setIsRoundTransitioning] = useState<boolean>(false);
   const [isGameOver, setIsGameOver] = useState<boolean>(false);
-  const TOTAL_GAME_TIME = 1.5 * 60; // 10분(600초)
-  const [gameTimeLeft, setGameTimeLeft] = useState<number>(TOTAL_GAME_TIME);
+  
+  // 정답 제출 횟수 제한 추가
+  const [guessSubmitCount, setGuessSubmitCount] = useState<number>(0);
+  const MAX_GUESS_SUBMIT_COUNT = 3;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [context, setContext] = useState<CanvasRenderingContext2D | null>(null);
@@ -144,195 +119,163 @@ const Game: React.FC = () => {
     '/ai/fox.png',
     '/ai/eggs.png'
   ]);
-
+  const [players, setPlayers] = useState<Player[]>([
+    { id: 0, name: 'Player 1', level: 1, avatar: '/avatars/chick.png' },
+    { id: 1, name: 'Player 2', level: 50, avatar: '/avatars/muscular.png' },
+    { id: 2, name: 'Player 3', level: 25, avatar: '/avatars/angry-bird.png' },
+    { id: 3, name: 'Player 4', level: 16, avatar: '/avatars/yellow-bird.png' },
+  ]);
+  
   const [predictions, setPredictions] = useState<{ class: string; probability: number }[]>([]);
 
-  // 웹소켓 연결 설정
-  useEffect(() => {
-    if (!roomId) {
-      console.log("roomId가 없어 웹소켓 연결을 시도하지 않습니다.");
-
-      return; // roomId가 없으면 연결하지 않음
-    }
-    // 웹소켓 연결 생성
-    const connectWebSocket = () => {
-      const ws = new WebSocket(WS_URL);
-      wsRef.current = ws;
-
-      ws.onopen = () => {
-        console.log("웹소켓 연결 성공");
-        setIsConnected(true);
-        
-        // 방에 참가 메시지 전송
-        const joinMessage = {
-          type: "join_room",
-          data: {
-            roomId: roomId,
-            playerName: currentPlayer // 현재 플레이어 이름 사용
-          }
-        };
-        ws.send(JSON.stringify(joinMessage)); 
-        // 자신의 접속 상태 업데이트
-        handlePlayerConnection(currentPlayer, true);
-      };
-
-ws.onmessage = (event) => {
-  try {
-    const message: WebSocketMessage = JSON.parse(event.data);
-    
-    console.log("받은 웹소켓 메시지:", message); // 받은 메시지 전체 로깅
-    
-    // 메시지 타입에 따라 처리
-    switch (message.type) {
-      case "player_connected":
-        console.log("플레이어 연결:", message.data.playerName);
-        handlePlayerConnection(message.data.playerName, true);
-        break;
-      
-      case "player_disconnected":
-        console.log("플레이어 연결 해제:", message.data.playerName);
-        handlePlayerConnection(message.data.playerName, false);
-        break;
-      
-      case "room_players":
-        console.log("방 플레이어들:", message.data.players);
-        updateRoomPlayers(message.data.players);
-        break;
-      
-      default:
-        console.log("알 수 없는 메시지 타입:", message.type);
-    }
-  } catch (error) {
-    console.error("메시지 처리 중 오류 발생:", error);
-  }
-};
-      ws.onclose = (event) => {
-        console.log("웹소켓 연결 종료 상세 정보:", {
-          code: event.code,
-          reason: event.reason,
-          wasClean: event.wasClean
-        });
-        console.trace('웹소켓 연결 종료 추적');
-
-        setIsConnected(false);
-        
-        // 자신의 접속 상태 업데이트
-        handlePlayerConnection(currentPlayer, false);
-        
-        // 연결이 종료되면 5초 후 재연결 시도
-        setTimeout(() => {
-          if (wsRef.current?.readyState === WebSocket.CLOSED) {
-            connectWebSocket();
-          }
-        }, 5000);
-      };
-
-      ws.onerror = (error) => {
-        console.error("웹소켓 오류:", error);
-      };
-    };
-
-    connectWebSocket();
-
-    // 컴포넌트 언마운트 시 연결 종료
-    return () => {
-      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-        // 방에서 나가는 메시지 전송
-        const leaveMessage = {
-          type: "leave_room",
-          data: {
-            roomId: roomId,
-            playerName: currentPlayer
-          }
-        };
-        wsRef.current.send(JSON.stringify(leaveMessage));
-        
-        wsRef.current.close();
-      }
-    };
-  }, [roomId, currentPlayer]);
-
-  const formatGameTime = (seconds: number): string => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes.toString().padStart(2, '0')}분${remainingSeconds.toString().padStart(2, '0')}초`;
-  };
-
-  // 특정 플레이어의 접속 상태 업데이트
-  const handlePlayerConnection = (playerName: string, isConnected: boolean) => {
-    if (playerName.startsWith('플레이어')) {
-      setPlayerConnections(prev => ({
-        ...prev,
-        [playerName]: isConnected
-      }));
-    }
-  };
-
-  // 방의 모든 플레이어 정보 업데이트
-  const updateRoomPlayers = (roomPlayers: {playerName: string}[]) => {
-    // 인덱스 시그니처를 사용하여 타입 안전하게 선언
-    const newConnectionState: PlayerConnectionMap = {
-      "플레이어1": false,
-      "플레이어2": false,
-      "플레이어3": false,
-      "플레이어4": false
-    };
-    
-    // 접속 중인 플레이어 표시
-    roomPlayers.forEach(player => {
-      if (player.playerName.startsWith('플레이어')) {
-        newConnectionState[player.playerName] = true;
-      }
-    });
-    
-    // 자신은 항상 접속 중으로 표시
-    newConnectionState[currentPlayer] = true;
-    
-    setPlayerConnections(newConnectionState);
-  };
-
-  useEffect(() => {
-    const gameTimer = setInterval(() => {
-      setGameTimeLeft(prev => {
-        if (prev <= 0) {
-          clearInterval(gameTimer);
-          setIsGameOver(true); // 게임 종료 상태로 설정
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+  // 웹소켓 훅 사용
+  const { isConnected, playerConnections, sessionId, sendMessage } = useGameWebSocket({
+    roomId,
+    currentPlayer
+  });
   
-    return () => clearInterval(gameTimer);
-  }, []);
+  // 웹소켓 연결 완료 후 타이머 정보 가져오기 위한 상태 추가
+  const [isGameTimerReady, setIsGameTimerReady] = useState<boolean>(false);
 
-  // 하트비트 메시지 전송 (연결 유지)
+  // 웹소켓 연결 상태 및 세션 ID 유효 여부 체크
   useEffect(() => {
-    if (!roomId) return; // roomId가 없으면 실행하지 않음
+    if (isConnected && sessionId) {
+      setIsGameTimerReady(true);
+    } else {
+      setIsGameTimerReady(false);
+    }
+  }, [isConnected, sessionId]);
+
+  const {
+    totalTime,
+    drawTime,
+    gameTimeLeft,
+    setGameTimeLeft,
+    isLoading: isTimerLoading,
+    error: timerError
+  } = useGameTimer({
+    roomId,
+    sessionId: sessionId || '0',
+    isGameOver
+  });
+
+  
+  // 기존의 timeLeft 상태 변수 유지 (그림 그리기 시간)
+  const [timeLeft, setTimeLeft] = useState<number>(20);
+
+  useEffect(() => {
+    // console.log('현재 타이머 상태:', {
+    //   totalTime,
+    //   drawTime,
+    //   gameTimeLeft,
+    //   timeLeft,
+    //   isTimerLoading
+    // });
+  }, [totalTime, drawTime, gameTimeLeft, timeLeft, isTimerLoading]);
+
+  useEffect(() => {
+    if (drawTime > 0) {
+      // console.log('백엔드에서 받은 drawTime으로 업데이트:', drawTime, totalTime);
+      setTimeLeft(drawTime);
+    }
+  }, [drawTime]);
+
+  // 세션 ID 디버깅
+  useEffect(() => {
+    if (sessionId) {
+      console.log('현재 세션 ID:', sessionId);
+    }
+  }, [sessionId]);
+  
+  // 타이머 데이터 로드 중 에러가 있으면 로그 출력
+  useEffect(() => {
+    if (timerError) {
+      console.error('타이머 데이터 로드 오류:', timerError);
+    }
+  }, [timerError]);
+
+  useEffect(() => {
+  // drawTime이 유효한 값(0 포함)일 때만 업데이트
+  if (drawTime !== undefined) {
+    // console.log('🕒 drawTime으로 timeLeft 업데이트:', drawTime);
+    setTimeLeft(drawTime);
+  }
+}, [drawTime]);
+
+  useEffect(() => {
+    // 이미 번호가 확정된 경우 넘어감
+    if (localStorage.getItem('playerNumberConfirmed') === 'true') return;
     
-    const heartbeatInterval = setInterval(() => {
-      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-        const heartbeatMessage = {
-          type: "heartbeat",
-          data: {
-            roomId: roomId,
-            playerName: currentPlayer
-          }
-        };
-        wsRef.current.send(JSON.stringify(heartbeatMessage));
+    // 웹소켓 연결 상태 체크
+    if (!isConnected) return;
+    
+    // 모든 플레이어 접속 정보 확인
+    const connectedPlayers = Object.entries(playerConnections)
+      .filter(([_, info]) => info.isConnected)
+      .map(([num]) => num);
+    
+    console.log("현재 접속 중인 플레이어:", connectedPlayers);
+    
+    // 현재 할당된 번호
+    const currentNumber = localStorage.getItem('playerNumber') || "1";
+    
+    // 현재 번호가 이미 다른 사용자에 의해 사용 중인지 확인
+    // (현재 사용자를 제외하고 동일한 번호를 사용하는 경우)
+    if (connectedPlayers.includes(currentNumber) && connectedPlayers.length > 1) {
+      console.log(`플레이어 번호 ${currentNumber}가 이미 사용 중입니다. 새 번호 할당...`);
+      
+      // 사용 가능한 플레이어 번호 목록
+      const availableNumbers = ["1", "2", "3", "4"].filter(
+        num => !connectedPlayers.includes(num)
+      );
+      
+      if (availableNumbers.length > 0) {
+        // 사용 가능한 번호 중 랜덤 선택
+        const randomIndex = Math.floor(Math.random() * availableNumbers.length);
+        const newNumber = availableNumbers[randomIndex];
+        
+        localStorage.setItem('playerNumber', newNumber);
+        const newNickname = getPlayerNickname(newNumber);
+        setCurrentPlayer(newNickname);
+        
+        console.log(`새 플레이어 번호 할당: ${newNumber}, 닉네임: ${newNickname}`);
+        
+        // 방에 새 플레이어 정보 알림
+        sendMessage("player_update", {
+          roomId: roomId,
+          playerNumber: newNumber,
+          nickname: newNickname
+        });
+      } else {
+        console.log("모든 플레이어 자리가 이미 사용 중입니다.");
+        // 오류 메시지 또는 대기 처리
       }
-    }, 30000); // 30초마다 하트비트 전송
+    } else {
+      // 현재 번호가 사용 가능하면 확정
+      localStorage.setItem('playerNumberConfirmed', 'true');
+      console.log(`플레이어 번호 ${currentNumber} 확정`);
+    }
+  }, [isConnected, playerConnections, roomId, sendMessage]);
 
-    return () => clearInterval(heartbeatInterval);
-  }, [roomId, currentPlayer]);
+  // 캔버스 초기화
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    setContext(ctx);
+  }, []);
+ 
   const handlePlayerCorrectAnswer = () => {
     setEggCount(prev => prev + 1);
   };
   
   const handleAICorrectAnswer = () => {
     setEggCount(prev => Math.max(0, prev - 1));
-
     setAIRoundWinCount(prev => prev + 1);
   };
 
@@ -357,84 +300,100 @@ ws.onmessage = (event) => {
     setIsEraser(true);
   };
 
-const handleNextPlayer = () => {
-  // 게임이 종료됐으면 동작하지 않음
-  if (isGameOver) return;
-  
-  setIsDrawing(false);
-  setHasCompleted(false);
-
-  const nextDrawerIndex = (activeDrawerIndex + 1) % 3;
-  
-  if (nextDrawerIndex === 0) {
-    // 세 번째 턴이 끝났을 때만 라운드 전환 시작
-    setIsRoundTransitioning(true);
+  const handleNextPlayer = () => {
+    // 게임이 종료됐으면 동작하지 않음
+    if (isGameOver) return;
     
-    setTimeout(() => {
-      setCurrentRound(prev => prev + 1);
-      setGuesserIndex((guesserIndex + 1) % 4);
-      setActiveDrawerIndex(0); // 첫 번째 플레이어부터 시작
-      
-      if (context && canvasRef.current) {
-        context.fillStyle = 'white';
-        context.fillRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-      }
+    setIsDrawing(false);
+    setHasCompleted(false);
+  
+    const nextDrawerIndex = (activeDrawerIndex + 1) % 3;
+    
+    if (nextDrawerIndex === 0) {
+      // 세 번째 턴이 끝났을 때 라운드 전환 함수 호출
+      transitionToNextRound();
+    } else {
+      // 첫 번째나 두 번째 턴이 끝났을 때는 그냥 다음 턴으로 넘어감
+      setActiveDrawerIndex(nextDrawerIndex);
+      setTimeLeft(20);
+    }
+  };
 
-      const newWords = ['사과', '자동차', '컴퓨터', '강아지'];
-      setQuizWord(newWords[Math.floor(Math.random() * newWords.length)]);
-      
-      // 라운드 전환 완료 표시
-      setIsRoundTransitioning(false);
-    }, 3000);
-  } else {
-    // 첫 번째나 두 번째 턴이 끝났을 때는 그냥 다음 턴으로 넘어감
-    setActiveDrawerIndex(nextDrawerIndex);
+const transitionToNextRound = () => {
+  // 라운드 전환 시작을 표시
+  setIsRoundTransitioning(true);
+
+  setTimeLeft(0);
+
+  // 3초 뒤에 실행 (RoundTransition 모달의 카운트다운 시간과 일치)
+  setTimeout(() => {
+    setCurrentRound(prev => prev + 1);
+    setGuesserIndex((guesserIndex + 1) % 4);
+    setActiveDrawerIndex(0);
+    
+    // 캔버스 초기화
+    if (context && canvasRef.current) {
+      context.fillStyle = 'white';
+      context.fillRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+    }
+
+    // 새 퀴즈 단어 설정
+    const newWords = ['사과', '자동차', '컴퓨터', '강아지', '고양이', '비행기', '꽃', '커피'];
+    setQuizWord(newWords[Math.floor(Math.random() * newWords.length)]);
+    
+    // 상태 초기화
+    setHasCompleted(false);
+    setGuessSubmitCount(0);
+    setShowCorrectAnswer(false);
+
     setTimeLeft(20);
-  }
+
+    // 라운드 전환 완료 표시
+    setIsRoundTransitioning(false);
+    
+    // 여기에서 타이머 리셋 호출 (모달이 사라지는 시점)
+    if (sessionId) {
+      gameTimerService.resetTurnTimer(
+        roomId,
+        sessionId,
+        {
+          currentRound: currentRound + 1,
+          currentDrawerIndex: 0,
+          newDrawTime: 20
+        }
+      );
+      console.log('라운드 전환 후 타이머 리셋 요청 완료');
+    }
+  }, 3000);
 };
-
-
 
 const handleGuessSubmit = (e: React.FormEvent) => {
   e.preventDefault();
 
   if (isGameOver) return;
 
+  // 제출 횟수가 최대치에 도달했으면 더 이상 제출 불가
+  if (guessSubmitCount >= MAX_GUESS_SUBMIT_COUNT) {
+    setAiAnswer('제출 횟수를 모두 사용했습니다.');
+    return;
+  }
+
   if (!guess || guess.trim() === '') {
     console.log('빈 입력값 감지됨');
     setIsEmptyGuess(true);
     return;
   }
-  
+    
+  // 제출 횟수 증가
+  setGuessSubmitCount(prev => prev + 1);
+
   if (guess.trim().toLowerCase() === quizWord.toLowerCase()) {
     handlePlayerCorrectAnswer();
     setIsHumanCorrect(true);
-
-    // 라운드 전환 시작을 표시
-    setIsRoundTransitioning(true);
+    setHumanRoundWinCount(prev => prev + 1);
     
-    setTimeout(() => {
-      setCurrentRound(prev => prev + 1);
-      setGuesserIndex((guesserIndex + 1) % 4);
-      setActiveDrawerIndex(0);
-      
-      setHumanRoundWinCount(prev => prev + 1);
-  
-      setTimeLeft(20);
-      
-      setHasCompleted(false);
-      
-      if (context && canvasRef.current) {
-        context.fillStyle = 'white';
-        context.fillRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-      }
-      
-      const newWords = ['사과', '자동차', '컴퓨터', '강아지', '고양이', '비행기', '꽃', '커피'];
-      setQuizWord(newWords[Math.floor(Math.random() * newWords.length)]);
-      
-      // 라운드 전환 완료 표시
-      setIsRoundTransitioning(false);
-    }, 3000);
+    // 라운드 전환 함수 호출
+    transitionToNextRound();
   } else {
     setIsWrongGuess(true);
     setAiAnswer('틀렸습니다! 다시 시도해보세요.');
@@ -444,42 +403,18 @@ const handleGuessSubmit = (e: React.FormEvent) => {
 };
 
 const handlePass = () => {
-
   if (isGameOver) return;
 
   // 조건 수정: 순서3(activeDrawerIndex === 2)이고 전체 PASS 횟수가 3회 미만일 때
   if (activeDrawerIndex === 2 && passCount < MAX_PASS_COUNT) {
     setAIRoundWinCount(prev => prev + 1);      
     setPassCount(prev => prev + 1);
-    
     setEggCount(prev => Math.max(0, prev - 1));
-    // 라운드 전환 시작을 표시
-    setIsRoundTransitioning(true);
     
-    setTimeout(() => {
-      setCurrentRound(prev => prev + 1);
-      setGuesserIndex((guesserIndex + 1) % 4);
-      setActiveDrawerIndex(0);
-
-      setTimeLeft(20);
-      
-      setHasCompleted(false);
-      setShowCorrectAnswer(false);
-      
-      if (context && canvasRef.current) {
-        context.fillStyle = 'white';
-        context.fillRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-      }
-      
-      const newWords = ['사과', '자동차', '컴퓨터', '강아지'];
-      setQuizWord(newWords[Math.floor(Math.random() * newWords.length)]);
-      
-      // 라운드 전환 완료 표시
-      setIsRoundTransitioning(false);
-    }, 3000);
+    // 라운드 전환 함수 호출
+    transitionToNextRound();
   }
 };
-
 
   const calculateCurrentDrawerPlayerIndex = () => {
     let tempIndex = 0;
@@ -514,56 +449,53 @@ const handlePass = () => {
       throw error;
     }
   };
-  useEffect(() => {
-    // 게임이 종료됐거나 라운드 전환 중이면 타이머를 멈춤
-    if (isGameOver || isRoundTransitioning) return;
   
-    if (timeLeft <= 0) {
-      const nextDrawerIndex = (activeDrawerIndex + 1) % 3;
-  
-      if (nextDrawerIndex === 0) {
-        // 세 번째 턴이 끝났을 때만 라운드 전환 시작
-        setIsRoundTransitioning(true);
-        
-        setTimeout(() => {
-          setCurrentRound(prev => prev + 1);
-          setGuesserIndex((guesserIndex + 1) % 4);
-          setActiveDrawerIndex(0);
-          
-          if (context && canvasRef.current) {
-            context.fillStyle = 'white';
-            context.fillRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-          }
-    
-          const newWords = ['사과', '자동차', '컴퓨터', '강아지'];
-          setQuizWord(newWords[Math.floor(Math.random() * newWords.length)]);
-          
-          setTimeLeft(20);
-          setHasCompleted(false);
-          
-          // 라운드 전환 완료 표시
-          setIsRoundTransitioning(false);
-        }, 3000);
-      } else {
-        // 첫 번째나 두 번째 턴이 끝났을 때는 그냥 다음 턴으로 넘어감
-        setActiveDrawerIndex(nextDrawerIndex);
-        setTimeLeft(20);
-        setHasCompleted(false);
-      }
-      return;
+// 그림 그리기 타이머 효과 - 개선된 버전
+useEffect(() => {
+  // 게임이 종료됐거나 라운드 전환 중이면 타이머를 멈춤
+  if (isGameOver || isRoundTransitioning) return;
+
+  // 타이머가 0이 되었을 때
+  if (timeLeft <= 0) {
+    console.log("타이머 종료, 다음 플레이어로 전환");
+
+    const nextDrawerIndex = (activeDrawerIndex + 1) % 3;
+    console.log(`현재 인덱스: ${activeDrawerIndex}, 다음 인덱스: ${nextDrawerIndex}`);
+
+    if (nextDrawerIndex === 0) {
+      // 세 번째 턴이 끝났을 때는 라운드 전환 함수 호출
+      console.log("세 번째 턴 종료, 라운드 전환 시작");
+      transitionToNextRound();
+    } else {
+      // 첫 번째나 두 번째 턴이 끝났을 때는 그냥 다음 턴으로 넘어감
+      console.log(`턴 전환: ${activeDrawerIndex} -> ${nextDrawerIndex}`);
+      setActiveDrawerIndex(nextDrawerIndex);
+      setTimeLeft(20);
+      setHasCompleted(false);
     }
+    return;
+  }
+
+  // 라운드 전환 중이 아닐 때만 타이머 작동
+  const timer = setInterval(() => {
+    setTimeLeft(prev => prev - 1);
+  }, 1000);
+
+  return () => clearInterval(timer);
+}, [timeLeft, context, guesserIndex, activeDrawerIndex, isRoundTransitioning, isGameOver]);
+
   
-    // 라운드 전환 중이 아닐 때만 타이머 작동
-    const timer = setInterval(() => {
-      setTimeLeft(prev => prev - 1);
-    }, 1000);
-  
-    return () => clearInterval(timer);
-  }, [timeLeft, context, guesserIndex, activeDrawerIndex, isRoundTransitioning, isGameOver]);
-  
+  // 게임 시간 포맷 함수
+  const formatGameTime = (seconds: number): string => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes.toString().padStart(2, '0')}분${remainingSeconds.toString().padStart(2, '0')}초`;
+  };
 
   const currentDrawerIndex = calculateCurrentDrawerPlayerIndex();
   const currentDrawer = players[currentDrawerIndex];
+
+
 
   return (
     <div className="flex justify-center items-center w-full min-h-screen bg-cover bg-[url('/backgrounds/wooden-bg.jpg')] px-[150px] py-4 box-border flex-col">
@@ -628,7 +560,12 @@ const handlePass = () => {
               사람 {humanRoundWinCount} : {aiRoundWinCount} AI
             </div>
             <div className="flex-1 text-right pr-10">
-              <div className="text-lg text-gray-700 text-5xl">남은시간: {timeLeft}초</div>
+              <div className="text-lg text-gray-700 text-5xl">
+                {/* 남은시간: {isTimerLoading ? '로딩 중...' : `${timeLeft}초`}
+                 */}
+                     남은시간: {timeLeft}초
+
+              </div>
             </div>
             <div className="bg-yellow-100 px-6 py-1 rounded-full border-2 border-yellow-400 text-xl font-bold shadow-md">
               남은 시간: {formatGameTime(gameTimeLeft)}
@@ -645,65 +582,69 @@ const handlePass = () => {
             activeDrawerIndex={activeDrawerIndex}
             guesserIndex={guesserIndex}
             roomId={roomId}
-            playerConnections={playerConnections} // 플레이어 접속 상태 전달
+            playerConnections={playerConnections as any} // 타입 단언 사용
             isConnected={isConnected} // 웹소켓 연결 상태 전달
           />
         </div>
 
         {/* 캔버스 컴포넌트 - 중앙 */}
         <div className="w-3/5 mr-4">
-          <CanvasSection 
-            canvasRef={canvasRef}
-            context={context}
-            isDrawing={isDrawing}
-            setIsDrawing={setIsDrawing}
-            lastPoint={lastPoint}
-            setLastPoint={setLastPoint}
-            currentColor={currentColor}
-            isEraser={isEraser}
-            showCorrectAnswer={showCorrectAnswer}
-            quizWord={quizWord}
-            currentRound={currentRound}
-            timeLeft={timeLeft}
-            hasCompleted={hasCompleted}
-            setHasCompleted={setHasCompleted}
-            handleColorChange={handleColorChange}
-            handleEraserToggle={handleEraserToggle}
-            handleNextPlayer={handleNextPlayer}
-            currentDrawer={currentDrawer}
-            calculateCurrentDrawerPlayerIndex={calculateCurrentDrawerPlayerIndex}
-            guess={guess}
-            setGuess={setGuess}
-            handleGuessSubmit={handleGuessSubmit}
-            handlePass={handlePass}
-            activeDrawerIndex={activeDrawerIndex}
-            handleCanvasSubmit={handleCanvasSubmit}
-            setPredictions={setPredictions}      
-            />
+        <CanvasSection 
+          canvasRef={canvasRef}
+          context={context}
+          isDrawing={isDrawing}
+          setIsDrawing={setIsDrawing}
+          lastPoint={lastPoint}
+          setLastPoint={setLastPoint}
+          currentColor={currentColor}
+          isEraser={isEraser}
+          showCorrectAnswer={showCorrectAnswer}
+          quizWord={quizWord}
+          currentRound={currentRound}
+          timeLeft={timeLeft}
+          hasCompleted={hasCompleted}
+          setHasCompleted={setHasCompleted} // 이 함수를 통해 그림 지운 후 다시 그리기 가능
+          handleColorChange={handleColorChange}
+          handleEraserToggle={handleEraserToggle}
+          handleNextPlayer={handleNextPlayer}
+          currentDrawer={currentDrawer}
+          calculateCurrentDrawerPlayerIndex={calculateCurrentDrawerPlayerIndex}
+          guess={guess}
+          setGuess={setGuess}
+          handleGuessSubmit={handleGuessSubmit}
+          handlePass={handlePass}
+          activeDrawerIndex={activeDrawerIndex}
+          handleCanvasSubmit={handleCanvasSubmit}
+          setPredictions={setPredictions}
+          roomId={roomId}  // 추가
+          sessionId={sessionId}  // 추가
+        />
         </div>
 
         {/* AI 컴포넌트 - 우측 */}
         <div className="w-1/5">
-          <AISection 
-            aiImages={aiImages}
-            aiAnswer={aiAnswer}
-            guess={guess}
-            setGuess={setGuess}
-            handleGuessSubmit={handleGuessSubmit}
-            handlePass={handlePass}
-            eggCount={eggCount}
-            onAICorrectAnswer={handleAICorrectAnswer}
-            quizWord={quizWord}
-            predictions={predictions}
-            canPass={activeDrawerIndex === 2 && passCount < MAX_PASS_COUNT}
-            passCount={passCount}
-            isHumanCorrect={isHumanCorrect}
-            setIsHumanCorrect={setIsHumanCorrect}
-            isEmptyGuess={isEmptyGuess}
-            setIsEmptyGuess={setIsEmptyGuess}
-            isWrongGuess={isWrongGuess}
-            setIsWrongGuess={setIsWrongGuess}
-          />
+        <AISection 
+          aiImages={aiImages}
+          aiAnswer={aiAnswer}
+          guess={guess}
+          setGuess={setGuess}
+          handleGuessSubmit={handleGuessSubmit}
+          handlePass={handlePass}
+          eggCount={eggCount}
+          onAICorrectAnswer={handleAICorrectAnswer}
+          quizWord={quizWord}
+          predictions={predictions}
+          canPass={activeDrawerIndex === 2 && passCount < MAX_PASS_COUNT}
+          passCount={passCount}
+          isHumanCorrect={isHumanCorrect}
+          setIsHumanCorrect={setIsHumanCorrect}
+          isEmptyGuess={isEmptyGuess}
+          setIsEmptyGuess={setIsEmptyGuess}
+          isWrongGuess={isWrongGuess}
+          setIsWrongGuess={setIsWrongGuess}
+          guessSubmitCount={guessSubmitCount}
+          maxGuessSubmitCount={MAX_GUESS_SUBMIT_COUNT}
+        />
         </div>
       </div>
     </div>

@@ -3,7 +3,7 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useMusic } from '../contexts/MusicContext'
 import { useAuth } from '../contexts/AuthContext';
 import { sendReadyStatusMessage, sendGameStartMessage, sendLeaveRoomMessage } from '../utils/GameSocketUtils';
-import useGameWebSocket from '../hooks/useGameWebSocket';
+import useUserWebSocket from '../hooks/useUserWebSocket';
 import GameInstructionModal from '../components/Game/GameInstructionModal';
 import PlayerSlot from '../components/Game/PlayerSlot';
 import GameRoomHeader from '../components/Game/GameRoomHeader';
@@ -40,7 +40,7 @@ const GameWaitingRoom: React.FC = () => {
     setChatMessages,
     isLeaving,
     setIsLeaving
-  } = useGameWebSocket({
+  } = useUserWebSocket({
     roomId: actualRoomId || '',
     user,
     isAuthenticated,
@@ -436,7 +436,7 @@ const GameWaitingRoom: React.FC = () => {
               isConnected={isConnected}
               onInputChange={handleChatInputChange}
               onSubmit={handleSendChat}
-              chatEnabled={false} // 채팅 기능 비활성화 상태
+              chatEnabled={true} // 채팅 기능 비활성화 상태
             />
           </div>
           
