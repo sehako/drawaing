@@ -23,7 +23,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 public class ChatMessage {
     @Id
     private String id;
-    private String senderId; // 보내는 사람
+    private Long senderId; // 보내는 사람
     private String sessionId; // 방 번호
     private String message; // 채팅 메시지
     @CreatedDate
