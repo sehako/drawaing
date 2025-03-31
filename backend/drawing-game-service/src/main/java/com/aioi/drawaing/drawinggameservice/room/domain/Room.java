@@ -48,7 +48,7 @@ public class Room {
     }
 
     public void updateParticipantReady(long userId) {
-        this.getParticipants().get(userId).updateReady();
+        this.getParticipants().get(userId).toggleReady();
     }
 
     public void updateSessionId(String sessionId) {
@@ -60,12 +60,13 @@ public class Room {
         if (!participants.containsKey(hostId) && !participants.isEmpty()) {
             // 가장 오래된 참여자 선택 (LinkedHashMap의 첫 번째 키)
             this.hostId = participants.keySet().iterator().next();
-            this.status = RoomStatus.READY.name();
+            this.participants.get(hostId).updateReady();
         }
     }
 
     public void updateHostId(long hostId) {
         this.hostId = hostId;
+        this.participants.get(hostId).updateReady();
     }
 
 }
