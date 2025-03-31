@@ -1,3 +1,4 @@
+// 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import ColorPicker from './ColorPicker';
 import chick from '../../assets/Common/chick.gif'
@@ -127,7 +128,7 @@ const CanvasSection: React.FC<CanvasSectionProps> = ({
   const [receivedDrawingData, setReceivedDrawingData] = useState<DrawingData>({});
 
   const handleReceivedDrawingPoints = useCallback((points: Array<{x: number, y: number}>) => {
-    console.log('서버에서 받은 그리기 포인트:', points);
+    // console.log('서버에서 받은 그리기 포인트:', points);
     setReceivedDrawingPoints(prevPoints => [...prevPoints, ...points]);
   }, []);
   
@@ -136,7 +137,7 @@ const CanvasSection: React.FC<CanvasSectionProps> = ({
     useEffect(() => {
       // roomId와 sessionId 유효성 검사
       if (!roomId || !sessionId) {
-        console.warn('roomId 또는 sessionId가 유효하지 않습니다.');
+        // console.warn('roomId 또는 sessionId가 유효하지 않습니다.');
         return;
       }
       
@@ -151,7 +152,7 @@ const CanvasSection: React.FC<CanvasSectionProps> = ({
             roomId, 
             sessionId, 
             (drawingData: DrawingData) => {
-              console.log('서버에서 받은 그림 데이터:', drawingData);
+              // console.log('서버에서 받은 그림 데이터:', drawingData);
               
               // 현재 메시지에 포함된 사용자 ID 목록
               const currentUserIds = new Set(Object.keys(drawingData).map(id => parseInt(id)));
@@ -168,13 +169,13 @@ const CanvasSection: React.FC<CanvasSectionProps> = ({
                 if (points.length === 0) {
                   hasEraseOperation = true;
                   erasedUserId = parseInt(userIdStr);
-                  console.log(`사용자 ${userIdStr}의 그림 지우기 이벤트 감지됨 (빈 배열)`);
+                  // console.log(`사용자 ${userIdStr}의 그림 지우기 이벤트 감지됨 (빈 배열)`);
                 }
               });
               
               // 지우기 이벤트 처리 - 빈 배열이 있는 경우
               if (hasEraseOperation && erasedUserId !== null) {
-                console.log(`사용자 ${erasedUserId}의 그림 지우기 이벤트 처리 중...`);
+                // console.log(`사용자 ${erasedUserId}의 그림 지우기 이벤트 처리 중...`);
                 
                 // 해당 사용자의 그림을 히스토리에서 제거
                 setDrawingHistory(prevHistory => {
@@ -182,7 +183,7 @@ const CanvasSection: React.FC<CanvasSectionProps> = ({
                   const erasedUserDrawings = prevHistory.filter(d => d.userId === erasedUserId);
                   const otherDrawings = prevHistory.filter(d => d.userId !== erasedUserId);
                   
-                  console.log(`지울 그림 수: ${erasedUserDrawings.length}, 유지할 그림 수: ${otherDrawings.length}`);
+                  // console.log(`지울 그림 수: ${erasedUserDrawings.length}, 유지할 그림 수: ${otherDrawings.length}`);
                   
                   // 캔버스 초기화하고 유지할 그림만 다시 그리기
                   if (canvasRef.current && context) {
@@ -235,7 +236,7 @@ const CanvasSection: React.FC<CanvasSectionProps> = ({
           
           return unsubscribe;
         } catch (error) {
-          console.error('웹소켓 설정 중 오류:', error);
+          // console.error('웹소켓 설정 중 오류:', error);
         }
       };
       
@@ -262,7 +263,7 @@ const CanvasSection: React.FC<CanvasSectionProps> = ({
           
           // 빈 배열인 경우 지우기 이벤트로 처리
           if (points.length === 0) {
-            console.log(`그림 렌더링 중 지우기 이벤트 감지: 사용자 ${userId}`);
+            // console.log(`그림 렌더링 중 지우기 이벤트 감지: 사용자 ${userId}`);
             return; // 건너뛰기
           }
           
@@ -297,12 +298,12 @@ const CanvasSection: React.FC<CanvasSectionProps> = ({
     const sendDrawingPoints = useCallback((points: DrawPoint[]) => {
       // roomId, sessionId, 포인트 유효성 검사
       if (!roomId || !sessionId || points.length === 0) {
-        console.log('전송 취소: 좌표 없음 또는 roomId/sessionId 없음');
+        // console.log('전송 취소: 좌표 없음 또는 roomId/sessionId 없음');
         return false;
       }
       
       // 그리기 포인트 전송 로그
-      console.log(`전송 시도: ${points.length}개 좌표, roomId=${roomId}, sessionId=${sessionId}`);
+      // console.log(`전송 시도: ${points.length}개 좌표, roomId=${roomId}, sessionId=${sessionId}`);
       
       // drawingService를 통한 포인트 전송
       return drawingService.sendDrawingPoints(roomId, sessionId, currentUserId, points);
@@ -315,10 +316,10 @@ const CanvasSection: React.FC<CanvasSectionProps> = ({
     const initializeClient = async () => {
       try {
         await drawingService.initializeClient(roomId, sessionId);
-        console.log('그림 전송 서비스 초기화 완료');
+        // console.log('그림 전송 서비스 초기화 완료');
         
       } catch (error) {
-        console.error('그림 전송 서비스 초기화 실패:', error);
+        // console.error('그림 전송 서비스 초기화 실패:', error);
       }
     };
     
@@ -332,7 +333,7 @@ const CanvasSection: React.FC<CanvasSectionProps> = ({
 // sendDrawingData 함수 내에 로그 추가
 const sendDrawingData = useCallback(() => {
   if (!roomId || !sessionId || drawingPoints.length === 0) {
-    console.log('전송 취소: 좌표 없음 또는 roomId/sessionId 없음');
+    // console.log('전송 취소: 좌표 없음 또는 roomId/sessionId 없음');
     return;
   }
   
@@ -341,7 +342,7 @@ const sendDrawingData = useCallback(() => {
     [currentUserId]: drawingPoints
   };
   
-  console.log(`전송 시도: ${drawingPoints.length}개 좌표, roomId=${roomId}, sessionId=${sessionId}, userId=${currentUserId}`);
+  // console.log(`전송 시도: ${drawingPoints.length}개 좌표, roomId=${roomId}, sessionId=${sessionId}, userId=${currentUserId}`);
   const success = drawingService.sendDrawingPoints(roomId, sessionId, currentUserId, drawingPoints);
   
   if (success) {
@@ -393,9 +394,9 @@ const sendDrawingData = useCallback(() => {
       try {
         const predictions = await handleCanvasSubmit(blob);
         setPredictions(predictions); // 예측값을 state로 저장
-        console.log("캔버스세션: ",predictions)
+        // console.log("캔버스세션: ",predictions)
       } catch (error) {
-        console.error("예측값 받아오기 실패:", error);
+        // console.error("예측값 받아오기 실패:", error);
       }
     }, "image/png");
     
@@ -421,12 +422,12 @@ const sendDrawingData = useCallback(() => {
 const clearCurrentDrawing = () => {
   if (!canvasRef.current || !context) return;
   
-  console.log("=== 지우기 작업 시작 ===");
-  console.log("지우기 전 현재 데이터:", {
-    drawingHistory: [...drawingHistory],
-    drawingHistory에서_현재유저그림: drawingHistory.filter(d => d.userId === currentUserId),
-    currentUserId
-  });
+  // console.log("=== 지우기 작업 시작 ===");
+  // console.log("지우기 전 현재 데이터:", {
+  //   drawingHistory: [...drawingHistory],
+  //   drawingHistory에서_현재유저그림: drawingHistory.filter(d => d.userId === currentUserId),
+  //   currentUserId
+  // });
   
   // 현재 플레이어의 그림을 히스토리에서 제거 (userId로 구분)
   const updatedHistory = drawingHistory.filter(drawing => drawing.userId !== currentUserId);
@@ -454,16 +455,16 @@ const clearCurrentDrawing = () => {
   // 지우기 이벤트를 웹소켓으로 전송
   if (roomId && sessionId) {
     // 명확한 지우기 이벤트 로깅
-    console.log("=== 지우기 이벤트 웹소켓 전송 ===");
-    console.log("전송 대상 roomId:", roomId);
-    console.log("전송 대상 sessionId:", sessionId);
-    console.log("지울 userId:", currentUserId);
+    // console.log("=== 지우기 이벤트 웹소켓 전송 ===");
+    // console.log("전송 대상 roomId:", roomId);
+    // console.log("전송 대상 sessionId:", sessionId);
+    // console.log("지울 userId:", currentUserId);
     
     // 빈 배열 전송 - 현재 사용자의 그림 지우기 신호
     const success = drawingService.sendDrawingPoints(roomId, sessionId, currentUserId, []);
     
-    console.log(`웹소켓 전송 결과: ${success ? '성공' : '실패'}`);
-    console.log("=== 지우기 작업 완료 ===");
+    // console.log(`웹소켓 전송 결과: ${success ? '성공' : '실패'}`);
+    // console.log("=== 지우기 작업 완료 ===");
     
     // 그림 지운 후 상태 초기화
     setDrawingPoints([]);
@@ -471,7 +472,7 @@ const clearCurrentDrawing = () => {
 };
 
 const handleReceivedDrawingData = useCallback((data: DrawingData) => {
-  console.log('서버에서 받은 그리기 데이터:', data);
+  // console.log('서버에서 받은 그리기 데이터:', data);
   
   // 새로운 그리기 데이터를 상태에 병합
   setReceivedDrawingData(prevData => {
@@ -575,7 +576,7 @@ const handleReceivedDrawingData = useCallback((data: DrawingData) => {
       // 좌표 저장
       setDrawingPoints(prev => {
         const newPoints = [...prev, {x, y}];
-        console.log(`좌표 추가: (${x}, ${y}), 총 ${newPoints.length}개`);
+        // console.log(`좌표 추가: (${x}, ${y}), 총 ${newPoints.length}개`);
         return newPoints;
       });
     }
@@ -779,11 +780,11 @@ const handleMouseEnter = (e: React.MouseEvent<HTMLCanvasElement>) => {
 
   useEffect(() => {
     // 로그 추가
-    console.log(`라운드 또는 활성 드로어 변경: 라운드=${currentRound}, 드로어 인덱스=${activeDrawerIndex}`);
+    // console.log(`라운드 또는 활성 드로어 변경: 라운드=${currentRound}, 드로어 인덱스=${activeDrawerIndex}`);
     
     // 새 라운드가 시작될 때 (activeDrawerIndex === 0)
     if (activeDrawerIndex === 0) {
-      console.log(`새 라운드 시작: ${currentRound}라운드`);
+      // console.log(`새 라운드 시작: ${currentRound}라운드`);
       setDrawingHistory([]);
       setHasDrawnInRound([false, false, false]);
       setHasCompleted(false);

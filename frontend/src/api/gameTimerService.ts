@@ -117,7 +117,7 @@ const gameTimerService = {
         passcode: ''
       },
       debug: function(str) {
-        console.log('STOMP: ' + str);
+        // console.log('STOMP: ' + str);
       }
     });
 
