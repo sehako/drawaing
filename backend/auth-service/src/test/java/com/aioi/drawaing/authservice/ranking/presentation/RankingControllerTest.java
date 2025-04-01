@@ -7,8 +7,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.aioi.drawaing.authservice.ranking.application.RankingService;
-import com.aioi.drawaing.authservice.ranking.domain.DrawingGameRecord;
 import com.aioi.drawaing.authservice.ranking.presentation.request.GameResultRequest;
+import com.aioi.drawaing.authservice.ranking.presentation.response.GameRecordResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -46,9 +46,9 @@ class RankingControllerTest {
         // given
         Long memberId = 1L;
         GameResultRequest request = new GameResultRequest(memberId, RankingController.GameStatus.WIN, 100);
-        DrawingGameRecord mockRecord = DrawingGameRecord.builder()
-                .id(memberId)
+        GameRecordResponse mockRecord = GameRecordResponse.builder()
                 .win(1)
+                .maximumScore(100)
                 .rankScore(100)
                 .build();
 
@@ -63,8 +63,8 @@ class RankingControllerTest {
         resultActions.andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("SUCCESS"))
                 .andExpect(jsonPath("$.message").value("성공했습니다."))
-                .andExpect(jsonPath("$.data.id").value(memberId))
                 .andExpect(jsonPath("$.data.win").value(1))
+                .andExpect(jsonPath("$.data.maximumScore").value(100))
                 .andExpect(jsonPath("$.data.rankScore").value(100));
     }
 

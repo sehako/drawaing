@@ -2,7 +2,6 @@ package com.aioi.drawaing.authservice.member.application.response;
 
 import com.aioi.drawaing.authservice.member.domain.Member;
 import com.aioi.drawaing.authservice.oauth.domain.entity.ProviderType;
-import com.nimbusds.oauth2.sdk.token.AccessToken;
 import lombok.Builder;
 
 @Builder
