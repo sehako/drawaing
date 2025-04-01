@@ -24,6 +24,9 @@ const GameWaitingRoom: React.FC = () => {
   const [localReady, setLocalReady] = useState<boolean>(false);
   const [userChangedReady, setUserChangedReady] = useState<boolean>(false);
   
+  // 게임 시작 카운트다운 상태 추가
+  const [gameStartCountdown, setGameStartCountdown] = useState<number | null>(null);
+  
   // 방장 상태 관리 개선
   const [isLocalHost, setIsLocalHost] = useState<boolean>(location.state?.isHost || false);
 
@@ -37,6 +40,7 @@ const GameWaitingRoom: React.FC = () => {
     players,
     currentUser,
     chatMessages,
+    gameStartInfo, // 게임 시작 정보 가져오기
     setChatMessages,
     isLeaving,
     setIsLeaving
@@ -54,7 +58,60 @@ const GameWaitingRoom: React.FC = () => {
     console.log("isLocalHost 상태:", isLocalHost);
     console.log("플레이어 목록:", players);
     console.log("연결 상태:", isConnected);
-  }, [currentUser, isLocalHost, players, isConnected]);
+    console.log("게임 시작 정보:", gameStartInfo);
+  }, [currentUser, isLocalHost, players, isConnected, gameStartInfo]);
+
+  // 게임 시작 정보가 업데이트되면 카운트다운 시작
+  useEffect(() => {
+    if (!gameStartInfo || !actualRoomId) return;
+    
+    console.log('게임 시작 정보 감지:', gameStartInfo);
+    
+    // ISO 시간 문자열을 Date 객체로 변환
+    const startTime = new Date(gameStartInfo.startTime);
+    const currentTime = new Date();
+    
+    // 시작 시간과 현재 시간 차이 계산 (밀리초)
+    const timeUntilStart = startTime.getTime() - currentTime.getTime();
+    
+    // 시작까지 남은 시간을 초 단위로 계산 (올림)
+    const secondsUntilStart = Math.ceil(timeUntilStart / 1000);
+    
+    console.log(`게임 시작까지 ${secondsUntilStart}초 남음`);
+    
+    if (secondsUntilStart <= 0) {
+      // 이미 시작 시간이 지났거나 현재 시간인 경우 즉시 이동
+      console.log('시작 시간이 이미 지났거나 현재임 - 즉시 게임 화면으로 이동');
+      navigate(`/game/${actualRoomId}`);
+      return;
+    }
+    
+    // 카운트다운 초기화
+    setGameStartCountdown(secondsUntilStart);
+    
+    // 카운트다운 실행
+    const countdownInterval = setInterval(() => {
+      setGameStartCountdown(prev => {
+        if (prev === null || prev <= 1) {
+          clearInterval(countdownInterval);
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    
+    // 시작 시간에 맞춰 게임 화면으로 이동하는 타이머 설정
+    const startGameTimer = setTimeout(() => {
+      console.log('게임 시작 시간이 되었습니다 - 게임 화면으로 이동');
+      navigate(`/game/${actualRoomId}`);
+    }, timeUntilStart);
+    
+    // 컴포넌트 언마운트 시 타이머 정리
+    return () => {
+      clearInterval(countdownInterval);
+      clearTimeout(startGameTimer);
+    };
+  }, [gameStartInfo, actualRoomId, navigate]);
 
   // 실제 사용할 roomId 결정
   useEffect(() => {
@@ -228,7 +285,7 @@ const GameWaitingRoom: React.FC = () => {
   const MAX_PLAYERS = 4;
 
   // 모든 플레이어가 준비 상태인지 확인
-  const allPlayersReady = players.length === MAX_PLAYERS && players.every(player => 
+  const allPlayersReady = players.length >= 2 && players.every(player => 
     player.isHost || player.isReady
   );
   
@@ -241,6 +298,12 @@ const GameWaitingRoom: React.FC = () => {
   // 준비 상태 토글 - 웹소켓 메시지 전송
   const toggleReady = () => {
     if (!currentUser || !stompClient || !isConnected || !actualRoomId) return;
+    
+    // 게임 시작 카운트다운 중에는 준비 상태 변경 불가
+    if (gameStartCountdown !== null) {
+      console.log('게임 시작 카운트다운 중에는 준비 상태를 변경할 수 없습니다.');
+      return;
+    }
     
     // 로컬 상태를 즉시 반영 (UI 즉시 업데이트)
     const newReadyStatus = !localReady;
@@ -272,6 +335,12 @@ const GameWaitingRoom: React.FC = () => {
       return;
     }
     
+    // 게임 시작 카운트다운 중에는 시작 버튼 중복 클릭 방지
+    if (gameStartCountdown !== null) {
+      console.log('이미 게임 시작 카운트다운이 진행 중입니다.');
+      return;
+    }
+    
     console.log('게임 시작 메시지 전송:', {
       memberId: currentUser.memberId,
       roomId: actualRoomId
@@ -283,6 +352,12 @@ const GameWaitingRoom: React.FC = () => {
   
   // 방 나가기 함수
   const leaveRoom = () => {
+    // 게임 시작 카운트다운 중에는 방 나가기 불가
+    if (gameStartCountdown !== null) {
+      alert('게임 시작 카운트다운 중에는 방을 나갈 수 없습니다.');
+      return;
+    }
+    
     if (window.confirm('정말로 방을 나가시겠습니까?')) {
       // 나가기 플래그 설정 - 재연결 방지
       setIsLeaving(true);
@@ -306,6 +381,7 @@ const GameWaitingRoom: React.FC = () => {
             try {
               stompClient.unsubscribe(`/topic/room/${actualRoomId}`);
               stompClient.unsubscribe(`/topic/room/${actualRoomId}/chat`);
+              stompClient.unsubscribe(`/topic/room.wait/${actualRoomId}`); // 새로 추가된 구독 취소
               console.log('구독 취소 완료');
             } catch (error) {
               console.error('구독 취소 중 오류:', error);
@@ -384,6 +460,21 @@ const GameWaitingRoom: React.FC = () => {
 
   return (
     <div className="relative w-full min-h-screen bg-amber-50">
+      {/* 게임 시작 카운트다운 모달 */}
+      {gameStartCountdown !== null && (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div className="absolute inset-0 bg-black bg-opacity-50"></div>
+          <div className="relative z-50 bg-amber-100 p-8 rounded-xl shadow-2xl border-4 border-amber-500 flex flex-col items-center">
+            <h2 className="text-4xl font-bold mb-4 text-amber-800">게임 시작 준비!</h2>
+            <div className="text-7xl font-black text-amber-600 mb-4">{gameStartCountdown}</div>
+            <p className="text-xl text-center">
+              잠시 후 게임이 시작됩니다.<br />
+              준비하세요!
+            </p>
+          </div>
+        </div>
+      )}
+      
       {/* 게임 설명 모달 - 최상위 z-index로 설정 */}
       {showInstructionModal && (
         <div className="fixed inset-0 flex items-center justify-center z-50">
@@ -452,6 +543,9 @@ const GameWaitingRoom: React.FC = () => {
               customIsHost={isLocalHost}
               playerCount={players.length}
               maxPlayers={MAX_PLAYERS}
+              roomId={actualRoomId || undefined} // null을 undefined로 변환
+              // 게임 카운트다운 중에는 버튼 비활성화
+              disabled={gameStartCountdown !== null}
             />
           </div>
         </div>
