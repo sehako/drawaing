@@ -23,8 +23,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class RankingController {
     private final RankingService rankingService;
 
-    public enum GameStatus {WIN, LOSE, DRAW}
-
     @Operation(summary = "랭킹 점수 업데이트")
     @PatchMapping()
     public ResponseEntity<?> updateRecord(
