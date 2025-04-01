@@ -16,7 +16,6 @@ build/
 bin/
 !**/src/main/**/bin/
 !**/src/test/**/bin/
-.yml
 
 ### IntelliJ IDEA ###
 .idea
@@ -36,8 +35,3 @@ out/
 
 ### VS Code ###
 .vscode/
-
-node_modules
-.vite
-.env
-
