@@ -10,6 +10,8 @@ import com.aioi.drawaing.authservice.ranking.infrastructure.repository.DrawingGa
 import com.aioi.drawaing.authservice.ranking.presentation.request.GameResultRequest;
 import com.aioi.drawaing.authservice.ranking.presentation.response.GameRecordResponse;
 import com.aioi.drawaing.authservice.ranking.presentation.response.RankingResponse;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -24,19 +26,25 @@ public class RankingService {
     private final MemberService memberService;
 
     @Transactional
-    public GameRecordResponse updateGameRecord(GameResultRequest req) {
+    public List<GameRecordResponse> updateGameRecords(List<GameResultRequest> requests) {
+        List<GameRecordResponse> responses = new ArrayList<>();
 
-        DrawingGameRecord record = getOrCreateRecord(req.memberId());
-        GameStatus status = parseGameStatus(req.status());
-        record.updateRecord(req.score());
+        for (GameResultRequest req : requests) {
+            DrawingGameRecord record = getOrCreateRecord(req.memberId());
+            GameStatus status = parseGameStatus(req.status());
+            record.updateRecord(req.score());
 
-        switch (status) {
-            case WIN -> record.updateWinCount();
-            case DRAW -> record.updateDrawCount();
-            case LOSE -> record.updateLoseCount();
-            default -> throw new IllegalArgumentException("Invalid game status");
+            switch (status) {
+                case WIN -> record.updateWinCount();
+                case DRAW -> record.updateDrawCount();
+                case LOSE -> record.updateLoseCount();
+                default -> throw new IllegalArgumentException("Invalid game status");
+            }
+
+            responses.add(GameRecordResponse.from(drawingGameRecordRepository.save(record)));
         }
-        return GameRecordResponse.from(drawingGameRecordRepository.save(record));
+
+        return responses;
     }
 
     private DrawingGameRecord getOrCreateRecord(Long memberId) {
@@ -88,7 +96,7 @@ public class RankingService {
         try {
             return GameStatus.valueOf(gameStatus.toUpperCase());
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("유효하지 않은 랭킹 타입: " + gameStatus);
+            throw new IllegalArgumentException("유효하지 않은 결과 타입: " + gameStatus);
         }
     }
 }

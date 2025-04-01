@@ -30,6 +30,7 @@ import com.aioi.drawaing.authservice.oauth.domain.entity.RoleType;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
@@ -64,11 +65,13 @@ public class MemberService {
     }
 
     @Transactional
-    public void expUpdate(MemberExpUpdateRequest req) {
-        Member member = getMember(req.memberId());
-        LevelInfo newLevel = calculateNewLevel(member.getLevel(), member.getExp(), req.exp());
-        member.expUpdate(newLevel.level(), newLevel.exp(), req.point());
-        memberRepository.saveAndFlush(member);
+    public void expUpdate(List<MemberExpUpdateRequest> requests) {
+        for (MemberExpUpdateRequest req : requests) {
+            Member member = getMember(req.memberId());
+            LevelInfo newLevel = calculateNewLevel(member.getLevel(), member.getExp(), req.exp());
+            member.expUpdate(newLevel.level(), newLevel.exp(), req.point());
+            memberRepository.saveAndFlush(member);
+        }
     }
 
     @Transactional

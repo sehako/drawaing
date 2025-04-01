@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -50,8 +51,8 @@ public class MemberController {
     @Operation(summary = "회원 경험치 추가")
     @PatchMapping("/exp")
     public ResponseEntity<?> expUpdate(
-            @RequestBody MemberExpUpdateRequest memberExpUpdateRequest) {
-        memberService.expUpdate(memberExpUpdateRequest);
+            @RequestBody List<MemberExpUpdateRequest> memberExpUpdateRequests) {
+        memberService.expUpdate(memberExpUpdateRequests);
         return ApiResponseEntity.onSuccess("경험치, 포인트 저장 완료");
     }
 
