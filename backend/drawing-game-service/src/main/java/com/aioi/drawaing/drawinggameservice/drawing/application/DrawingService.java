@@ -10,6 +10,7 @@ import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.SessionReposi
 import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.feign.AuthServiceClient;
 import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.feign.request.GameResultRequest;
 import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.feign.request.MemberExpUpdateRequest;
+import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.feign.response.AuthResponse;
 import com.aioi.drawaing.drawinggameservice.drawing.presentation.DrawMessagePublisher;
 import com.aioi.drawaing.drawinggameservice.drawing.presentation.dto.AddSessionParticipantInfo;
 import com.aioi.drawaing.drawinggameservice.drawing.presentation.dto.DrawInfo;
@@ -131,8 +132,10 @@ public class DrawingService {
         Session session = findSession(sessionId);
         log.info("endSession: {}", sessionId);
 
-        authServiceClient.updateRanking(new GameResultRequest(1L,"WIN", 10));
-        authServiceClient.updateMemberExp(new MemberExpUpdateRequest(1L, 10, 10));
+        AuthResponse win = authServiceClient.updateRanking(new GameResultRequest(1L, "WIN", 10));
+        log.info(win.data());
+        AuthResponse authResponse = authServiceClient.updateMemberExp(new MemberExpUpdateRequest(1L, 10, 10));
+        log.info(authResponse.data());
 
         drawMessagePublisher.publishGameResult("/topic/session.result/"+roomId+"/"+sessionId, session.toParticipantScoreInfo());
     }
