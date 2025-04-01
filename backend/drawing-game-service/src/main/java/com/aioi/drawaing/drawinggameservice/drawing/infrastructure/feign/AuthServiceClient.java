@@ -7,7 +7,7 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
-@FeignClient(name = "auth-service", url="https://www.drawaing.site/service/auth")
+@FeignClient(name = "AUTH-SERVICE")//, url="https://www.drawaing.site/service/auth")
 public interface AuthServiceClient {
     @PatchMapping("/api/v1/ranking")
     AuthResponse updateRanking(@RequestBody GameResultRequest gameResultRequest);
