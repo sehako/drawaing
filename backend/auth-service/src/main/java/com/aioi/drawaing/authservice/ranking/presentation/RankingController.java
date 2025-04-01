@@ -5,6 +5,7 @@ import com.aioi.drawaing.authservice.ranking.application.RankingService;
 import com.aioi.drawaing.authservice.ranking.presentation.request.GameResultRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -26,8 +27,8 @@ public class RankingController {
     @Operation(summary = "랭킹 점수 업데이트")
     @PatchMapping()
     public ResponseEntity<?> updateRecord(
-            @RequestBody GameResultRequest gameResultRequest) {
-        rankingService.updateGameRecord(gameResultRequest);
+            @RequestBody List<GameResultRequest> gameResultRequest) {
+        rankingService.updateGameRecords(gameResultRequest);
         return ApiResponseEntity.onSuccess("랭킹 점수 업데이트 완료");
     }
 
