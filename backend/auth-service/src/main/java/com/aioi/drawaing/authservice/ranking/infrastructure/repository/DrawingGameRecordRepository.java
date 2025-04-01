@@ -26,7 +26,7 @@ public interface DrawingGameRecordRepository extends JpaRepository<DrawingGameRe
 
     // 플레이 횟수 조회
     @Query("""
-                SELECT 
+                SELECT
                     m.id as memberId,
                     m.nickname as nickname,
                     dgr.playCount as value,
@@ -40,7 +40,7 @@ public interface DrawingGameRecordRepository extends JpaRepository<DrawingGameRe
 
     // 포인트 조회
     @Query("""
-                SELECT 
+                SELECT
                     m.id as memberId,
                     m.nickname as nickname,
                     m.point as value,
@@ -48,13 +48,13 @@ public interface DrawingGameRecordRepository extends JpaRepository<DrawingGameRe
                 FROM DrawingGameRecord dgr
                 JOIN dgr.member m
                 WHERE m.role != 'ROLE_GUEST'
-                ORDER BY m.point DESC, lastPlayedAt ASC
+                ORDER BY m.point DESC, dgr.lastPlayedAt ASC
             """)
     Page<RankingResponse> findByPointRanking(Pageable pageable);
 
     // 레벨 조회
     @Query("""
-                SELECT 
+                SELECT
                     m.id as memberId,
                     m.nickname as nickname,
                     m.level as value,
@@ -62,7 +62,7 @@ public interface DrawingGameRecordRepository extends JpaRepository<DrawingGameRe
                 FROM DrawingGameRecord dgr
                 JOIN dgr.member m
                 WHERE m.role != 'ROLE_GUEST'
-                ORDER BY m.level DESC, m.exp DESC, lastPlayedAt ASC
+                ORDER BY m.level DESC, m.exp DESC, dgr.lastPlayedAt ASC
             """)
     Page<RankingResponse> findByLevelRanking(Pageable pageable);
 }
