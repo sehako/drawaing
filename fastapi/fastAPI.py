@@ -26,6 +26,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = ModifiedShuffleNetV2(num_classes=84)  # 클래스 수를 맞춰서 초기화
 model.load_state_dict(torch.load("shufflenet05_smaller72.pth", map_location=device))
 model.to(device)  # 모델을 GPU 또는 CPU로 이동
+model = model.to(torch.float16)  # 모델을 FP16으로 변환
 model.eval()
 
 # 클래스 라벨 리스트 (실제 학습 데이터에 맞게 수정)
@@ -59,6 +60,7 @@ def transform_image(image_bytes):
     ])
 
     image_tensor = transform(image).unsqueeze(0)
+    image_tensor = image_tensor.to(torch.float16)
     print(f"Transformed Image Tensor Shape: {image_tensor.shape}")  # 변환된 텐서 크기 확인
 
     return image_tensor
