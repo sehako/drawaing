@@ -33,4 +33,11 @@ public class Store {
     private Boolean isQuantityLimited;
     private Integer remainingQuantity;
     private Integer soldQuantity;
+
+    public void updateQuantity(Integer quantity) {
+        if (this.isQuantityLimited) {
+            this.remainingQuantity = Math.max(this.remainingQuantity - quantity, 0);
+        }
+        this.soldQuantity += quantity;
+    }
 }
