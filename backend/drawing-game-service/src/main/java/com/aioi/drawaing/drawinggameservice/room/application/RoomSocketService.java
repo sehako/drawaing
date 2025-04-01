@@ -2,10 +2,12 @@ package com.aioi.drawaing.drawinggameservice.room.application;
 
 import com.aioi.drawaing.drawinggameservice.drawing.application.DrawingService;
 import com.aioi.drawaing.drawinggameservice.room.application.dto.AddRoomParticipantInfo;
+import com.aioi.drawaing.drawinggameservice.room.application.dto.RoomStartInfo;
 import com.aioi.drawaing.drawinggameservice.room.domain.Room;
 import com.aioi.drawaing.drawinggameservice.room.domain.RoomParticipant;
 import com.aioi.drawaing.drawinggameservice.room.infrastructure.repository.RoomRepository;
 
+import java.time.LocalDateTime;
 import java.util.Objects;
 
 import com.aioi.drawaing.drawinggameservice.room.presentation.RoomMessagePublisher;
@@ -62,8 +64,9 @@ public class RoomSocketService {
             log.error("모든 참여자가 준비되지 않았습니다.");
             throw new RuntimeException("모든 참여자가 준비되지 않았습니다.");
         }
-        // 게임 시작 로직
-        drawingService.startSession(roomId, room.getSessionId(), room.getAddRoomParticipantInfos());
+
+        //게임 대기방에서 실제 게임으로 넘어가는 중간 대기 시간을 처리하는 함수
+        transitionToGame(roomId, room);
     }
 
     public void toggleReadyStatus(String roomId, Long memberId) {
@@ -89,6 +92,19 @@ public class RoomSocketService {
         repository.save(room);
 
         roomMessagePublisher.publishRoomState(room);
+    }
+
+    public void transitionToGame(String roomId, Room room) {
+        roomMessagePublisher.publishRoomStart("/topic/room.wait/"+roomId, new RoomStartInfo(LocalDateTime.now().plusSeconds(5)));
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            log.error(e.getMessage());
+            throw new RuntimeException(e);
+        }
+
+        // 게임 시작 로직
+        drawingService.startSession(roomId, room.getSessionId(), room.getAddRoomParticipantInfos());
     }
 
     private void validateJoinRoom(Room room, Long memberId) {
