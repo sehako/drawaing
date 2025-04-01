@@ -31,26 +31,40 @@ const getPlayerIdByNumber = (playerNumber: string): number => {
 
 const Game: React.FC = () => {
   // URL에서 roomId 파라미터 가져오기
-  const { roomId: paramRoomId } = useParams<{ roomId?: string }>();
-  const [roomId, setRoomId] = useState<string | null>('');
+  const { roomId: storedRoomId } = useParams<{ roomId?: string }>();
+  
+  // ReadyButton과 동일한 방식으로 선언 - 초기값 null로 설정
+  const [roomId, setRoomId] = useState<string | null>(null);
   const navigate = useNavigate();
   
   const [passCount, setPassCount] = useState<number>(0);
   const MAX_PASS_COUNT = 3;
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  
+  // ReadyButton과 일관된 방식으로 roomId 초기화 및 업데이트
   useEffect(() => {
     // 우선순위: URL 파라미터 > localStorage
     const storedRoomId = localStorage.getItem('roomId');    
-    const roomIdToUse = paramRoomId || storedRoomId
+    const roomIdToUse = storedRoomId;
     
-    console.log('Game.tsx - roomId 설정:', roomIdToUse);
-    setRoomId(roomIdToUse || ''); // null이면 빈 문자열 할당
-  }, [paramRoomId]);
+    console.log('Game.tsx - roomId 설정 과정:');
+    console.log('- URL 파라미터 roomId:', storedRoomId);
+    console.log('- localStorage roomId:', storedRoomId);
+    console.log('- 최종 선택된 roomId:', roomIdToUse);
+    
+    // 결정된 roomId 설정 (null일 경우를 대비해 빈 문자열로 변환)
+    setRoomId(storedRoomId || '');
+    
+    // 결정된 roomId를 localStorage에 저장 (다른 컴포넌트와 공유)
+    if (storedRoomId) {
+      localStorage.setItem('roomId', storedRoomId);
+    }
+  }, [storedRoomId]);
 
   // roomId가 없으면 기본 방으로 리다이렉트
   useEffect(() => {
-    if (!roomId) {
+    if (!storedRoomId) {
       navigate('/game/1');
     }
   }, [roomId, navigate]);
@@ -160,11 +174,11 @@ const Game: React.FC = () => {
 
   const [predictions, setPredictions] = useState<{ class: string; probability: number }[]>([]);
 
-  // 웹소켓 훅 사용
-const { isConnected, playerConnections, sessionId, sendMessage } = useGameWebSocket({
-  roomId: roomId ?? "", // null이면 빈 문자열로 변환
-  currentPlayer
-});
+  // 웹소켓 훅 사용 - roomId가 null일 때도 빈 문자열로 처리하도록 수정
+  const { isConnected, playerConnections, sessionId, sendMessage } = useGameWebSocket({
+    roomId: roomId ?? "", // null이면 빈 문자열로 변환
+    currentPlayer
+  });
   
   // 웹소켓 연결 완료 후 타이머 정보 가져오기 위한 상태 추가
   const [isGameTimerReady, setIsGameTimerReady] = useState<boolean>(false);
@@ -176,10 +190,19 @@ const { isConnected, playerConnections, sessionId, sendMessage } = useGameWebSoc
   useEffect(() => {
     if (isConnected && sessionId) {
       setIsGameTimerReady(true);
+      
+      // 세션 ID가 유효하면 저장
+      if (sessionId && roomId) {
+        console.log(`유효한 세션 ID(${sessionId})와 roomId(${roomId}) 감지됨`);
+        
+        // 로컬 스토리지에 세션 ID 저장
+        localStorage.setItem('sessionId', sessionId);
+        localStorage.setItem('roomId', roomId);
+      }
     } else {
       setIsGameTimerReady(false);
     }
-  }, [isConnected, sessionId]);
+  }, [isConnected, sessionId, roomId]);
 
   const {
     totalTime,

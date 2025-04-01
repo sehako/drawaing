@@ -213,7 +213,7 @@ const updatePlayersList = useCallback((playerData: any) => {
           updatePlayerReadyStatus(data.payload || data);
         } else if (data.type === 'GAME_START') {
           console.log('게임 시작 이벤트 감지');
-          navigate('/game');
+          navigate(`game/${roomId}`);
         } else if (data.participants) {
           // participants 객체가 있는 경우 플레이어 목록 업데이트
           console.log('participants 객체 감지, 플레이어 목록 업데이트');

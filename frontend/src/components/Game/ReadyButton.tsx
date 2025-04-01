@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Player } from '../../utils/GameSocketUtils';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 interface ReadyButtonProps {
   currentUser: Player | null;
@@ -12,7 +12,8 @@ interface ReadyButtonProps {
   customIsHost?: boolean;
   playerCount?: number;
   maxPlayers?: number;
-  roomId?: string; // roomId 추가
+  roomId?: string;
+  sessionId?: string;  // sessionId 추가
 }
 
 const ReadyButton: React.FC<ReadyButtonProps> = ({
@@ -25,15 +26,54 @@ const ReadyButton: React.FC<ReadyButtonProps> = ({
   customIsHost,
   playerCount = 0,
   maxPlayers = 4,
-  roomId, 
+  roomId: propRoomId,
+  sessionId: propSessionId,  // props에서 sessionId 받기
 }) => {
-  const navigate = useNavigate(); // useNavigate 훅 추가
-
-  // 컴포넌트 내부 상태 추가 - props 변경에 즉시 반응하기 위함
+  const navigate = useNavigate();
+  // URL 파라미터에서 roomId 가져오기
+  const { roomId: paramRoomId } = useParams<{ roomId: string }>();
+  
+  // 실제 사용할 roomId와 sessionId 상태
+  const [roomId, setRoomId] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  
+  // 내부 상태
   const [localIsHost, setLocalIsHost] = useState<boolean>(false);
   
-  // 마운트 시 localStorage 확인
+  // roomId와 sessionId 초기화
   useEffect(() => {
+    // 1. sessionId 설정 (props > localStorage)
+    const storedSessionId = localStorage.getItem('sessionId');
+    const sessionIdToUse = propSessionId || storedSessionId || null;
+    
+    // 2. roomId 설정 (URL 파라미터 > props > localStorage)
+    const storedRoomId = localStorage.getItem('roomId');
+    const roomIdToUse = paramRoomId || propRoomId || storedRoomId || null;
+    
+    console.log('ReadyButton - 초기화:');
+    console.log('- URL 파라미터 roomId:', paramRoomId);
+    console.log('- Props roomId:', propRoomId);
+    console.log('- localStorage roomId:', storedRoomId);
+    console.log('- 최종 roomId:', roomIdToUse);
+    console.log('- Props sessionId:', propSessionId);
+    console.log('- localStorage sessionId:', storedSessionId);
+    console.log('- 최종 sessionId:', sessionIdToUse);
+    
+    setRoomId(roomIdToUse);
+    setSessionId(sessionIdToUse);
+    
+    // 값이 유효하면 localStorage에 저장
+    if (roomIdToUse) {
+      localStorage.setItem('roomId', roomIdToUse);
+    }
+    if (sessionIdToUse) {
+      localStorage.setItem('sessionId', sessionIdToUse);
+    }
+  }, [paramRoomId, propRoomId, propSessionId]);
+  
+  // 마운트 시 isHost 확인
+  useEffect(() => {
+    // 방장 상태 확인
     const storedIsHost = localStorage.getItem('isHost') === 'true';
     console.log('ReadyButton - localStorage에서 isHost 값 확인:', storedIsHost);
     
@@ -41,13 +81,12 @@ const ReadyButton: React.FC<ReadyButtonProps> = ({
     if (customIsHost === undefined && storedIsHost) {
       setLocalIsHost(true);
     }
-  }, []);
+  }, [customIsHost]);
   
   // customIsHost 값이 변경될 때마다 내부 상태 업데이트
   useEffect(() => {
-    console.log('ReadyButton - customIsHost 변경됨:', customIsHost);
-    
     if (customIsHost !== undefined) {
+      console.log('ReadyButton - customIsHost 변경됨:', customIsHost);
       setLocalIsHost(customIsHost);
     }
   }, [customIsHost]);
@@ -67,35 +106,41 @@ const ReadyButton: React.FC<ReadyButtonProps> = ({
   // 디버깅용 렌더링 로그
   useEffect(() => {
     console.log('ReadyButton 렌더링 - 현재 상태:');
+    console.log('roomId:', roomId);
+    console.log('sessionId:', sessionId);
     console.log('localIsHost:', localIsHost);
     console.log('customIsHost:', customIsHost);
     console.log('currentUser?.isHost:', currentUser?.isHost);
     console.log('allPlayersReady:', allPlayersReady);
-    console.log('roomId:', roomId);
-  }, [localIsHost, customIsHost, currentUser, allPlayersReady, roomId]);
+  }, [roomId, sessionId, localIsHost, customIsHost, currentUser, allPlayersReady]);
 
   if (!currentUser) return null;
-    // 시작 버튼 클릭 핸들러 수정
-    const handleStartGame = () => {
-      // 기존 onStartGame 호출하여 웹소켓 메시지 전송
-      onStartGame();
-      
-      // 유효한 roomId가 있으면 해당 roomId로 게임 페이지로 이동
-      if (roomId) {
-        console.log(`게임 시작: /game/${roomId}로 이동합니다.`);
-        
-        // 약간의 지연 후 이동 (웹소켓 메시지가 전송될 시간 확보)
-        setTimeout(() => {
-          navigate(`/game/${roomId}`);
-        }, 500);
-      } else {
-        // roomId가 없으면 기본 경로로 이동
-        console.log('roomId가 없습니다. 기본 게임 페이지로 이동합니다.');
-        navigate('/game');
-      }
-    };
   
-    if (!currentUser) return null;
+  // 시작 버튼 클릭 핸들러 - 이제 sessionId를 우선적으로 사용
+  const handleStartGame = () => {
+    // 기존 onStartGame 호출하여 웹소켓 메시지 전송
+    onStartGame();
+    
+    // 게임 페이지로 이동 - sessionId가 있으면 사용, 없으면 roomId 사용
+    const idToUse = sessionId || roomId;
+    
+    if (idToUse) {
+      console.log(`게임 시작: /game/${idToUse}로 이동합니다.`);
+      
+      // 로컬 스토리지에 sessionId와 roomId 저장 (게임 페이지에서 사용)
+      if (sessionId) localStorage.setItem('sessionId', sessionId);
+      if (roomId) localStorage.setItem('roomId', roomId);
+      
+      // 약간의 지연 후 이동 (웹소켓 메시지가 전송될 시간 확보)
+      setTimeout(() => {
+        navigate(`/game/${idToUse}`);
+      }, 500);
+    } else {
+      // 식별자가 없으면 기본 경로로 이동
+      console.log('식별자가 없습니다. 기본 게임 페이지로 이동합니다.');
+      navigate('/game');
+    }
+  };
 
   // customReadyState가 제공되면 이를 사용, 아니면 currentUser.isReady 사용
   const isReady = customReadyState !== undefined ? customReadyState : currentUser.isReady;
