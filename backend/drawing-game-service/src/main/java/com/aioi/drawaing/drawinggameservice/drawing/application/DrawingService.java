@@ -16,9 +16,11 @@ import com.aioi.drawaing.drawinggameservice.drawing.presentation.dto.AddSessionP
 import com.aioi.drawaing.drawinggameservice.drawing.presentation.dto.DrawInfo;
 import com.aioi.drawaing.drawinggameservice.drawing.presentation.dto.WinParticipantInfo;
 import com.aioi.drawaing.drawinggameservice.room.application.dto.AddRoomParticipantInfo;
+import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -132,10 +134,15 @@ public class DrawingService {
         Session session = findSession(sessionId);
         log.info("endSession: {}", sessionId);
 
-        AuthResponse win = authServiceClient.updateRanking(new GameResultRequest(1L, "WIN", 10));
-        log.info(win.data());
-        AuthResponse authResponse = authServiceClient.updateMemberExp(new MemberExpUpdateRequest(1L, 10, 10));
-        log.info(authResponse.data());
+        try {
+            AuthResponse win = authServiceClient.updateRanking(new GameResultRequest(1L, "WIN", 10));
+            log.info(win.data());
+            AuthResponse authResponse = authServiceClient.updateMemberExp(new MemberExpUpdateRequest(1L, 10, 10));
+            log.info(authResponse.data());
+        } catch (Exception e ) {
+            log.error(e.getMessage());
+            throw new RuntimeException(e);
+        }
 
         drawMessagePublisher.publishGameResult("/topic/session.result/"+roomId+"/"+sessionId, session.toParticipantScoreInfo());
     }
