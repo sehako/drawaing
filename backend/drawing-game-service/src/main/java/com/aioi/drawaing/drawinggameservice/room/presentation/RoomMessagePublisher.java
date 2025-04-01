@@ -1,5 +1,6 @@
 package com.aioi.drawaing.drawinggameservice.room.presentation;
 
+import com.aioi.drawaing.drawinggameservice.room.application.dto.RoomStartInfo;
 import com.aioi.drawaing.drawinggameservice.room.domain.Room;
 import com.aioi.drawaing.drawinggameservice.room.presentation.dto.RoomInfoResponse;
 import lombok.RequiredArgsConstructor;
@@ -16,5 +17,9 @@ public class RoomMessagePublisher {
                 "/topic/room/" + room.getId(),
                 new RoomInfoResponse(room.getSessionId(), room.getHostId(), room.getParticipants())
         );
+    }
+
+    public void publishRoomStart(String topic, RoomStartInfo roomStartInfo) {
+        simpMessagingTemplate.convertAndSend(topic, roomStartInfo);
     }
 }
