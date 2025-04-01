@@ -4,6 +4,7 @@ import com.aioi.drawaing.authservice.common.response.PageResponse;
 import com.aioi.drawaing.authservice.member.application.MemberService;
 import com.aioi.drawaing.authservice.member.domain.Member;
 import com.aioi.drawaing.authservice.ranking.domain.DrawingGameRecord;
+import com.aioi.drawaing.authservice.ranking.domain.GameStatus;
 import com.aioi.drawaing.authservice.ranking.domain.RankingType;
 import com.aioi.drawaing.authservice.ranking.infrastructure.repository.DrawingGameRecordRepository;
 import com.aioi.drawaing.authservice.ranking.presentation.request.GameResultRequest;
@@ -26,10 +27,10 @@ public class RankingService {
     public GameRecordResponse updateGameRecord(GameResultRequest req) {
 
         DrawingGameRecord record = getOrCreateRecord(req.memberId());
-
+        GameStatus status = parseGameStatus(req.status());
         record.updateRecord(req.score());
 
-        switch (req.status()) {
+        switch (status) {
             case WIN -> record.updateWinCount();
             case DRAW -> record.updateDrawCount();
             case LOSE -> record.updateLoseCount();
@@ -80,7 +81,14 @@ public class RankingService {
             return RankingType.valueOf(rankingType.toUpperCase());
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("유효하지 않은 랭킹 타입: " + rankingType);
+        }
+    }
 
+    private GameStatus parseGameStatus(String gameStatus) {
+        try {
+            return GameStatus.valueOf(gameStatus.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("유효하지 않은 랭킹 타입: " + gameStatus);
         }
     }
 }
