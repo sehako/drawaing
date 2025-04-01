@@ -14,6 +14,7 @@ interface ReadyButtonProps {
   maxPlayers?: number;
   roomId?: string;
   sessionId?: string;  // sessionId 추가
+  disabled?: boolean;  // 버튼 비활성화 상태 추가
 }
 
 const ReadyButton: React.FC<ReadyButtonProps> = ({
@@ -28,6 +29,7 @@ const ReadyButton: React.FC<ReadyButtonProps> = ({
   maxPlayers = 4,
   roomId: propRoomId,
   sessionId: propSessionId,  // props에서 sessionId 받기
+  disabled = false,  // 기본값은 활성화 상태
 }) => {
   const navigate = useNavigate();
   // URL 파라미터에서 roomId 가져오기
@@ -112,34 +114,26 @@ const ReadyButton: React.FC<ReadyButtonProps> = ({
     console.log('customIsHost:', customIsHost);
     console.log('currentUser?.isHost:', currentUser?.isHost);
     console.log('allPlayersReady:', allPlayersReady);
-  }, [roomId, sessionId, localIsHost, customIsHost, currentUser, allPlayersReady]);
+    console.log('disabled:', disabled);
+  }, [roomId, sessionId, localIsHost, customIsHost, currentUser, allPlayersReady, disabled]);
 
   if (!currentUser) return null;
   
   // 시작 버튼 클릭 핸들러 - 이제 sessionId를 우선적으로 사용
   const handleStartGame = () => {
+    // 비활성화 상태면 아무 동작하지 않음
+    if (disabled) return;
+    
     // 기존 onStartGame 호출하여 웹소켓 메시지 전송
     onStartGame();
+  };
+
+  // 준비 버튼 클릭 핸들러
+  const handleToggleReady = () => {
+    // 비활성화 상태면 아무 동작하지 않음
+    if (disabled) return;
     
-    // 게임 페이지로 이동 - sessionId가 있으면 사용, 없으면 roomId 사용
-    const idToUse = sessionId || roomId;
-    
-    if (idToUse) {
-      console.log(`게임 시작: /game/${idToUse}로 이동합니다.`);
-      
-      // 로컬 스토리지에 sessionId와 roomId 저장 (게임 페이지에서 사용)
-      if (sessionId) localStorage.setItem('sessionId', sessionId);
-      if (roomId) localStorage.setItem('roomId', roomId);
-      
-      // 약간의 지연 후 이동 (웹소켓 메시지가 전송될 시간 확보)
-      setTimeout(() => {
-        navigate(`/game/${idToUse}`);
-      }, 500);
-    } else {
-      // 식별자가 없으면 기본 경로로 이동
-      console.log('식별자가 없습니다. 기본 게임 페이지로 이동합니다.');
-      navigate('/game');
-    }
+    onToggleReady();
   };
 
   // customReadyState가 제공되면 이를 사용, 아니면 currentUser.isReady 사용
@@ -151,29 +145,29 @@ const ReadyButton: React.FC<ReadyButtonProps> = ({
         // 방장인 경우: 시작 버튼만 표시
         <button
           onClick={handleStartGame}
-          disabled={!allPlayersReady || !isConnected || playerCount < 2}
+          disabled={!allPlayersReady || !isConnected || playerCount < 2 || disabled}
           className={`w-full h-16 sm:h-24 rounded-full flex items-center justify-center border-4 border-black shadow-[8px_8px_0_0_rgba(0,0,0,1)] hover:shadow-[10px_10px_0_0_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 text-2xl sm:text-4xl font-bold font-['Press_Start_2P'] transition-all duration-200 ${
-            allPlayersReady && isConnected && playerCount >= 2
+            allPlayersReady && isConnected && playerCount >= 2 && !disabled
               ? 'bg-[#ffd62e]' 
               : 'bg-gray-400 text-gray-600 cursor-not-allowed'
           }`}
         >
-          시작
+          {disabled ? '게임 시작 준비 중...' : '시작'}
         </button>
       ) : (
         // 일반 플레이어인 경우: 준비 버튼 표시
         <button
-          onClick={onToggleReady}
-          disabled={!isConnected}
+          onClick={handleToggleReady}
+          disabled={!isConnected || disabled}
           className={`w-full h-16 sm:h-24 rounded-full flex items-center justify-center border-4 border-black shadow-[8px_8px_0_0_rgba(0,0,0,1)] hover:shadow-[10px_10px_0_0_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 text-2xl sm:text-4xl font-bold font-['Press_Start_2P'] transition-all duration-200 ${
-            !isConnected
+            !isConnected || disabled
               ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
               : isReady 
                 ? 'bg-red-500 text-white' 
                 : 'bg-[#ffd62e] text-black'
           }`}
         >
-          {isReady ? '취소' : '준비'}
+          {disabled ? '게임 시작 준비 중...' : (isReady ? '취소' : '준비')}
         </button>
       )}
     </div>
