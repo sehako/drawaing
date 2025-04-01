@@ -139,8 +139,9 @@ public class DrawingService {
             log.info(win.data());
             AuthResponse authResponse = authServiceClient.updateMemberExp(new MemberExpUpdateRequest(1L, 10, 10));
             log.info(authResponse.data());
-        } catch (Exception e ) {
-            log.error(e.getMessage());
+        } catch (FeignException e) {
+//            log.error(e.getMessage());
+            log.error("❌ Feign 요청 실패: {}", e.getMessage(), e); // ✅ 올바른 로깅 방식
             throw new RuntimeException(e);
         }
 
