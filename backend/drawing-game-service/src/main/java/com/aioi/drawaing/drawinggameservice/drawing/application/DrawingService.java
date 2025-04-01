@@ -7,6 +7,9 @@ import com.aioi.drawaing.drawinggameservice.drawing.domain.*;
 import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.KeywordRepository;
 import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.RoomSesseionRepository;
 import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.SessionRepository;
+import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.feign.AuthServiceClient;
+import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.feign.request.GameResultRequest;
+import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.feign.request.MemberExpUpdateRequest;
 import com.aioi.drawaing.drawinggameservice.drawing.presentation.DrawMessagePublisher;
 import com.aioi.drawaing.drawinggameservice.drawing.presentation.dto.AddSessionParticipantInfo;
 import com.aioi.drawaing.drawinggameservice.drawing.presentation.dto.DrawInfo;
@@ -34,8 +37,9 @@ public class DrawingService {
     private final ScheduledExecutorService schedule;
     private final KeywordRepository keywordRepository;
     private final SessionRepository sessionRepository;
+    private final AuthServiceClient authServiceClient;
     private final int DEFAULT_WORD_COUNT = 30;
-    private final int DEFAULT_SESSION_TIMER = 600;
+    private final int DEFAULT_SESSION_TIMER = 30; //600;
     private final int DEFAULT_DRAW_TIMER = 20;
     private final int MAX_PARTICIPANT_NUMBER = 4;
 
@@ -126,6 +130,10 @@ public class DrawingService {
     private void endSession(String roomId, String sessionId){
         Session session = findSession(sessionId);
         log.info("endSession: {}", sessionId);
+
+        authServiceClient.updateRanking(new GameResultRequest(1L,"WIN", 10));
+        authServiceClient.updateMemberExp(new MemberExpUpdateRequest(1L, 10, 10));
+
         drawMessagePublisher.publishGameResult("/topic/session.result/"+roomId+"/"+sessionId, session.toParticipantScoreInfo());
     }
 
