@@ -29,9 +29,8 @@ public class RankingController {
     @PatchMapping()
     public ResponseEntity<?> updateRecord(
             @RequestBody GameResultRequest gameResultRequest) {
-        return ApiResponseEntity.onSuccess(
-                rankingService.updateGameRecord(gameResultRequest)
-        );
+        rankingService.updateGameRecord(gameResultRequest);
+        return ApiResponseEntity.onSuccess("랭킹 점수 업데이트 완료");
     }
 
     @Operation(summary = "랭킹 조회")
