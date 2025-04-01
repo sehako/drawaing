@@ -35,8 +35,8 @@ export const createStompClient = (): Client => {
       console.log(str);
     },
     reconnectDelay: 5000,
-    heartbeatIncoming: 4000,
-    heartbeatOutgoing: 4000,
+    heartbeatIncoming: 10000, // 유지하기 위해서
+    heartbeatOutgoing: 10000,
   });
 };
 
