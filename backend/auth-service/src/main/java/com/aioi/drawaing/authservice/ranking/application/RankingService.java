@@ -1,9 +1,17 @@
 package com.aioi.drawaing.authservice.ranking.application;
 
+import com.aioi.drawaing.authservice.common.response.PageResponse;
+import com.aioi.drawaing.authservice.member.application.MemberService;
+import com.aioi.drawaing.authservice.member.domain.Member;
 import com.aioi.drawaing.authservice.ranking.domain.DrawingGameRecord;
+import com.aioi.drawaing.authservice.ranking.domain.RankingType;
 import com.aioi.drawaing.authservice.ranking.infrastructure.repository.DrawingGameRecordRepository;
 import com.aioi.drawaing.authservice.ranking.presentation.request.GameResultRequest;
+import com.aioi.drawaing.authservice.ranking.presentation.response.GameRecordResponse;
+import com.aioi.drawaing.authservice.ranking.presentation.response.RankingResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -11,10 +19,11 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class RankingService {
 
-    private final DrawingGameRecordRepository recordRepository;
+    private final DrawingGameRecordRepository drawingGameRecordRepository;
+    private final MemberService memberService;
 
     @Transactional
-    public DrawingGameRecord updateGameRecord(GameResultRequest req) {
+    public GameRecordResponse updateGameRecord(GameResultRequest req) {
 
         DrawingGameRecord record = getOrCreateRecord(req.memberId());
 
@@ -26,19 +35,52 @@ public class RankingService {
             case LOSE -> record.updateLoseCount();
             default -> throw new IllegalArgumentException("Invalid game status");
         }
-
-        return recordRepository.save(record);
+        return GameRecordResponse.from(drawingGameRecordRepository.save(record));
     }
 
     private DrawingGameRecord getOrCreateRecord(Long memberId) {
-        return recordRepository.findById(memberId)
+        Member member = memberService.getMember(memberId);
+        return drawingGameRecordRepository.findById(memberId)
                 .orElseGet(() -> DrawingGameRecord.builder()
-                        .id(memberId)
+                        .member(member)
                         .playCount(0)
                         .win(0)
                         .draw(0)
                         .lose(0)
                         .rankScore(0)
                         .build());
+    }
+
+    public PageResponse<?> getDrawingGameRanking(String rankingType, int page, int size) {
+        PageRequest pageRequest = PageRequest.of(page, size);
+
+        RankingType type = parseRankingType(rankingType);
+        Page<RankingResponse> resultPage = getRankingData(type, pageRequest);
+
+        return PageResponse.from(resultPage);
+    }
+
+    private Page<RankingResponse> getRankingData(RankingType type, PageRequest pageRequest) {
+        switch (type) {
+            case SCORE:
+                return drawingGameRecordRepository.findByScoreRanking(pageRequest);
+            case PLAY:
+                return drawingGameRecordRepository.findByPlayCountRanking(pageRequest);
+            case POINT:
+                return drawingGameRecordRepository.findByPointRanking(pageRequest);
+            case LEVEL:
+                return drawingGameRecordRepository.findByLevelRanking(pageRequest);
+            default:
+                throw new IllegalArgumentException("처리할 수 없는 랭킹 타입: " + type);
+        }
+    }
+
+    private RankingType parseRankingType(String rankingType) {
+        try {
+            return RankingType.valueOf(rankingType.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("유효하지 않은 랭킹 타입: " + rankingType);
+
+        }
     }
 }
