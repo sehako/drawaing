@@ -4,6 +4,7 @@ import SignupModal from '../components/landing/SignupModal';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import DrawingLogo from '../components/landing/DrawingLogo';
+import RoomFullModal from '../components/landing/RoomfullModal'; // 새로 만든 모달 컴포넌트 import
 
 // 쿠키에서 토큰 가져오기 함수
 const getAuthToken = () => {
@@ -23,6 +24,7 @@ const getAuthToken = () => {
 const LandingPage: React.FC = () => {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSignupModal, setShowSignupModal] = useState(false);
+  const [showRoomFullModal, setShowRoomFullModal] = useState(false); // 방 인원 초과 모달 상태 추가
   const [currentView, setCurrentView] = useState<'landing' | 'roomSelection'>('landing');
   const [roomCode, setRoomCode] = useState('');
   const [roomTitle, setRoomTitle] = useState('');
@@ -79,6 +81,7 @@ const LandingPage: React.FC = () => {
   const closeModal = () => {
     setShowLoginModal(false);
     setShowSignupModal(false);
+    setShowRoomFullModal(false); // 방 인원 초과 모달도 닫기
   };
 
   const handleSuccessfulLogin = () => {
@@ -188,7 +191,7 @@ const handleCreateRoom = async () => {
   }
 };
 
-// 방 참가 함수 수정
+// 방 참가 함수 수정 - 인원 수 확인 로직 추가
 const handleJoinRoom = async (inputRoomCode?: string) => {
   const codeToJoin = inputRoomCode || roomCode;
   if (!codeToJoin) {
@@ -233,23 +236,13 @@ const handleJoinRoom = async (inputRoomCode?: string) => {
       console.log('실제 웹소켓용 roomId:', actualRoomId);
       console.log('표시용 roomCode:', codeToJoin);
       
-      // // 중요: 방 참가 요청을 먼저 보내기
-      // const joinResponse = await fetch(`https://www.drawaing.site/service/game/api/v1/drawing/room?code=${codeToJoin}`, {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //     'Authorization': `Bearer ${token}`
-      //   },
-      //   body: JSON.stringify({
-      //     memberId: user.memberId,
-      //     nickname: user.nickname,
-      //     characterUrl: user.characterImage || 'default_character'
-      //   })
-      // });
-      
-      // if (!joinResponse.ok) {
-      //   throw new Error(`방 참가에 실패했습니다: ${joinResponse.status}`);
-      // }
+      // 여기에 방 인원 수 확인 로직 추가
+      if (data.result.participants && data.result.participants.length >= 4) {
+        // 방 인원이 이미 4명 이상인 경우 모달 표시
+        console.log('방 인원 초과! 현재 인원:', data.result.participants.length);
+        setShowRoomFullModal(true);
+        return; // 더 이상 진행하지 않고 함수 종료
+      }
       
       console.log('방 참가 요청 성공');
       
@@ -515,6 +508,11 @@ const handleJoinRoom = async (inputRoomCode?: string) => {
           handleLoginClick={handleLoginClick}
           handleSocialLogin={handleSocialLogin}
         />
+      )}
+
+      {/* 방 인원 초과 모달 추가 */}
+      {showRoomFullModal && (
+        <RoomFullModal closeModal={closeModal} />
       )}
     </div>
   );

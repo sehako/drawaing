@@ -31,18 +31,40 @@ const getPlayerIdByNumber = (playerNumber: string): number => {
 
 const Game: React.FC = () => {
   // URL에서 roomId 파라미터 가져오기
-  const params = useParams<{ roomId?: string }>();
-  const roomId = '67e3b8c70e25f60ac596bd83';
+  const { roomId: storedRoomId } = useParams<{ roomId?: string }>();
+  
+  // ReadyButton과 동일한 방식으로 선언 - 초기값 null로 설정
+  const [roomId, setRoomId] = useState<string | null>(null);
   const navigate = useNavigate();
   
   const [passCount, setPassCount] = useState<number>(0);
   const MAX_PASS_COUNT = 3;
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  
+  // ReadyButton과 일관된 방식으로 roomId 초기화 및 업데이트
+  useEffect(() => {
+    // 우선순위: URL 파라미터 > localStorage
+    const storedRoomId = localStorage.getItem('roomId');    
+    const roomIdToUse = storedRoomId;
+    
+    console.log('Game.tsx - roomId 설정 과정:');
+    console.log('- URL 파라미터 roomId:', storedRoomId);
+    console.log('- localStorage roomId:', storedRoomId);
+    console.log('- 최종 선택된 roomId:', roomIdToUse);
+    
+    // 결정된 roomId 설정 (null일 경우를 대비해 빈 문자열로 변환)
+    setRoomId(storedRoomId || '');
+    
+    // 결정된 roomId를 localStorage에 저장 (다른 컴포넌트와 공유)
+    if (storedRoomId) {
+      localStorage.setItem('roomId', storedRoomId);
+    }
+  }, [storedRoomId]);
 
   // roomId가 없으면 기본 방으로 리다이렉트
   useEffect(() => {
-    if (!roomId) {
+    if (!storedRoomId) {
       navigate('/game/1');
     }
   }, [roomId, navigate]);
@@ -96,7 +118,8 @@ const Game: React.FC = () => {
       default: return "플레이어";
     }
   }
-  
+
+
   const [currentRound, setCurrentRound] = useState<number>(1);
   const [quizWord, setQuizWord] = useState<string>('바나나');
   const [activeDrawerIndex, setActiveDrawerIndex] = useState<number>(0);
@@ -125,6 +148,7 @@ const Game: React.FC = () => {
   const [lastPoint, setLastPoint] = useState<{ x: number; y: number } | null>(null);
 
   const [playerMessages, setPlayerMessages] = useState<{[playerId: number]: string}>({});
+  const [storedSessionId, setStoredSessionId] = useState<string | null>(null);
 
   const [eggCount, setEggCount] = useState(10);
   const [aiAnswer, setAiAnswer] = useState<string>('');
@@ -151,12 +175,89 @@ const Game: React.FC = () => {
 
   const [predictions, setPredictions] = useState<{ class: string; probability: number }[]>([]);
 
-  // 웹소켓 훅 사용
+  // 웹소켓 훅 사용 - roomId가 null일 때도 빈 문자열로 처리하도록 수정
   const { isConnected, playerConnections, sessionId, sendMessage } = useGameWebSocket({
-    roomId,
+    roomId: roomId ?? "", // null이면 빈 문자열로 변환
     currentPlayer
   });
   
+    // playerConnections 객체로부터 플레이어 정보를 동적으로 업데이트하는 useEffect 추가
+useEffect(() => {
+  // 웹소켓 연결이 없거나 playerConnections가 비어있으면 처리하지 않음
+  if (!isConnected || Object.keys(playerConnections).length === 0) return;
+  
+  console.log('방 접속 정보로부터 플레이어 정보 업데이트:', playerConnections);
+  
+  // 기본 아바타 이미지 배열
+  const avatars = [
+    '/avatars/chick.png',
+    '/avatars/muscular.png',
+    '/avatars/angry-bird.png',
+    '/avatars/yellow-bird.png'
+  ];
+  
+  // 기본 레벨 배열
+  const defaultLevels = [1, 50, 25, 16];
+  
+  // 업데이트할 플레이어 배열 초기화
+  const updatedPlayers: Player[] = [];
+  
+  // playerConnections 객체를 순회하며 플레이어 정보 추출
+  Object.entries(playerConnections).forEach(([playerNumber, info]: [string, any]) => {
+    if (info && typeof info === 'object') {
+      const playerIndex = parseInt(playerNumber) - 1;
+      const isConnected = info.isConnected || false;
+      
+      // 연결된 플레이어만 추가
+      if (isConnected) {
+        // 기본 닉네임 (연결 정보에 nickname이 없는 경우)
+        const defaultNickname = getPlayerNickname(playerNumber);
+        
+        // 플레이어 정보 구성
+        updatedPlayers.push({
+          id: playerIndex,
+          name: info.nickname || defaultNickname,
+          level: defaultLevels[playerIndex % defaultLevels.length],
+          avatar: avatars[playerIndex % avatars.length]
+        });
+      }
+    }
+  });
+  
+  // 플레이어가 하나도 없는 경우, 현재 플레이어만 추가
+  if (updatedPlayers.length === 0) {
+    const playerNumber = localStorage.getItem('playerNumber') || "1";
+    const playerIndex = parseInt(playerNumber) - 1;
+    
+    updatedPlayers.push({
+      id: playerIndex,
+      name: currentPlayer,
+      level: defaultLevels[playerIndex % defaultLevels.length],
+      avatar: avatars[playerIndex % avatars.length]
+    });
+  }
+  
+  // 플레이어 수가 4명 미만인 경우, 남은 슬롯을 대기 중 상태로 채움
+  while (updatedPlayers.length < 4) {
+    const nextIndex = updatedPlayers.length;
+    updatedPlayers.push({
+      id: nextIndex,
+      name: `대기 중...`,
+      level: 0,
+      avatar: '/avatars/default.png'
+    });
+  }
+  
+  // 플레이어 순서대로 정렬 (id 기준)
+  updatedPlayers.sort((a, b) => a.id - b.id);
+  
+  console.log('업데이트된 플레이어 정보:', updatedPlayers);
+  
+  // players 상태 업데이트
+  setPlayers(updatedPlayers);
+  
+}, [isConnected, playerConnections, currentPlayer]);
+
   // 웹소켓 연결 완료 후 타이머 정보 가져오기 위한 상태 추가
   const [isGameTimerReady, setIsGameTimerReady] = useState<boolean>(false);
 
@@ -167,10 +268,19 @@ const Game: React.FC = () => {
   useEffect(() => {
     if (isConnected && sessionId) {
       setIsGameTimerReady(true);
+      
+      // 세션 ID가 유효하면 저장
+      if (sessionId && roomId) {
+        console.log(`유효한 세션 ID(${sessionId})와 roomId(${roomId}) 감지됨`);
+        
+        // 로컬 스토리지에 세션 ID 저장
+        localStorage.setItem('sessionId', sessionId);
+        localStorage.setItem('roomId', roomId);
+      }
     } else {
       setIsGameTimerReady(false);
     }
-  }, [isConnected, sessionId]);
+  }, [isConnected, sessionId, roomId]);
 
   const {
     totalTime,
@@ -180,7 +290,7 @@ const Game: React.FC = () => {
     isLoading: isTimerLoading,
     error: timerError
   } = useGameTimer({
-    roomId,
+    roomId: roomId ?? "", // null이면 빈 문자열로 변환
     sessionId: sessionId || '0',
     isGameOver
   });
@@ -380,7 +490,7 @@ const transitionToNextRound = () => {
     // 여기에서 타이머 리셋 호출 (모달이 사라지는 시점)
     if (sessionId) {
       gameTimerService.resetTurnTimer(
-        roomId,
+        roomId ?? '',
         sessionId,
         {
           currentRound: currentRound + 1,
@@ -800,15 +910,16 @@ useEffect(() => {
       <div className="flex w-full max-w-7xl">
         {/* 플레이어 컴포넌트 - 좌측 */}
         <div className="w-1/5 mr-9">
-          <PlayerSection 
-            currentRound={currentRound}
-            activeDrawerIndex={activeDrawerIndex}
-            guesserIndex={guesserIndex}
-            roomId={roomId}
-            playerConnections={playerConnections as any}
-            isConnected={isConnected}
-            playerMessages={playerMessages}
-          />
+        <PlayerSection 
+          currentRound={currentRound}
+          activeDrawerIndex={activeDrawerIndex}
+          guesserIndex={guesserIndex}
+          roomId={roomId || undefined}
+          playerConnections={playerConnections as any}
+          isConnected={isConnected}
+          playerMessages={playerMessages}
+          players={players} // 추가된 부분
+        />
         </div>
 
         {/* 캔버스 컴포넌트 - 중앙 */}
@@ -840,8 +951,8 @@ useEffect(() => {
           activeDrawerIndex={activeDrawerIndex}
           handleCanvasSubmit={handleCanvasSubmit}
           setPredictions={setPredictions}
-          roomId={roomId}  // 추가
-          sessionId={sessionId}  // 추가
+          roomId={roomId ?? ""}  // null이면 빈 문자열로 변환
+          sessionId={sessionId ?? ""}  // null이면 빈 문자열로 변환
         />
         </div>
 
