@@ -111,9 +111,7 @@ public class MemberService {
                         "https://i.pinimg.com/736x/8d/88/5f/8d885f3de74052403323f56445d83dab.jpg") // 임시로 넣어둠, 고칠 예정
                 .build();
 
-        memberRepository.save(member);
-
-        return ApiResponseEntity.from(SuccessCode.SUCCESS_MEMBER_REGISTER, null);
+        return ApiResponseEntity.from(SuccessCode.SUCCESS_MEMBER_REGISTER, memberRepository.save(member));
     }
 
     @Transactional
