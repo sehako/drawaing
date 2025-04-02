@@ -19,6 +19,11 @@ export interface JoinRoomRequest {
   characterUrl: string;
 }
 
+// 게임 시작 메시지 타입 정의 (추가됨)
+export interface GameStartMessage {
+  startTime: string;  // ISO 시간 문자열 형식 (예: "2025-04-01T13:29:44.189Z")
+}
+
 // 웹소켓 클라이언트 생성
 export const createStompClient = (): Client => {
   return new Client({
@@ -30,8 +35,8 @@ export const createStompClient = (): Client => {
       console.log(str);
     },
     reconnectDelay: 5000,
-    heartbeatIncoming: 4000,
-    heartbeatOutgoing: 4000,
+    heartbeatIncoming: 10000, // 유지하기 위해서
+    heartbeatOutgoing: 10000,
   });
 };
 
@@ -89,22 +94,40 @@ export const sendReadyStatusMessage = (
   });
 };
 
-// 게임 시작 메시지 전송
+// 게임 시작 메시지 전송 (수정됨)
 export const sendGameStartMessage = (
   client: Client, 
   memberId: number, 
   roomId: string
 ): void => {
-  client.publish({
-    destination: `/app/room.start/${roomId}`,
-    body: JSON.stringify({
-      memberId: memberId
-    }),
-    headers: { 
-      'content-type': 'application/json',
-      'Authorization': `Bearer ${getAuthToken()}`
+  // 현재 시간에서 3초 후를 시작 시간으로 설정
+  const startTime = new Date(Date.now() + 3000).toISOString();
+  
+  // 시작 시간 정보를 포함한 메시지 생성
+  const message = {
+    memberId: memberId,
+    startTime: startTime  // 시작 시간 추가
+  };
+  
+  console.log(`게임 시작 메시지 전송 (시작 시간: ${startTime}):`, JSON.stringify(message));
+  
+  // 연결 상태 확인 후 메시지 전송
+  if (client && client.connected) {
+    try {
+      client.publish({
+        destination: `/app/room.start/${roomId}`,
+        body: JSON.stringify(message),
+        headers: { 
+          'content-type': 'application/json',
+          'Authorization': `Bearer ${getAuthToken()}`
+        }
+      });
+    } catch (error) {
+      console.error('게임 시작 메시지 전송 오류:', error);
     }
-  });
+  } else {
+    console.warn('웹소켓이 연결되지 않았습니다. 게임 시작 요청을 보낼 수 없습니다.');
+  }
 };
 
 // 방 나가기 메시지 전송

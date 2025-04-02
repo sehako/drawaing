@@ -7,7 +7,8 @@ import {
   JoinRoomRequest, 
   Player,
   normalizePlayerData,
-  determineHostId
+  determineHostId,
+  GameStartMessage // 새로 추가된 인터페이스 import
 } from '../utils/GameSocketUtils';
 
 interface UseUserWebSocketProps {
@@ -27,6 +28,7 @@ interface UseUserWebSocketReturn {
   players: Player[];
   currentUser: Player | null;
   chatMessages: string[];
+  gameStartInfo: GameStartMessage | null; // 추가: 게임 시작 정보
   subscribeToRoom: (client: Client, roomId: string) => void;
   joinRoom: (client: Client, userInfo: JoinRoomRequest, roomId: string) => void;
   updatePlayersList: (playerData: any) => void;
@@ -52,105 +54,105 @@ const useUserWebSocket = ({
   const [currentUser, setCurrentUser] = useState<Player | null>(null);
   const [chatMessages, setChatMessages] = useState<string[]>([]);
   const [isLeaving, setIsLeaving] = useState<boolean>(false);
+  const [gameStartInfo, setGameStartInfo] = useState<GameStartMessage | null>(null); // 추가: 게임 시작 정보 상태
   const componentMountedRef = useRef(true);
 
   // updatePlayersList 함수 수정 - 방장 상태 더 확실하게 처리
-
-const updatePlayersList = useCallback((playerData: any) => {
-  console.log('===== 플레이어 데이터 처리 시작 =====');
-  console.log('원본 데이터:', playerData);
-  
-  // 데이터 형식 정규화 (hostId 정보 포함)
-  const { normalizedData, hostId } = normalizePlayerData(playerData);
-  console.log('정규화된 데이터:', normalizedData);
-  console.log('서버 지정 방장 ID:', hostId);
-  
-  // 빈 객체나 유효하지 않은 형식인 경우 처리 중단
-  if (!normalizedData || typeof normalizedData !== 'object' || Object.keys(normalizedData).length === 0) {
-    console.warn('유효한 플레이어 데이터가 아닙니다.');
-    return;
-  }
-  
-  // 플레이어 ID 목록
-  const playerIds = Object.keys(normalizedData);
-  console.log('플레이어 ID 목록:', playerIds);
-  
-  if (playerIds.length === 0) {
-    console.warn('플레이어 목록이 비어 있습니다.');
-    return;
-  }
-  
-  // 방장 ID 결정 (서버에서 제공한 hostId 사용, 없으면 첫 번째 플레이어)
-  const hostPlayerId = determineHostId(playerIds, hostId);
-  console.log('결정된 방장 ID:', hostPlayerId);
-  
-  // hostId가 있으면 localStorage에 저장
-  if (hostId !== null) {
-    // 현재 사용자가 방장인지 확인
-    const isCurrentUserHost = user?.memberId === hostId;
-    localStorage.setItem('isHost', isCurrentUserHost ? 'true' : 'false');
-    console.log('방장 여부 localStorage 저장:', isCurrentUserHost);
-  }
-  
-  // 객체를 배열로 변환하여 처리
-  const updatedPlayers = Object.entries(normalizedData).map(([id, data]: [string, any]) => {
-    // 방장 설정: hostId와 일치하는 플레이어를 방장으로
-    const isHost = hostPlayerId ? id === hostPlayerId : false;
+  const updatePlayersList = useCallback((playerData: any) => {
+    console.log('===== 플레이어 데이터 처리 시작 =====');
+    console.log('원본 데이터:', playerData);
     
-    return {
-      id: id,
-      memberId: parseInt(id),
-      nickname: data.nickname || '알 수 없음',
-      isReady: data.ready || false,  // 서버에서는 ready로 전송됨
-      isHost: isHost, // 명확하게 방장 여부 설정
-      character: data.characterUrl || 'https://placehold.co/400/gray/white?text=Unknown',
-      characterUrl: data.characterUrl || 'https://placehold.co/400/gray/white?text=Unknown'
-    };
-  });
-
-  console.log('변환된 플레이어 목록:', updatedPlayers);
-  
-  setPlayers(updatedPlayers);
-
-  // 현재 사용자 찾기
-  if (user && user.memberId) {
-    const userIdStr = user.memberId.toString();
-    console.log('현재 사용자 ID:', userIdStr);
+    // 데이터 형식 정규화 (hostId 정보 포함)
+    const { normalizedData, hostId } = normalizePlayerData(playerData);
+    console.log('정규화된 데이터:', normalizedData);
+    console.log('서버 지정 방장 ID:', hostId);
     
-    // 내가 방장인지 확인
-    const amIHost = hostId !== null && user.memberId === hostId;
-    console.log('내가 방장인가?', amIHost);
-    
-    // 방장 정보 로컬 스토리지에 저장
-    localStorage.setItem('isHost', amIHost ? 'true' : 'false');
-    
-    const myInfo = updatedPlayers.find(p => p.id === userIdStr || p.memberId === user.memberId);
-    if (myInfo) {
-      // 방장 상태를 명확하게 설정
-      const updatedMyInfo = {...myInfo, isHost: amIHost};
-      console.log('내 플레이어 정보 업데이트:', updatedMyInfo);
-      setCurrentUser(updatedMyInfo);
-    } else {
-      // 사용자가 목록에 없으면, 기존 user 정보로 가상의 플레이어 객체 생성
-      const virtualUser = {
-        id: userIdStr,
-        memberId: user.memberId,
-        nickname: user.nickname || '게스트',
-        isReady: false,
-        isHost: amIHost,  // hostId에 따라 방장 여부 결정
-        character: user.characterImage || 'https://placehold.co/400/gray/white?text=Unknown',
-        characterUrl: user.characterImage || 'https://placehold.co/400/gray/white?text=Unknown'
-      };
-      console.log('목록에 내 정보가 없어 가상 정보 생성:', virtualUser);
-      setCurrentUser(virtualUser);
-      
-      // 플레이어 목록에 자신 추가(서버 응답에 본인이 없는 경우를 대비)
-      setPlayers([...updatedPlayers, virtualUser]);
+    // 빈 객체나 유효하지 않은 형식인 경우 처리 중단
+    if (!normalizedData || typeof normalizedData !== 'object' || Object.keys(normalizedData).length === 0) {
+      console.warn('유효한 플레이어 데이터가 아닙니다.');
+      return;
     }
-  }
-  
-  console.log('===== 플레이어 데이터 처리 완료 =====');
-}, [user]);
+    
+    // 플레이어 ID 목록
+    const playerIds = Object.keys(normalizedData);
+    console.log('플레이어 ID 목록:', playerIds);
+    
+    if (playerIds.length === 0) {
+      console.warn('플레이어 목록이 비어 있습니다.');
+      return;
+    }
+    
+    // 방장 ID 결정 (서버에서 제공한 hostId 사용, 없으면 첫 번째 플레이어)
+    const hostPlayerId = determineHostId(playerIds, hostId);
+    console.log('결정된 방장 ID:', hostPlayerId);
+    
+    // hostId가 있으면 localStorage에 저장
+    if (hostId !== null) {
+      // 현재 사용자가 방장인지 확인
+      const isCurrentUserHost = user?.memberId === hostId;
+      localStorage.setItem('isHost', isCurrentUserHost ? 'true' : 'false');
+      console.log('방장 여부 localStorage 저장:', isCurrentUserHost);
+    }
+    
+    // 객체를 배열로 변환하여 처리
+    const updatedPlayers = Object.entries(normalizedData).map(([id, data]: [string, any]) => {
+      // 방장 설정: hostId와 일치하는 플레이어를 방장으로
+      const isHost = hostPlayerId ? id === hostPlayerId : false;
+      
+      return {
+        id: id,
+        memberId: parseInt(id),
+        nickname: data.nickname || '알 수 없음',
+        isReady: data.ready || data.isReady || false,  // 서버에서 ready 또는 isReady로 전송 가능
+        isHost: isHost, // 명확하게 방장 여부 설정
+        character: data.characterUrl || 'https://placehold.co/400/gray/white?text=Unknown',
+        characterUrl: data.characterUrl || 'https://placehold.co/400/gray/white?text=Unknown'
+      };
+    });
+
+    console.log('변환된 플레이어 목록:', updatedPlayers);
+    
+    setPlayers(updatedPlayers);
+
+    // 현재 사용자 찾기
+    if (user && user.memberId) {
+      const userIdStr = user.memberId.toString();
+      console.log('현재 사용자 ID:', userIdStr);
+      
+      // 내가 방장인지 확인
+      const amIHost = hostId !== null && user.memberId === hostId;
+      console.log('내가 방장인가?', amIHost);
+      
+      // 방장 정보 로컬 스토리지에 저장
+      localStorage.setItem('isHost', amIHost ? 'true' : 'false');
+      
+      const myInfo = updatedPlayers.find(p => p.id === userIdStr || p.memberId === user.memberId);
+      if (myInfo) {
+        // 방장 상태를 명확하게 설정
+        const updatedMyInfo = {...myInfo, isHost: amIHost};
+        console.log('내 플레이어 정보 업데이트:', updatedMyInfo);
+        setCurrentUser(updatedMyInfo);
+      } else {
+        // 사용자가 목록에 없으면, 기존 user 정보로 가상의 플레이어 객체 생성
+        const virtualUser = {
+          id: userIdStr,
+          memberId: user.memberId,
+          nickname: user.nickname || '게스트',
+          isReady: false,
+          isHost: amIHost,  // hostId에 따라 방장 여부 결정
+          character: user.characterImage || 'https://placehold.co/400/gray/white?text=Unknown',
+          characterUrl: user.characterImage || 'https://placehold.co/400/gray/white?text=Unknown'
+        };
+        console.log('목록에 내 정보가 없어 가상 정보 생성:', virtualUser);
+        setCurrentUser(virtualUser);
+        
+        // 플레이어 목록에 자신 추가(서버 응답에 본인이 없는 경우를 대비)
+        setPlayers([...updatedPlayers, virtualUser]);
+      }
+    }
+    
+    console.log('===== 플레이어 데이터 처리 완료 =====');
+  }, [user]);
 
   // 준비 상태 업데이트 함수
   const updatePlayerReadyStatus = useCallback((readyData: any) => {
@@ -165,20 +167,20 @@ const updatePlayersList = useCallback((playerData: any) => {
         // 플레이어 목록 업데이트
         setPlayers(prev => prev.map(player => 
           player.id === playerId
-            ? { ...player, isReady: playerData.ready }
+            ? { ...player, isReady: playerData.ready || playerData.isReady || false }
             : player
         ));
 
         // 현재 사용자의 준비 상태 업데이트
         setCurrentUser(prev => 
           prev && prev.id === playerId
-            ? { ...prev, isReady: playerData.ready }
+            ? { ...prev, isReady: playerData.ready || playerData.isReady || false }
             : prev
         );
 
         // 채팅에 메시지 추가
         const playerName = players.find(p => p.id === playerId)?.nickname || 'Unknown';
-        const readyStatus = playerData.ready ? '준비 완료' : '준비 취소';
+        const readyStatus = (playerData.ready || playerData.isReady) ? '준비 완료' : '준비 취소';
         const newMessage = `시스템: ${playerName}님이 ${readyStatus}했습니다.`;
         setChatMessages(prev => [...prev, newMessage]);
       }
@@ -193,11 +195,11 @@ const updatePlayersList = useCallback((playerData: any) => {
     setChatMessages(prev => [...prev, newMessage]);
   }, []);
 
-  // 웹소켓 방 구독 함수
+  // 웹소켓 방 구독 함수 - 게임 시작 메시지 처리 추가
   const subscribeToRoom = useCallback((client: Client, roomId: string) => {
     console.log(`방 이벤트 구독 시도: /topic/room/${roomId}`);
     
-    // 방 이벤트 구독
+    // 방 이벤트 구독 (기존)
     client.subscribe(`/topic/room/${roomId}`, (message) => {
       try {
         console.log('방 이벤트 메시지 수신:', message);
@@ -213,7 +215,15 @@ const updatePlayersList = useCallback((playerData: any) => {
           updatePlayerReadyStatus(data.payload || data);
         } else if (data.type === 'GAME_START') {
           console.log('게임 시작 이벤트 감지');
-          navigate('/game');
+          // 게임 시작 처리 로직 - payload에 startTime 필드 확인
+          if (data.payload && data.payload.startTime) {
+            console.log('게임 시작 시간 수신:', data.payload.startTime);
+            setGameStartInfo({ startTime: data.payload.startTime });
+          } else {
+            // 이전 방식: 즉시 게임 화면으로 이동
+            console.log('게임 시작 시간이 없는 이전 형식의 메시지 감지, 곧 새 방식으로 처리될 예정');
+            // navigate(`/game/${roomId}`); // 직접 이동은 제거 (새 메커니즘으로 대체)
+          }
         } else if (data.participants) {
           // participants 객체가 있는 경우 플레이어 목록 업데이트
           console.log('participants 객체 감지, 플레이어 목록 업데이트');
@@ -232,7 +242,38 @@ const updatePlayersList = useCallback((playerData: any) => {
       }
     });
     
-    // 채팅 메시지 구독
+    // 새로운 게임 시작 시간 정보 구독 (추가)
+    console.log(`게임 시작 시간 구독 시도: /topic/room.wait/${roomId}`);
+    client.subscribe(`/topic/room.wait/${roomId}`, (message) => {
+      try {
+        console.log('게임 시작 시간 메시지 수신:', message);
+        const data = JSON.parse(message.body);
+        console.log('게임 시작 시간 데이터 수신:', data);
+        
+        // startTime 필드 확인
+        if (data && data.startTime) {
+          console.log('유효한 게임 시작 시간 수신:', data.startTime);
+          
+          // 게임 시작 정보 업데이트
+          setGameStartInfo({ startTime: data.startTime });
+          
+          // 시스템 메시지 추가
+          const startDate = new Date(data.startTime);
+          const countdownSeconds = Math.ceil((startDate.getTime() - Date.now()) / 1000);
+          
+          setChatMessages(prev => [
+            ...prev, 
+            `시스템: 게임이 ${countdownSeconds > 0 ? `${countdownSeconds}초 후에` : '곧'} 시작됩니다. 준비하세요!`
+          ]);
+        } else {
+          console.warn('게임 시작 시간이 없거나 유효하지 않음:', data);
+        }
+      } catch (error) {
+        console.error('게임 시작 메시지 파싱 오류:', error);
+      }
+    });
+    
+    // 채팅 메시지 구독 (기존)
     client.subscribe(`/topic/room/${roomId}/chat`, (message) => {
       try {
         console.log('채팅 메시지 수신:', message);
@@ -246,10 +287,45 @@ const updatePlayersList = useCallback((playerData: any) => {
       }
     });
     
-    console.log('구독 완료');
-  }, [updatePlayersList, updatePlayerReadyStatus, addChatMessage, navigate]);
+    console.log('모든 구독 완료');
+  }, [updatePlayersList, updatePlayerReadyStatus, addChatMessage]);
 
-  // joinRoom 함수 내부를 수정합니다
+  // 게임 시작 시간 정보에 따라 게임 화면으로 이동
+  useEffect(() => {
+    if (!gameStartInfo || !roomId) return;
+    
+    console.log('게임 시작 정보 감지:', gameStartInfo);
+    
+    // ISO 시간 문자열을 Date 객체로 변환
+    const startTime = new Date(gameStartInfo.startTime);
+    const currentTime = new Date();
+    
+    // 시작 시간과 현재 시간 차이 계산 (밀리초)
+    const timeUntilStart = startTime.getTime() - currentTime.getTime();
+    
+    console.log(`게임 시작까지 ${timeUntilStart}ms 남음`);
+    
+    if (timeUntilStart <= 0) {
+      // 이미 시작 시간이 지났거나 현재 시간인 경우 즉시 이동
+      console.log('시작 시간이 이미 지났거나 현재임 - 즉시 게임 화면으로 이동');
+      navigate(`/game/${roomId}`);
+      return;
+    }
+    
+    // 시작 시간에 맞춰 게임 화면으로 이동하는 타이머 설정
+    console.log(`${timeUntilStart}ms 후에 게임 화면으로 이동 예정`);
+    const startGameTimer = setTimeout(() => {
+      console.log('게임 시작 시간이 되었습니다 - 게임 화면으로 이동');
+      navigate(`/game/${roomId}`);
+    }, timeUntilStart);
+    
+    // 컴포넌트 언마운트 시 타이머 정리
+    return () => {
+      clearTimeout(startGameTimer);
+    };
+  }, [gameStartInfo, roomId, navigate]);
+
+  // joinRoom 함수
   const joinRoom = useCallback((client: Client, userInfo: JoinRoomRequest, roomId: string) => {
     console.log('방 참가 시도 - 사용자 정보:', userInfo, '방 ID:', roomId);
     
@@ -308,8 +384,6 @@ const updatePlayersList = useCallback((playerData: any) => {
         }
       } else {
         console.log('방 참가 성공. 현재 플레이어:', players);
-        
-        
         
         // 플레이어 목록에 자신이 없는지 확인하고 추가
         const iAmInList = players.some(p => p.id === selfPlayer.id);
@@ -512,7 +586,8 @@ const updatePlayersList = useCallback((playerData: any) => {
     setChatMessages,
     setCurrentUser,
     setIsLeaving,
-    isLeaving
+    isLeaving,
+    gameStartInfo,
   };
 }
 
