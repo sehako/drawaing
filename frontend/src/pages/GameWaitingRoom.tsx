@@ -9,6 +9,9 @@ import PlayerSlot from '../components/Game/PlayerSlot';
 import GameRoomHeader from '../components/Game/GameRoomHeader';
 import ChatArea from '../components/Game/ChatArea';
 import ReadyButton from '../components/Game/ReadyButton';
+import { useRefreshStateManagement } from '../hooks/useRefreshStateManagement';
+import { RoomStateManager } from '../utils/roomStateUtils';
+
 
 const GameWaitingRoom: React.FC = () => {
   const navigate = useNavigate();
@@ -24,6 +27,7 @@ const GameWaitingRoom: React.FC = () => {
   const [localReady, setLocalReady] = useState<boolean>(false);
   const [userChangedReady, setUserChangedReady] = useState<boolean>(false);
   
+
   // 게임 시작 카운트다운 상태 추가
   const [gameStartCountdown, setGameStartCountdown] = useState<number | null>(null);
   
@@ -40,7 +44,7 @@ const GameWaitingRoom: React.FC = () => {
     players,
     currentUser,
     chatMessages,
-    gameStartInfo, // 게임 시작 정보 가져오기
+    gameStartInfo,
     setChatMessages,
     isLeaving,
     setIsLeaving
@@ -50,6 +54,8 @@ const GameWaitingRoom: React.FC = () => {
     isAuthenticated,
     isLoading
   });
+
+  
 
   // 디버깅을 위한 로그 추가
   useEffect(() => {
