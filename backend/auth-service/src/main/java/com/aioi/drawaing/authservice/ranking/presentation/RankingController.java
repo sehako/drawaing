@@ -29,6 +29,7 @@ public class RankingController {
     public ResponseEntity<?> updateRecord(
             @RequestBody List<GameResultRequest> gameResultRequest) {
         rankingService.updateGameRecords(gameResultRequest);
+        log.info("랭킹 점수 업데이트 완료");
         return ApiResponseEntity.onSuccess("랭킹 점수 업데이트 완료");
     }
 
@@ -38,6 +39,7 @@ public class RankingController {
             @RequestParam(name = "type") String rankingType,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
+        log.info("=====랭킹 조회=====");
         return ApiResponseEntity.onSuccess(
                 rankingService.getDrawingGameRanking(rankingType, page, size)
         );
