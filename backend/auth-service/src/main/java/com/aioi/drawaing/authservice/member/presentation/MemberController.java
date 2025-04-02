@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -35,6 +36,7 @@ public class MemberController {
     @Operation(summary = "회원 정보 조회")
     @GetMapping("/{member_id}")
     public ResponseEntity<?> get(@PathVariable("member_id") Long memberId) {
+        log.info("회원 정보 조회 memberId: {},  ", memberId);
         return ApiResponseEntity.onSuccess(memberService.get(memberId));
     }
 
@@ -44,14 +46,18 @@ public class MemberController {
             HttpServletRequest request,
             @RequestBody MemberInfoUpdateRequest memberInfoUpdateRequest) {
         Long memberId = Long.parseLong(request.getParameter("member-id"));
+        log.info("=====회원 정보 수정=====");
+        log.info("memberId: {}", memberId);
+        log.info("UpdateRequest: {}", memberInfoUpdateRequest);
         return ApiResponseEntity.onSuccess(memberService.infoUpdate(memberInfoUpdateRequest, memberId));
     }
 
     @Operation(summary = "회원 경험치 추가")
     @PatchMapping("/exp")
     public ResponseEntity<?> expUpdate(
-            @RequestBody MemberExpUpdateRequest memberExpUpdateRequest) {
-        memberService.expUpdate(memberExpUpdateRequest);
+            @RequestBody List<MemberExpUpdateRequest> memberExpUpdateRequests) {
+        memberService.expUpdate(memberExpUpdateRequests);
+        log.info("경험치, 포인트 저장 완료");
         return ApiResponseEntity.onSuccess("경험치, 포인트 저장 완료");
     }
 
@@ -60,6 +66,7 @@ public class MemberController {
     public ResponseEntity<?> delete(
             HttpServletRequest request) {
         Long memberId = Long.parseLong(request.getParameter("member-id"));
+        log.info("회원 탈퇴 memberId: {},  ", memberId);
         memberService.delete(memberId);
         return ApiResponseEntity.onSuccess("회원 탈퇴에 성공하였습니다.");
     }
@@ -70,10 +77,10 @@ public class MemberController {
             , Errors errors) {
         // validation check
         if (errors.hasErrors()) {
-            log.error("signUp 에러 : {}", errors.getAllErrors());
+            log.error("signUp 에러: {}", errors.getAllErrors());
             return ApiResponseEntity.onFailure(ErrorCode.VALIDATION_ERROR);
         }
-        log.info("signUp : {}", signUp);
+        log.info("회원 가입: {}", signUp);
         return memberService.signUp(signUp);
     }
 
@@ -84,9 +91,10 @@ public class MemberController {
             @RequestBody @Validated MemberReqDto.Login login,
             Errors errors) {
         if (errors.hasErrors()) {
-            log.error("login 에러 : {}", errors.getAllErrors());
+            log.error("login 에러: {}", errors.getAllErrors());
             return ApiResponseEntity.onFailure(ErrorCode.VALIDATION_ERROR);
         }
+        log.info("로그인: {}", login);
         return memberService.login(response, login);
     }
 
