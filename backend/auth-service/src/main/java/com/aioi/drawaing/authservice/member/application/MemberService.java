@@ -30,6 +30,7 @@ import com.aioi.drawaing.authservice.oauth.domain.entity.RoleType;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
@@ -60,15 +61,19 @@ public class MemberService {
         Member member = getMember(memberId);
         member.infoUpdate(memberInfoUpdateRequest);
         memberRepository.saveAndFlush(member);
+        log.info("member info updated: {}", member);
         return MemberResponse.of(member);
     }
 
     @Transactional
-    public void expUpdate(MemberExpUpdateRequest req) {
-        Member member = getMember(req.memberId());
-        LevelInfo newLevel = calculateNewLevel(member.getLevel(), member.getExp(), req.exp());
-        member.expUpdate(newLevel.level(), newLevel.exp(), req.point());
-        memberRepository.saveAndFlush(member);
+    public void expUpdate(List<MemberExpUpdateRequest> requests) {
+        for (MemberExpUpdateRequest req : requests) {
+            Member member = getMember(req.memberId());
+            LevelInfo newLevel = calculateNewLevel(member.getLevel(), member.getExp(), req.exp());
+            member.expUpdate(newLevel.level(), newLevel.exp(), req.point());
+            memberRepository.saveAndFlush(member);
+            log.info("member exp updated: {}", member);
+        }
     }
 
     @Transactional
@@ -130,7 +135,7 @@ public class MemberService {
     public ResponseEntity<?> guestLogin(HttpServletRequest request, HttpServletResponse response) {
         try {
             String refreshToken = CookieUtil.getCookie(request, REFRESH_TOKEN).map(Cookie::getValue).orElse(null);
-            log.info("Refresh token: {}", refreshToken);
+            log.info("GUEST Refresh token: {}", refreshToken);
 
             Member member = processGuestSignUp(refreshToken);
 
@@ -159,7 +164,7 @@ public class MemberService {
         }
         // 5. 쿠키에서 Refresh Token 삭제
         CookieUtil.deleteCookie(request, response, REFRESH_TOKEN);
-
+        log.info("로그아웃 완료 memberId: {}", memberId);
         return ApiResponseEntity.from(SuccessCode.LOGOUT_SUCCESS, null);
     }
 
@@ -184,6 +189,7 @@ public class MemberService {
                 .providerType(ProviderType.GUEST)
                 // 기본 캐릭터 이미지 넣어줄 예정
                 .build();
+        log.info("게스트 회원가입 member: {}", member);
         memberRepository.save(member);
         return member;
     }
@@ -211,6 +217,7 @@ public class MemberService {
         if (member.getRole() != RoleType.ROLE_GUEST) {
             return guestSignUp();
         }
+        log.info("이미 가입된 게스트 유저입니다. REFRESH_TOKEN: " + refreshToken);
         return member;
     }
 
