@@ -37,7 +37,7 @@ public class RoomService {
             log.error("code에 해당하는 room이 없습니다.");
             return new RuntimeException("room이 없습니다.");
         });
-        return new RoomId(room.getId());
+        return new RoomId(room.getId(), room.getParticipantSize());
     }
 
 }
