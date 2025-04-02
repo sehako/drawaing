@@ -69,4 +69,8 @@ public class Room {
         this.participants.get(hostId).updateReady();
     }
 
+    public long getParticipantSize(){
+        return this.participants.size();
+    }
+
 }
