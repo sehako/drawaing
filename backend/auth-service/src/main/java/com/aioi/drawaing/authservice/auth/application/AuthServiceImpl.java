@@ -67,7 +67,7 @@ public class AuthServiceImpl implements com.aioi.drawaing.authservice.auth.appli
         checkEmailDuplication(emailRequest.email());
 
         String code = codeGenerator.generateCode();
-        log.info("code: {}", code);
+        log.info("email code: {}", code);
         String text = emailSender.buildTextForVerificationCode(EmailTemplate.EMAIL_VERIFICATION_CONTENT, code);
 
         emailSender.sendVerificationCode(emailRequest.email(), EmailTemplate.EMAIL_VERIFICATION_SUBJECT, text);

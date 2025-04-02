@@ -1,14 +1,13 @@
 package com.aioi.drawaing.authservice.auth.presentation;
 
+import com.aioi.drawaing.authservice.auth.application.AuthService;
+import com.aioi.drawaing.authservice.auth.exception.DuplicateResourceException;
 import com.aioi.drawaing.authservice.auth.presentation.dto.EmailRequest;
 import com.aioi.drawaing.authservice.auth.presentation.dto.EmailVerificationRequest;
-import com.aioi.drawaing.authservice.auth.exception.DuplicateResourceException;
-import com.aioi.drawaing.authservice.auth.application.AuthService;
 import com.aioi.drawaing.authservice.common.code.ErrorCode;
 import com.aioi.drawaing.authservice.common.response.ApiResponseEntity;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -62,6 +61,7 @@ public class AuthController {
     public ResponseEntity<?> checkNicknameDuplication(@RequestParam("nickname") String nickname) {
         try {
             authService.checkNicknameDuplication(nickname);
+            log.info("사용 가능한 닉네임 nickname: {}", nickname);
             return ApiResponseEntity.onSuccess("사용 가능한 닉네임 입니다.");
         } catch (DuplicateResourceException e) {
             return ApiResponseEntity.onFailure(ErrorCode.ALREADY_EXIST_NICKNAME);
@@ -73,6 +73,7 @@ public class AuthController {
     public ResponseEntity<?> checkEmailDuplication(@RequestParam("email") String email) {
         try {
             authService.checkEmailDuplication(email);
+            log.info("사용 가능한 이메일 email: {}", email);
             return ApiResponseEntity.onSuccess("사용 가능한 이메일 입니다.");
         } catch (DuplicateResourceException e) {
             return ApiResponseEntity.onFailure(ErrorCode.ALREADY_EXIST_EMAIL);
@@ -83,6 +84,7 @@ public class AuthController {
     @PostMapping("/email/code")
     public ResponseEntity<?> sendEmailCode(@RequestBody EmailRequest emailRequest) {
         authService.sendEmailCode(emailRequest);
+        log.info("이메일 인증 코드 전송 성공 request: {}", emailRequest);
         return ApiResponseEntity.onSuccess(null);
     }
 
@@ -90,6 +92,7 @@ public class AuthController {
     @PostMapping("/email/authentication")
     public ResponseEntity<?> verifyEmailCode(@RequestBody EmailVerificationRequest emailVerificationRequest) {
         authService.verifyEmailCode(emailVerificationRequest);
+        log.info("이메일 인증 성공 request: {}", emailVerificationRequest);
         return ApiResponseEntity.onSuccess("이메일 인증에 성공하였습니다.");
     }
 
@@ -97,6 +100,7 @@ public class AuthController {
     @PostMapping("/email/password")
     public ResponseEntity<?> sendEmailPassword(@RequestBody EmailRequest emailRequest) {
         authService.sendEmailPassword(emailRequest);
+        log.info("임시 비밀번호 전송 성공 request: {}", emailRequest);
         return ApiResponseEntity.onSuccess(null);
     }
 }
