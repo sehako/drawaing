@@ -73,7 +73,9 @@ public class MemberController {
 
     @Operation(summary = "회원 가입")
     @PostMapping("/signup")
-    public ResponseEntity<?> signUp(@RequestBody @Validated MemberReqDto.SignUp signUp
+    public ResponseEntity<?> signUp(
+            HttpServletResponse response,
+            @RequestBody @Validated MemberReqDto.SignUp signUp
             , Errors errors) {
         // validation check
         if (errors.hasErrors()) {
@@ -81,7 +83,7 @@ public class MemberController {
             return ApiResponseEntity.onFailure(ErrorCode.VALIDATION_ERROR);
         }
         log.info("회원 가입: {}", signUp);
-        return memberService.signUp(signUp);
+        return memberService.signUp(response, signUp);
     }
 
     @Operation(summary = "로그인")

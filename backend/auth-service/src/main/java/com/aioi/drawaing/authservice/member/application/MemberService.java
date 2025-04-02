@@ -89,7 +89,7 @@ public class MemberService {
     }
 
     @Transactional
-    public ResponseEntity<?> signUp(SignUp signUp) {
+    public ResponseEntity<?> signUp(HttpServletResponse response, SignUp signUp) {
         if (memberRepository.existsByEmail(signUp.getEmail())) {
             return ApiResponseEntity.onFailure(ErrorCode.ALREADY_EXIST_EMAIL);
         }
@@ -111,7 +111,7 @@ public class MemberService {
                         "https://i.pinimg.com/736x/8d/88/5f/8d885f3de74052403323f56445d83dab.jpg") // 임시로 넣어둠, 고칠 예정
                 .build();
 
-        return ApiResponseEntity.from(SuccessCode.SUCCESS_MEMBER_REGISTER, memberRepository.save(member));
+        return ApiResponseEntity.from(SuccessCode.SUCCESS_MEMBER_REGISTER, processLogin(member, response));
     }
 
     @Transactional
@@ -123,7 +123,7 @@ public class MemberService {
                 return ApiResponseEntity.onFailure(ErrorCode.NOT_SUPPORT_PROVIDER);
             }
 
-            return ApiResponseEntity.onSuccess(processLogin(member, response));
+            return ApiResponseEntity.from(SuccessCode.SUCCESS_LOGIN, processLogin(member, response));
         } catch (Exception e) {
             log.error("Login failed: {}", e.getMessage());
             return ApiResponseEntity.onFailure(ErrorCode.SERVER_ERROR);
