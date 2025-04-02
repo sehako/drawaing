@@ -21,7 +21,7 @@ public class SwaggerConfig {
     @Bean
     public OpenAPI customOpenAPI(@Value("${openapi.service.url}") String url) {
         return new OpenAPI()
-                .servers(List.of(new Server().url(url)))
+                .servers(List.of(new Server().url("/")))
                 .components(new Components().addSecuritySchemes("Bearer",
                         new SecurityScheme().type(SecurityScheme.Type.HTTP).scheme("bearer").bearerFormat("JWT")))
                 .addSecurityItem(new SecurityRequirement().addList("Bearer"))
