@@ -425,7 +425,7 @@ const useUserWebSocket = ({
     
     try {
       // 웹소켓 클라이언트 생성
-      newClient = createStompClient();
+      newClient = createStompClient(roomId); // roomId 전달
 
       // 연결 성공 시 콜백
       newClient.onConnect = () => {
