@@ -25,12 +25,21 @@ export interface GameStartMessage {
 }
 
 // 웹소켓 클라이언트 생성
-export const createStompClient = (): Client => {
+// 웹소켓 클라이언트 생성 - roomId 파라미터 추가
+export const createStompClient = (roomId?: string): Client => {
+  // 연결 헤더 준비 (기존 설정 유지하고 roomId 추가)
+  const headers: Record<string, string> = {
+    'Authorization': `Bearer ${getAuthToken()}`
+  };
+  
+  // roomId가 있으면 헤더에 추가
+  if (roomId) {
+    headers['roomId'] = roomId;
+  }
+
   return new Client({
     brokerURL: 'wss://www.drawaing.site/service/game/drawing',
-    connectHeaders: {
-      'Authorization': `Bearer ${getAuthToken()}`
-    },
+    connectHeaders: headers,
     debug: (str) => {
       console.log(str);
     },
