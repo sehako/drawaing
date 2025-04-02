@@ -12,6 +12,7 @@ import com.aioi.drawaing.authservice.member.application.MemberService;
 import com.aioi.drawaing.authservice.member.presentation.MemberController;
 import com.aioi.drawaing.authservice.member.presentation.request.MemberExpUpdateRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -46,14 +47,16 @@ public class MemberControllerTest {
     @DisplayName("성공: 경험치 업데이트")
     void expUpdate_Success() throws Exception {
         // given
-        MemberExpUpdateRequest request = new MemberExpUpdateRequest(1L, 100, 50);
+        List<MemberExpUpdateRequest> requests = List.of(
+                new MemberExpUpdateRequest(1L, 100, 50)
+        );
 
-        doNothing().when(memberService).expUpdate(any(MemberExpUpdateRequest.class));
+        doNothing().when(memberService).expUpdate(any(List.class));
 
         // when
         ResultActions resultActions = mockMvc.perform(patch("/api/v1/member/exp")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)));
+                .content(objectMapper.writeValueAsString(requests)));
 
         //then
         resultActions.andExpect(status().isOk())
@@ -62,6 +65,6 @@ public class MemberControllerTest {
                 .andExpect(jsonPath("$.data").value("경험치, 포인트 저장 완료"));
 
         //verify
-        verify(memberService, times(1)).expUpdate(any(MemberExpUpdateRequest.class));
+        verify(memberService, times(1)).expUpdate(any(List.class));
     }
 }
