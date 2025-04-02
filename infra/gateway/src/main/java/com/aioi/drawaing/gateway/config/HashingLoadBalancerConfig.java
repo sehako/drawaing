@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.function.client.WebClient;
 
 @Configuration
-@LoadBalancerClient(value = "game", configuration = HashingLoadBalancer.class)
+@LoadBalancerClient(value = "game-service", configuration = HashingLoadBalancer.class)
 public class HashingLoadBalancerConfig {
     @Bean
     @LoadBalanced
