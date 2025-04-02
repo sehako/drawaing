@@ -23,7 +23,7 @@ app.add_middleware(
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # 모델 로드 (사전에 학습된 CNN 모델)
-model = ModifiedShuffleNetV2(num_classes=84)  # 클래스 수를 맞춰서 초기화
+model = ModifiedShuffleNetV2(num_classes=50)  # 클래스 수를 맞춰서 초기화
 model.load_state_dict(torch.load("shufflenet05_smaller72.pth", map_location=device))
 model.to(device)  # 모델을 GPU 또는 CPU로 이동
 model = model.to(torch.float16)  # 모델을 FP16으로 변환
