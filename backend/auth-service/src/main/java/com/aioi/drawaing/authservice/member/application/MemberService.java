@@ -102,7 +102,8 @@ public class MemberService {
                 .password(passwordEncoder.encode(signUp.getPassword()))
                 .role(RoleType.ROLE_USER)
                 .providerType(ProviderType.LOCAL)
-                // 기본 캐릭터 이미지 넣어줄 예정
+                .characterImage(
+                        "https://i.pinimg.com/736x/8d/88/5f/8d885f3de74052403323f56445d83dab.jpg") // 임시로 넣어둠, 고칠 예정
                 .build();
 
         memberRepository.save(member);
@@ -182,7 +183,8 @@ public class MemberService {
                 .nickname(randomNickname)
                 .role(RoleType.ROLE_GUEST)
                 .providerType(ProviderType.GUEST)
-                // 기본 캐릭터 이미지 넣어줄 예정
+                .characterImage(
+                        "https://i.pinimg.com/736x/8d/88/5f/8d885f3de74052403323f56445d83dab.jpg") // 임시로 넣어둠, 고칠 예정
                 .build();
         memberRepository.save(member);
         return member;

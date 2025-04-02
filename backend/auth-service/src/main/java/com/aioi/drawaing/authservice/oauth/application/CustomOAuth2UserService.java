@@ -76,7 +76,8 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 .level(1)
                 .exp(0)
                 .point(0)
-                // 임시로 넣어둠, 고칠 예정
+                .characterImage(
+                        "https://i.pinimg.com/736x/8d/88/5f/8d885f3de74052403323f56445d83dab.jpg") // 임시로 넣어둠, 고칠 예정
                 .build();
 
         return memberRepository.saveAndFlush(user);
