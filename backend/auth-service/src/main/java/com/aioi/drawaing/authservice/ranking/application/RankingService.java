@@ -42,7 +42,8 @@ public class RankingService {
                 case LOSE -> record.updateLoseCount();
                 default -> throw new IllegalArgumentException("Invalid game status");
             }
-            log.info("Game record updated: {}", record);
+            log.info("Game record updated: win={}, draw={}, lose={}, rankScore={}, playCount={}",
+                    record.getWin(), record.getDraw(), record.getLose(), record.getRankScore(), record.getPlayCount());
             responses.add(GameRecordResponse.from(drawingGameRecordRepository.save(record)));
         }
 
@@ -67,7 +68,7 @@ public class RankingService {
 
         RankingType type = parseRankingType(rankingType);
         Page<RankingResponse> resultPage = getRankingData(type, pageRequest);
-        log.info("{} Type ranking: {}", type, resultPage);
+        log.info("{} Type ranking totalElements: {}", type, resultPage.getTotalElements());
         return PageResponse.from(resultPage);
     }
 
@@ -82,6 +83,7 @@ public class RankingService {
             case LEVEL:
                 return drawingGameRecordRepository.findByLevelRanking(pageRequest);
             default:
+                log.error("처리할 수 없는 랭킹 타입: {}", type);
                 throw new IllegalArgumentException("처리할 수 없는 랭킹 타입: " + type);
         }
     }
@@ -90,6 +92,7 @@ public class RankingService {
         try {
             return RankingType.valueOf(rankingType.toUpperCase());
         } catch (IllegalArgumentException e) {
+            log.error("유효하지 않은 랭킹 타입: {}", rankingType);
             throw new IllegalArgumentException("유효하지 않은 랭킹 타입: " + rankingType);
         }
     }
@@ -98,6 +101,7 @@ public class RankingService {
         try {
             return GameStatus.valueOf(gameStatus.toUpperCase());
         } catch (IllegalArgumentException e) {
+            log.error("유효하지 않은 결과 타입: {}", gameStatus);
             throw new IllegalArgumentException("유효하지 않은 결과 타입: " + gameStatus);
         }
     }
