@@ -10,6 +10,7 @@ import com.aioi.drawaing.authservice.ranking.application.RankingService;
 import com.aioi.drawaing.authservice.ranking.presentation.request.GameResultRequest;
 import com.aioi.drawaing.authservice.ranking.presentation.response.GameRecordResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -42,30 +43,31 @@ class RankingControllerTest {
 
     @Test
     @DisplayName("성공: 게임 결과 업데이트")
-    void updateRecord_Success() throws Exception {
+    void updateRecords_Success() throws Exception {
         // given
         Long memberId = 1L;
-        GameResultRequest request = new GameResultRequest(memberId, RankingController.GameStatus.WIN, 100);
-        GameRecordResponse mockRecord = GameRecordResponse.builder()
-                .win(1)
-                .maximumScore(100)
-                .rankScore(100)
-                .build();
+        List<GameResultRequest> requests = List.of(
+                new GameResultRequest(memberId, "WIN", 100),
+                new GameResultRequest(memberId, "WIN", 50)
+        );
 
-        doReturn(mockRecord).when(rankingService).updateGameRecord(any(GameResultRequest.class));
+        List<GameRecordResponse> mockResponses = List.of(
+                GameRecordResponse.builder().win(1).maximumScore(100).rankScore(100).build(),
+                GameRecordResponse.builder().win(2).maximumScore(150).rankScore(150).build()
+        );
 
-        //when
+        doReturn(mockResponses).when(rankingService).updateGameRecords(any(List.class));
+
+        // when
         ResultActions resultActions = mockMvc.perform(patch("/api/v1/ranking")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)));
+                .content(objectMapper.writeValueAsString(requests)));
 
         // then
         resultActions.andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("SUCCESS"))
                 .andExpect(jsonPath("$.message").value("성공했습니다."))
-                .andExpect(jsonPath("$.data.win").value(1))
-                .andExpect(jsonPath("$.data.maximumScore").value(100))
-                .andExpect(jsonPath("$.data.rankScore").value(100));
+                .andExpect(jsonPath("$.data").value("랭킹 점수 업데이트 완료"));
     }
 
 }

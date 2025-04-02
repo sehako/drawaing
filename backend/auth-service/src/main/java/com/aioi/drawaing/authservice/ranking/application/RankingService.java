@@ -4,17 +4,22 @@ import com.aioi.drawaing.authservice.common.response.PageResponse;
 import com.aioi.drawaing.authservice.member.application.MemberService;
 import com.aioi.drawaing.authservice.member.domain.Member;
 import com.aioi.drawaing.authservice.ranking.domain.DrawingGameRecord;
+import com.aioi.drawaing.authservice.ranking.domain.GameStatus;
 import com.aioi.drawaing.authservice.ranking.domain.RankingType;
 import com.aioi.drawaing.authservice.ranking.infrastructure.repository.DrawingGameRecordRepository;
 import com.aioi.drawaing.authservice.ranking.presentation.request.GameResultRequest;
 import com.aioi.drawaing.authservice.ranking.presentation.response.GameRecordResponse;
 import com.aioi.drawaing.authservice.ranking.presentation.response.RankingResponse;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RankingService {
@@ -23,19 +28,26 @@ public class RankingService {
     private final MemberService memberService;
 
     @Transactional
-    public GameRecordResponse updateGameRecord(GameResultRequest req) {
+    public List<GameRecordResponse> updateGameRecords(List<GameResultRequest> requests) {
+        List<GameRecordResponse> responses = new ArrayList<>();
 
-        DrawingGameRecord record = getOrCreateRecord(req.memberId());
+        for (GameResultRequest req : requests) {
+            DrawingGameRecord record = getOrCreateRecord(req.memberId());
+            GameStatus status = parseGameStatus(req.status());
+            record.updateRecord(req.score());
 
-        record.updateRecord(req.score());
-
-        switch (req.status()) {
-            case WIN -> record.updateWinCount();
-            case DRAW -> record.updateDrawCount();
-            case LOSE -> record.updateLoseCount();
-            default -> throw new IllegalArgumentException("Invalid game status");
+            switch (status) {
+                case WIN -> record.updateWinCount();
+                case DRAW -> record.updateDrawCount();
+                case LOSE -> record.updateLoseCount();
+                default -> throw new IllegalArgumentException("Invalid game status");
+            }
+            log.info("Game record updated: win={}, draw={}, lose={}, rankScore={}, playCount={}",
+                    record.getWin(), record.getDraw(), record.getLose(), record.getRankScore(), record.getPlayCount());
+            responses.add(GameRecordResponse.from(drawingGameRecordRepository.save(record)));
         }
-        return GameRecordResponse.from(drawingGameRecordRepository.save(record));
+
+        return responses;
     }
 
     private DrawingGameRecord getOrCreateRecord(Long memberId) {
@@ -56,7 +68,7 @@ public class RankingService {
 
         RankingType type = parseRankingType(rankingType);
         Page<RankingResponse> resultPage = getRankingData(type, pageRequest);
-
+        log.info("{} Type ranking totalElements: {}", type, resultPage.getTotalElements());
         return PageResponse.from(resultPage);
     }
 
@@ -71,6 +83,7 @@ public class RankingService {
             case LEVEL:
                 return drawingGameRecordRepository.findByLevelRanking(pageRequest);
             default:
+                log.error("처리할 수 없는 랭킹 타입: {}", type);
                 throw new IllegalArgumentException("처리할 수 없는 랭킹 타입: " + type);
         }
     }
@@ -79,8 +92,17 @@ public class RankingService {
         try {
             return RankingType.valueOf(rankingType.toUpperCase());
         } catch (IllegalArgumentException e) {
+            log.error("유효하지 않은 랭킹 타입: {}", rankingType);
             throw new IllegalArgumentException("유효하지 않은 랭킹 타입: " + rankingType);
+        }
+    }
 
+    private GameStatus parseGameStatus(String gameStatus) {
+        try {
+            return GameStatus.valueOf(gameStatus.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            log.error("유효하지 않은 결과 타입: {}", gameStatus);
+            throw new IllegalArgumentException("유효하지 않은 결과 타입: " + gameStatus);
         }
     }
 }
