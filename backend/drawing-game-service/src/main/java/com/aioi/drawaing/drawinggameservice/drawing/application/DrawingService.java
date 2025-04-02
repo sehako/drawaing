@@ -7,14 +7,20 @@ import com.aioi.drawaing.drawinggameservice.drawing.domain.*;
 import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.KeywordRepository;
 import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.RoomSesseionRepository;
 import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.SessionRepository;
+import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.feign.AuthServiceClient;
+import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.feign.request.GameResultRequest;
+import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.feign.request.MemberExpUpdateRequest;
+import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.feign.response.AuthResponse;
 import com.aioi.drawaing.drawinggameservice.drawing.presentation.DrawMessagePublisher;
 import com.aioi.drawaing.drawinggameservice.drawing.presentation.dto.AddSessionParticipantInfo;
 import com.aioi.drawaing.drawinggameservice.drawing.presentation.dto.DrawInfo;
 import com.aioi.drawaing.drawinggameservice.drawing.presentation.dto.WinParticipantInfo;
 import com.aioi.drawaing.drawinggameservice.room.application.dto.AddRoomParticipantInfo;
+import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -34,8 +40,9 @@ public class DrawingService {
     private final ScheduledExecutorService schedule;
     private final KeywordRepository keywordRepository;
     private final SessionRepository sessionRepository;
+    private final AuthServiceClient authServiceClient;
     private final int DEFAULT_WORD_COUNT = 30;
-    private final int DEFAULT_SESSION_TIMER = 600;
+    private final int DEFAULT_SESSION_TIMER = 30; //600;
     private final int DEFAULT_DRAW_TIMER = 20;
     private final int MAX_PARTICIPANT_NUMBER = 4;
 
@@ -126,6 +133,18 @@ public class DrawingService {
     private void endSession(String roomId, String sessionId){
         Session session = findSession(sessionId);
         log.info("endSession: {}", sessionId);
+
+        try {
+            AuthResponse win = authServiceClient.updateRanking(new GameResultRequest(1L, "WIN", 10));
+            log.info(win.data());
+            AuthResponse authResponse = authServiceClient.updateMemberExp(new MemberExpUpdateRequest(1L, 10, 10));
+            log.info(authResponse.data());
+        } catch (FeignException e) {
+//            log.error(e.getMessage());
+            log.error("❌ Feign 요청 실패: {}", e.getMessage(), e); // ✅ 올바른 로깅 방식
+            throw new RuntimeException(e);
+        }
+
         drawMessagePublisher.publishGameResult("/topic/session.result/"+roomId+"/"+sessionId, session.toParticipantScoreInfo());
     }
 
