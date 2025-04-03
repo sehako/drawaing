@@ -4,7 +4,7 @@ import SignupModal from '../components/landing/SignupModal';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import DrawingLogo from '../components/landing/DrawingLogo';
-import RoomFullModal from '../components/landing/RoomfullModal'; // 새로 만든 모달 컴포넌트 import
+import RoomFullModal from '../components/landing/RoomFullModal'; // 새로 만든 모달 컴포넌트 import
 
 // 쿠키에서 토큰 가져오기 함수
 const getAuthToken = () => {

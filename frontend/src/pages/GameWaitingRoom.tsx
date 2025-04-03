@@ -285,9 +285,8 @@ const GameWaitingRoom: React.FC = () => {
   const MAX_PLAYERS = 4;
 
   // 모든 플레이어가 준비 상태인지 확인
-  const allPlayersReady = players.length >= 2 && players.every(player => 
-    player.isHost || player.isReady
-  );
+  const allPlayersReady = players.length === MAX_PLAYERS && 
+  players.filter(player => !player.isHost).every(player => player.isReady);
   
   // 디버깅을 위한 로그 추가
   console.log('현재 플레이어 수:', players.length);
