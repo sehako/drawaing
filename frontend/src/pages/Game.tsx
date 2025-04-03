@@ -31,7 +31,7 @@ const getPlayerIdByNumber = (playerNumber: string): number => {
 
 const Game: React.FC = () => {
   // URL에서 roomId 파라미터 가져오기
-  const { roomId: urlRoomId } = useParams<{ roomId?: string }>();
+  const { roomId: storedRoomId } = useParams<{ roomId?: string }>();
   
   // ReadyButton과 동일한 방식으로 선언 - 초기값 null로 설정
   const [roomId, setRoomId] = useState<string | null>(null);
@@ -44,28 +44,29 @@ const Game: React.FC = () => {
   
   // ReadyButton과 일관된 방식으로 roomId 초기화 및 업데이트
   useEffect(() => {
-    // URL에서 roomId 파라미터 가져오기
-    const localStorageRoomId = localStorage.getItem('roomId');
-    
-    // "nofd8h"가 유효한 roomId 값이므로 그대로 사용
-    const roomIdToUse = urlRoomId || localStorageRoomId  || "nofd8h";
+    const storedRoomId = localStorage.getItem('roomId');    
+    const roomIdToUse = storedRoomId;
+
     
     console.log('Game.tsx - roomId 설정 과정:');
-    console.log('- URL 파라미터 roomId:', urlRoomId);
-    console.log('- localStorage roomId:', localStorageRoomId );
+    console.log('- URL 파라미터 roomId:', storedRoomId);
+    console.log('- localStorage roomId:', storedRoomId);
     console.log('- 최종 선택된 roomId:', roomIdToUse);
     
-    // 결정된 roomId 설정
-    setRoomId(roomIdToUse);
+    // 결정된 roomId 설정 (null일 경우를 대비해 빈 문자열로 변환)
+    setRoomId(storedRoomId || '');
+
     
     // 결정된 roomId를 localStorage에 저장 (다른 컴포넌트와 공유)
-    localStorage.setItem('roomId', roomIdToUse);
+    if (storedRoomId) {
+      localStorage.setItem('roomId', storedRoomId);
+    }
+  }, [storedRoomId]);
 
-  }, [urlRoomId]);
 
   // roomId가 없으면 기본 방으로 리다이렉트
   useEffect(() => {
-    if (!roomId) {
+    if (!storedRoomId) {
       navigate('/game/1');
     }
   }, [roomId, navigate]);
@@ -124,7 +125,7 @@ const Game: React.FC = () => {
   const [currentRound, setCurrentRound] = useState<number>(1);
   const [quizWord, setQuizWord] = useState<string>('바나나');
   const [activeDrawerIndex, setActiveDrawerIndex] = useState<number>(0);
-  const [guesserIndex, setGuesserIndex] = useState<number>(0);
+  const [guesserIndex, setGuesserIndex] = useState<number>(3);
   const [isDrawing, setIsDrawing] = useState<boolean>(false);
   const [guess, setGuess] = useState<string>('');
   const [hasCompleted, setHasCompleted] = useState<boolean>(false);
@@ -947,6 +948,7 @@ useEffect(() => {
           setPredictions={setPredictions}
           roomId={roomId ?? ""}  // null이면 빈 문자열로 변환
           sessionId={sessionId ?? ""}  // null이면 빈 문자열로 변환
+          timeleft={timeLeft}
         />
         </div>
 
