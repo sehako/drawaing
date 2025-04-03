@@ -12,6 +12,7 @@ import useGameTimer from '../hooks/useGameTimer'; // 타이머 훅 추가
 import gameTimerService from '../api/gameTimerService';
 import chatService from '../api/chatservice';
 import correctAnswerService from '../api/correctAnswerService';
+import { DrawPoint } from '../api/drawingService';
 
 interface Player {
   id: number;
@@ -147,7 +148,7 @@ const Game: React.FC = () => {
   const [context, setContext] = useState<CanvasRenderingContext2D | null>(null);
   const [currentColor, setCurrentColor] = useState<string>('red');
   const [isEraser, setIsEraser] = useState<boolean>(false);
-  const [lastPoint, setLastPoint] = useState<{ x: number; y: number } | null>(null);
+  const [lastPoint, setLastPoint] = useState<DrawPoint | null>(null);
 
   const [playerMessages, setPlayerMessages] = useState<{[playerId: number]: string}>({});
   const [storedSessionId, setStoredSessionId] = useState<string | null>(null);
