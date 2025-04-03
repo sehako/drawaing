@@ -52,8 +52,12 @@ dependencies {
     // prometheus
     implementation 'io.micrometer:micrometer-registry-prometheus'
 
-    // docker-compose
-    implementation 'org.springframework.boot:spring-boot-docker-compose:3.4.4'
+
+    if (project.hasProperty("profile") && project.profile == "dev") {
+        // docker-compose
+        implementation 'org.springframework.boot:spring-boot-docker-compose:3.4.4'
+    }
+
 }
 
 ext {
