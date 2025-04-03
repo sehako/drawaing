@@ -4,7 +4,7 @@ import torchvision.transforms as transforms
 import torchvision.models as models
 from PIL import Image
 from io import BytesIO
-from model.network import ModifiedShuffleNetV2  # 모델 클래스 임포트. 필요하다니 불러옴...
+from model.modeling import ModifiedShuffleNetV2  # 모델 클래스 임포트. 필요하다니 불러옴...
 from fastapi.middleware.cors import CORSMiddleware
 import base64  # 추가
 
@@ -24,9 +24,8 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # 모델 로드 (사전에 학습된 CNN 모델)
 model = ModifiedShuffleNetV2(num_classes=50)  # 클래스 수를 맞춰서 초기화
-model.load_state_dict(torch.load("shufflenet05_smaller72.pth", map_location=device))
+model.load_state_dict(torch.load("shufflenet05_50_100_72.pth", map_location=device))
 model.to(device)  # 모델을 GPU 또는 CPU로 이동
-model = model.to(torch.float16)  # 모델을 FP16으로 변환
 model.eval()
 
 # 클래스 라벨 리스트 (실제 학습 데이터에 맞게 수정)
@@ -54,13 +53,12 @@ def transform_image(image_bytes):
     print(f"Original Image Size: {image.size}")  # 이미지 크기 확인
 
     transform = transforms.Compose([
-        transforms.Resize((100, 100)),
+        transforms.Resize((64, 64)),
         transforms.ToTensor(),
-        transforms.Normalize(mean=[0.5], std=[0.5])  # 학습 시 사용된 정규화 값 맞추기
+        transforms.Normalize(mean=[0.5004, 0.4997, 0.5000], std=[0.2895, 0.2899, 0.2895])  # 새로운 평균값과 표준편차
     ])
 
     image_tensor = transform(image).unsqueeze(0)
-    image_tensor = image_tensor.to(torch.float16)
     print(f"Transformed Image Tensor Shape: {image_tensor.shape}")  # 변환된 텐서 크기 확인
 
     return image_tensor
