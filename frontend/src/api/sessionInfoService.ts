@@ -1,6 +1,5 @@
 // src/api/sessionInfoService.ts
 import { Client } from '@stomp/stompjs';
-import SockJS from 'sockjs-client';
 
 // 환경 변수 또는 설정에서 API URL 가져오기
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
@@ -29,18 +28,28 @@ class SessionInfoService {
 
     return new Promise((resolve, reject) => {
       try {
-        // SockJS와 STOMP 클라이언트 설정
-        const socket = new SockJS(`${API_URL}/ws`);
+        // STOMP 클라이언트 설정 (SockJS 없이 직접 WebSocket 사용)
         this.stompClient = new Client({
-          webSocketFactory: () => socket,
+          // WebSocket 엔드포인트 URL (ws:// 또는 wss://)
+          brokerURL: `${API_URL.replace('http://', 'ws://').replace('https://', 'wss://')}/ws`,
+          
+          // 디버그 로깅
           debug: (str) => {
             if (process.env.NODE_ENV !== 'production') {
               console.debug('[STOMP DEBUG]', str);
             }
           },
+          
+          // 추가 설정
           reconnectDelay: 5000,
-          heartbeatIncoming: 4000,
-          heartbeatOutgoing: 4000
+          heartbeatIncoming: 10000,
+          heartbeatOutgoing: 10000,
+          
+          // 필요한 헤더가 있으면 추가
+          connectHeaders: {
+            roomId,
+            sessionId
+          }
         });
 
         // 연결 설정
