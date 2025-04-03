@@ -14,14 +14,15 @@ interface PlayerConnectionMap {
 }
 
 interface PlayerSectionProps {
-  currentRound?: number;
-  activeDrawerIndex?: number;
-  guesserIndex?: number;
-  roomId?: string;
-  isConnected?: boolean;
-  playerConnections?: any;
-  playerMessages?: {[userId: number]: string};
-}
+    currentRound: number;
+    activeDrawerIndex: number;
+    guesserIndex: number;
+    roomId?: string;
+    playerConnections: any;
+    isConnected: boolean;
+    playerMessages: { [playerId: number]: string };
+    players: { id: number; name: string; level: number; avatar: string }[];
+  }
 
 // 플레이어 정보 인터페이스
 interface PlayerInfo {

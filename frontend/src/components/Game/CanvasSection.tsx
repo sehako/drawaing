@@ -9,12 +9,13 @@ import { Howl } from 'howler';
 import drawingService, { DrawPoint } from '../../api/drawingService';
 
 interface CanvasSectionProps {
-  canvasRef: React.MutableRefObject<HTMLCanvasElement | null>;
+  canvasRef: React.RefObject<HTMLCanvasElement | null>;
   context: CanvasRenderingContext2D | null;
   isDrawing: boolean;
   setIsDrawing: React.Dispatch<React.SetStateAction<boolean>>;
-  lastPoint: { x: number; y: number } | null;
-  setLastPoint: React.Dispatch<React.SetStateAction<{ x: number; y: number } | null>>;
+  // 수정할 부분
+  lastPoint: DrawPoint | null;
+  setLastPoint: React.Dispatch<React.SetStateAction<DrawPoint | null>>;
   currentColor: string;
   isEraser: boolean;
   showCorrectAnswer: boolean;
@@ -25,19 +26,18 @@ interface CanvasSectionProps {
   setHasCompleted: React.Dispatch<React.SetStateAction<boolean>>;
   handleColorChange: (color: string) => void;
   handleEraserToggle: () => void;
-  handleNext5: () => void;
-  currentDrawer: { name: string };
+  handleNextPlayer: () => void;
+  currentDrawer: { id: number; name: string; level: number; avatar: string };
   calculateCurrentDrawerPlayerIndex: () => number;
   guess: string;
   setGuess: React.Dispatch<React.SetStateAction<string>>;
-  handleGuessSubmit: (e: React.FormEvent) => void;
+  handleGuessSubmit: (e: React.FormEvent) => Promise<void>;
   handlePass: () => void;
   activeDrawerIndex: number;
   handleCanvasSubmit: (blob: Blob) => Promise<any>;
-  setPredictions: React.Dispatch<React.SetStateAction<any[]>>;
-  roomId: string;  // 추가
-  sessionId: string | null;  // 추가
-  
+  setPredictions: React.Dispatch<React.SetStateAction<{ class: string; probability: number; }[]>>;
+  roomId: string;
+  sessionId: string;
 }
 
 // 그림 데이터 저장을 위한 인터페이스
@@ -86,7 +86,7 @@ const CanvasSection: React.FC<CanvasSectionProps> = ({
   const [isPlayingSound, setIsPlayingSound] = useState(false);
 
   const [isMouseButtonDown, setIsMouseButtonDown] = useState(false);
-  const [drawingPoints, setDrawingPoints] = useState<Array<{x: number, y: number}>>([]);
+  const [drawingPoints, setDrawingPoints] = useState<Array<{x: number, y: number, timestamp?: number, isNewStroke?: boolean}>>([]);
 
 
   const [lastSoundTime, setLastSoundTime] = useState(0);
@@ -125,7 +125,7 @@ const CanvasSection: React.FC<CanvasSectionProps> = ({
   const currentUserId = userIds[activeDrawerIndex];
   const [allDrawingData, setAllDrawingData] = useState<DrawingData>({});
   const [receivedDrawingData, setReceivedDrawingData] = useState<DrawingData>({});
-
+  
   const handleReceivedDrawingPoints = useCallback((points: Array<{x: number, y: number}>) => {
     // console.log('서버에서 받은 그리기 포인트:', points);
     setReceivedDrawingPoints(prevPoints => [...prevPoints, ...points]);
@@ -565,7 +565,7 @@ const handleReceivedDrawingData = useCallback((data: DrawingData) => {
       isNewStroke: true // 새로운 선 시작
     };
     
-    setLastPoint({ x, y });
+    setLastPoint(newPoint);
     setIsDrawing(true);
     
     // 새 점 저장
