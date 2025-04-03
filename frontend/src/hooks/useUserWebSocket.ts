@@ -28,8 +28,7 @@ interface UseUserWebSocketReturn {
   players: Player[];
   currentUser: Player | null;
   chatMessages: string[];
-  gameStartInfo: GameStartMessage | null;
-  sessionId: string | null; // 추가: sessionId 상태 노출
+  gameStartInfo: GameStartMessage | null; // 추가: 게임 시작 정보
   subscribeToRoom: (client: Client, roomId: string) => void;
   joinRoom: (client: Client, userInfo: JoinRoomRequest, roomId: string) => void;
   updatePlayersList: (playerData: any) => void;
@@ -55,21 +54,13 @@ const useUserWebSocket = ({
   const [currentUser, setCurrentUser] = useState<Player | null>(null);
   const [chatMessages, setChatMessages] = useState<string[]>([]);
   const [isLeaving, setIsLeaving] = useState<boolean>(false);
-  const [gameStartInfo, setGameStartInfo] = useState<GameStartMessage | null>(null);
-  const [sessionId, setSessionId] = useState<string | null>(null); // 추가: sessionId 상태
+  const [gameStartInfo, setGameStartInfo] = useState<GameStartMessage | null>(null); // 추가: 게임 시작 정보 상태
   const componentMountedRef = useRef(true);
-
+  
   // updatePlayersList 함수 수정 - 방장 상태 더 확실하게 처리
   const updatePlayersList = useCallback((playerData: any) => {
     console.log('===== 플레이어 데이터 처리 시작 =====');
     console.log('원본 데이터:', playerData);
-    
-    // sessionId가 있으면 저장
-    if (playerData.sessionId) {
-      console.log('세션 ID 발견:', playerData.sessionId);
-      setSessionId(playerData.sessionId);
-      localStorage.setItem('sessionId', playerData.sessionId);
-    }
     
     // 데이터 형식 정규화 (hostId 정보 포함)
     const { normalizedData, hostId } = normalizePlayerData(playerData);
@@ -122,14 +113,6 @@ const useUserWebSocket = ({
     console.log('변환된 플레이어 목록:', updatedPlayers);
     
     setPlayers(updatedPlayers);
-    
-    // 플레이어 목록을 로컬 스토리지에 저장
-    try {
-      localStorage.setItem('playersList', JSON.stringify(updatedPlayers));
-      console.log('플레이어 목록이 로컬스토리지에 저장됨');
-    } catch (error) {
-      console.error('플레이어 목록 저장 중 오류:', error);
-    }
 
     // 현재 사용자 찾기
     if (user && user.memberId) {
@@ -170,7 +153,6 @@ const useUserWebSocket = ({
     
     console.log('===== 플레이어 데이터 처리 완료 =====');
   }, [user]);
-
 
   // 준비 상태 업데이트 함수
   const updatePlayerReadyStatus = useCallback((readyData: any) => {
@@ -224,16 +206,6 @@ const useUserWebSocket = ({
         const data = JSON.parse(message.body);
         console.log('방 이벤트 데이터 수신:', data);
         
-        // sessionId가 있는 경우 처리 (추가)
-        if (data.sessionId) {
-          console.log('세션 ID 발견:', data.sessionId);
-          setSessionId(data.sessionId);
-          localStorage.setItem('sessionId', data.sessionId);
-          
-          // roomId도 함께 저장
-          localStorage.setItem('roomId', roomId);
-        }
-        
         // 타입에 따른 처리
         if (data.type === 'PLAYER_JOIN' || data.type === 'PLAYER_LIST') {
           console.log('플레이어 목록 업데이트 이벤트 감지:', data.type);
@@ -247,6 +219,10 @@ const useUserWebSocket = ({
           if (data.payload && data.payload.startTime) {
             console.log('게임 시작 시간 수신:', data.payload.startTime);
             setGameStartInfo({ startTime: data.payload.startTime });
+          } else {
+            // 이전 방식: 즉시 게임 화면으로 이동
+            console.log('게임 시작 시간이 없는 이전 형식의 메시지 감지, 곧 새 방식으로 처리될 예정');
+            // navigate(`/game/${roomId}`); // 직접 이동은 제거 (새 메커니즘으로 대체)
           }
         } else if (data.participants) {
           // participants 객체가 있는 경우 플레이어 목록 업데이트
@@ -265,24 +241,6 @@ const useUserWebSocket = ({
         console.error('이벤트 데이터 파싱 오류:', error);
       }
     });
-
-
-    const storedSessionId = localStorage.getItem('sessionId');
-    if (storedSessionId) {
-      console.log(`세션 정보 구독 시도: /topic/session.info/${roomId}/${storedSessionId}`);
-      client.subscribe(`/topic/session.info/${roomId}/${storedSessionId}`, (message) => {
-        try {
-          console.log('세션 정보 메시지 수신:', message);
-          const data = JSON.parse(message.body);
-          console.log('세션 정보 데이터 수신:', data);
-          
-          // 세션 정보 처리 로직 추가
-          // 여기에서 필요한 데이터 처리를 수행
-        } catch (error) {
-          console.error('세션 정보 파싱 오류:', error);
-        }
-      });
-    }
     
     // 새로운 게임 시작 시간 정보 구독 (추가)
     console.log(`게임 시작 시간 구독 시도: /topic/room.wait/${roomId}`);
@@ -467,7 +425,7 @@ const useUserWebSocket = ({
     
     try {
       // 웹소켓 클라이언트 생성
-      newClient = createStompClient(roomId); // roomId 전달
+      newClient = createStompClient();
 
       // 연결 성공 시 콜백
       newClient.onConnect = () => {
@@ -630,7 +588,6 @@ const useUserWebSocket = ({
     setIsLeaving,
     isLeaving,
     gameStartInfo,
-    sessionId,
   };
 }
 
