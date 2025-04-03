@@ -48,7 +48,7 @@ public class DrawingService {
 
     //세션 시작
     //세션 시작할 때, 게임 제시어 주기
-    //세션 시작할 때, 타이머 시작 + 전달v
+    //세션 시작할 때, 타이머 시작 + 전달
     //세션 시작할 때, 게임 어떻게 할건지 의논 필요
     public void startSession(String roomId, String sessionId, List<AddRoomParticipantInfo> addParticipantInfos) {
         List<String> words = extractWords(DEFAULT_WORD_COUNT);
