@@ -52,7 +52,6 @@ type RoundPositions = {
   [round: number]: PositionMap;
 }
 
-
 const PlayerSection: React.FC<PlayerSectionProps> = ({ 
     currentRound = 1, 
     activeDrawerIndex = 0, 
@@ -72,33 +71,30 @@ const PlayerSection: React.FC<PlayerSectionProps> = ({
         "플레이어4": { level: 16, avatar: chicken }
     };
     
-    // 라운드별 플레이어 배치 정의 (고정)
-    const roundPositions: RoundPositions = {
-        1: {
-            "정답자": "플레이어1",
-            "순서1": "플레이어2",
-            "순서2": "플레이어3",
-            "순서3": "플레이어4"
-        },
-        2: {
-            "정답자": "플레이어2",
-            "순서1": "플레이어3",
-            "순서2": "플레이어4",
-            "순서3": "플레이어1"
-        },
-        3: {
-            "정답자": "플레이어3",
-            "순서1": "플레이어4",
-            "순서2": "플레이어1",
-            "순서3": "플레이어2"
-        },
-        4: {
-            "정답자": "플레이어4",
-            "순서1": "플레이어1",
-            "순서2": "플레이어2",
-            "순서3": "플레이어3"
-        }
+    // 플레이어 순환 로직으로 roundPositions 생성
+    const generateRoundPositions = (): RoundPositions => {
+      const positions: RoundPositions = {};
+      const playerCount = 4;
+      
+      // 플레이어 배열 생성 (플레이어1, 플레이어2, ...)
+      const playerNames = Array.from({ length: playerCount }, (_, i) => `플레이어${i + 1}`);
+      
+      // 각 라운드별 포지션 설정
+      for (let round = 1; round <= playerCount; round++) {
+        const roundPosition: PositionMap = {
+          "정답자": playerNames[(round - 1) % playerCount],
+          "순서1": playerNames[round % playerCount],
+          "순서2": playerNames[(round + 1) % playerCount],
+          "순서3": playerNames[(round + 2) % playerCount]
+        };
+        positions[round] = roundPosition;
+      }
+      
+      return positions;
     };
+
+    // 동적으로 roundPositions 생성
+    const roundPositions: RoundPositions = generateRoundPositions();
     
     // 현재 라운드에 맞는 플레이어 배치 가져오기
     const getCurrentPositions = (): PositionMap => {
