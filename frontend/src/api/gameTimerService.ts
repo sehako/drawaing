@@ -43,23 +43,23 @@ const gameTimerService = {
         passcode: ''
       },
       debug: function(str) {
-        console.log('STOMP: ' + str);
+        // console.log('STOMP: ' + str);
       },
       reconnectDelay: 5000,
-      heartbeatIncoming: 10000,
-      heartbeatOutgoing: 10000
+      heartbeatIncoming: 4000,
+      heartbeatOutgoing: 4000
     });
     
     client.onConnect = (frame) => {
-      console.log('STOMP 연결 성공:', frame);
+      // console.log('STOMP 연결 성공:', frame);
       
       // 타이머 업데이트 토픽 구독
       const subscription = client.subscribe(`/topic/session.timer/${roomId}/${sessionId}`, (message) => {
-        console.log('타이머 메시지 수신:', message);
+        // console.log('타이머 메시지 수신:', message);
         
         try {
           const data = JSON.parse(message.body);
-          console.log('파싱된 타이머 데이터:', data);
+          // console.log('파싱된 타이머 데이터:', data);
           
           const timerData: TimerData = {
             totalTime: data.totalTime ?? DEFAULT_TIMER_VALUES.totalTime,
@@ -83,13 +83,13 @@ const gameTimerService = {
     };
     
     client.onStompError = (frame) => {
-      console.error('STOMP 오류:', frame);
+      // console.error('STOMP 오류:', frame);
       if (onTimerUpdate) onTimerUpdate(DEFAULT_TIMER_VALUES);
     };
     
     // 연결 시작
     client.activate();
-    console.log('STOMP 연결 시도...');
+    // console.log('STOMP 연결 시도...');
     
     return client;
   },
@@ -117,7 +117,7 @@ const gameTimerService = {
         passcode: ''
       },
       debug: function(str) {
-        console.log('STOMP: ' + str);
+        // console.log('STOMP: ' + str);
       }
     });
 
@@ -131,14 +131,14 @@ const gameTimerService = {
         })
       });
 
-      console.log('턴 타이머 리셋 메시지 전송:', params);
+      // console.log('턴 타이머 리셋 메시지 전송:', params);
       
       // 연결 종료
       client.deactivate();
     };
 
     client.onStompError = (frame) => {
-      console.error('STOMP 오류:', frame);
+      // console.error('STOMP 오류:', frame);
     };
 
     // 연결 시작

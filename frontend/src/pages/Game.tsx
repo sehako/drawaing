@@ -36,9 +36,11 @@ const Game: React.FC = () => {
   // ReadyButton과 동일한 방식으로 선언 - 초기값 null로 설정
   const [roomId, setRoomId] = useState<string | null>(null);
   const navigate = useNavigate();
-  
+  const [storedPlayersList, setStoredPlayersList] = useState<Array<{ id: number; name: string; level: number; avatar: string }>>([]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [passCount, setPassCount] = useState<number>(0);
   const MAX_PASS_COUNT = 3;
+  const [paredUser, setParedUser] = useState<any>(null);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   
@@ -63,7 +65,8 @@ const Game: React.FC = () => {
     }
   }, [storedRoomId]);
 
-
+  const [currentUserId, setCurrentUserId] = useState<string>("");
+  
   // roomId가 없으면 기본 방으로 리다이렉트
   useEffect(() => {
     if (!storedRoomId) {
@@ -99,17 +102,48 @@ const Game: React.FC = () => {
   }, []);
   
   useEffect(() => {
+    try {
+      const storedPlayersListStr = localStorage.getItem('playersList');
+      if (storedPlayersListStr) {
+        const parsedPlayersList = JSON.parse(storedPlayersListStr);
+        
+        // PlayerSection에서 필요한 형태로 데이터 변환
+        const formattedPlayersList = parsedPlayersList.map((player: any) => ({
+          id: parseInt(player.id), 
+          name: player.nickname,
+          level: 1, // 기본 레벨 설정
+          avatar: player.characterUrl || 'default_character'
+        }));
+        
+        console.log('변환된 플레이어 목록:', formattedPlayersList);
+        setStoredPlayersList(formattedPlayersList);
+        
+        // 현재 사용자 찾기
+        const currentPlayerId = localStorage.getItem('playerNumber');
+        if (currentPlayerId) {
+          const user = formattedPlayersList.find((p: any) => p.id.toString() === currentPlayerId);
+          if (user) {
+            setCurrentUser(user);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('플레이어 목록 로드 중 오류:', error);
+    }
+  }, []);
+
+  useEffect(() => {
     if (!localStorage.getItem('playerNumber')) {
       localStorage.setItem('playerNumber', '1'); // 초기값으로 1 설정
     }
   }, []);
-
+  
   // 현재 플레이어 닉네임 설정
   const [currentPlayer, setCurrentPlayer] = useState<string>(() => {
     const playerNumber = localStorage.getItem('playerNumber') || "1";
     return getPlayerNickname(playerNumber);
   });
-
+  
   // 플레이어 번호에 따른 닉네임 반환 함수
   function getPlayerNickname(playerNumber: string): string {
     switch (playerNumber) {
@@ -120,8 +154,8 @@ const Game: React.FC = () => {
       default: return "플레이어";
     }
   }
-
-
+  
+  
   const [currentRound, setCurrentRound] = useState<number>(1);
   const [quizWord, setQuizWord] = useState<string>('바나나');
   const [activeDrawerIndex, setActiveDrawerIndex] = useState<number>(0);
@@ -142,16 +176,16 @@ const Game: React.FC = () => {
   // 정답 제출 횟수 제한 추가
   const [guessSubmitCount, setGuessSubmitCount] = useState<number>(0);
   const MAX_GUESS_SUBMIT_COUNT = 3;
-
+  
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [context, setContext] = useState<CanvasRenderingContext2D | null>(null);
   const [currentColor, setCurrentColor] = useState<string>('red');
   const [isEraser, setIsEraser] = useState<boolean>(false);
   const [lastPoint, setLastPoint] = useState<{ x: number; y: number } | null>(null);
-
-  const [playerMessages, setPlayerMessages] = useState<{[playerId: number]: string}>({});
+  
+  const [playerMessages, setPlayerMessages] = useState<{[playerId: string]: string}>({});
   const [storedSessionId, setStoredSessionId] = useState<string | null>(null);
-
+  
   const [eggCount, setEggCount] = useState(10);
   const [aiAnswer, setAiAnswer] = useState<string>('');
   const [aiImages] = useState<string[]>([
@@ -164,7 +198,7 @@ const Game: React.FC = () => {
     { id: 2, name: 'Player 3', level: 25, avatar: '/avatars/angry-bird.png' },
     { id: 3, name: 'Player 4', level: 16, avatar: '/avatars/yellow-bird.png' },
   ]);
-
+  
   const mapUserIdToPlayerId = (userId: number): number => {
     switch(userId) {
       case 1: return 0; // userId 1은 첫 번째 플레이어 (플레이어1)
@@ -174,34 +208,67 @@ const Game: React.FC = () => {
       default: return 0;
     }
   };
-
+  
   const [predictions, setPredictions] = useState<{ class: string; probability: number }[]>([]);
-
+  
   // 웹소켓 훅 사용 - roomId가 null일 때도 빈 문자열로 처리하도록 수정
   const { isConnected, playerConnections, sessionId, sendMessage } = useGameWebSocket({
     roomId: roomId ?? "", // null이면 빈 문자열로 변환
     currentPlayer
   });
-  
-    // playerConnections 객체로부터 플레이어 정보를 동적으로 업데이트하는 useEffect 추가
-    useEffect(() => {
-      // 웹소켓 연결이 없거나 playerConnections가 비어있으면 처리하지 않음
-      if (!isConnected || Object.keys(playerConnections).length === 0) return;
-      
-      console.log('방 접속 정보로부터 플레이어 정보 업데이트:', playerConnections);
-      
-      // 업데이트할 플레이어 배열 초기화
-      const updatedPlayers: Player[] = [];
-      
-      // playerConnections 객체를 순회하며 플레이어 정보 추출
-      Object.entries(playerConnections).forEach(([playerNumber, info]: [string, any]) => {
-        if (info && typeof info === 'object') {
-          const playerIndex = parseInt(playerNumber) - 1;
-          const isConnected = info.isConnected || false;
-          
-          // 연결된 플레이어만 추가
-          if (isConnected) {
-            updatedPlayers.push({
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem('currentUser');
+    if (savedUser) {
+      const parsedUser = JSON.parse(savedUser);
+      console.log('로컬 스토리지에서 가져온 currentUser:', parsedUser);
+      setParedUser(parsedUser); // 상태에 저장
+    } else {
+      console.log('로컬 스토리지에 currentUser가 없습니다.');
+    }
+  }, []);
+
+  // playerConnections 객체로부터 플레이어 정보를 동적으로 업데이트하는 useEffect 추가
+  useEffect(() => {
+    // 로컬 스토리지에서 ID 정보 가져오기
+    const storedUserId = localStorage.getItem('userId');
+    
+    // GameWaitingRoom에서 설정된 ID를 확인
+    if (storedUserId) {
+      console.log('로컬 스토리지에서 사용자 ID 불러옴:', storedUserId);
+      setCurrentUserId(storedUserId);
+    } else {
+      // 웹소켓 커넥션에서 ID 정보 확인
+      if (playerConnections && Object.keys(playerConnections).length > 0) {
+        const playerIds = Object.keys(playerConnections);
+        console.log('사용 가능한 플레이어 ID 목록:', playerIds);
+        
+        // 첫 번째 ID를 기본값으로 설정
+        const newUserId = playerIds[0];
+        localStorage.setItem('userId', newUserId);
+        setCurrentUserId(newUserId);
+        console.log('새 사용자 ID 설정:', newUserId);
+      }
+    }
+  }, [playerConnections]);
+  useEffect(() => {
+    // 웹소켓 연결이 없거나 playerConnections가 비어있으면 처리하지 않음
+    if (!isConnected || Object.keys(playerConnections).length === 0) return;
+    
+    console.log('방 접속 정보로부터 플레이어 정보 업데이트:', playerConnections);
+    
+    // 업데이트할 플레이어 배열 초기화
+    const updatedPlayers: Player[] = [];
+    
+    // playerConnections 객체를 순회하며 플레이어 정보 추출
+    Object.entries(playerConnections).forEach(([playerNumber, info]: [string, any]) => {
+      if (info && typeof info === 'object') {
+        const playerIndex = parseInt(playerNumber) - 1;
+        const isConnected = info.isConnected || false;
+        
+        // 연결된 플레이어만 추가
+        if (isConnected) {
+          updatedPlayers.push({
               id: playerIndex,
               name: info.nickname || `플레이어${playerNumber}`,
               level: playerIndex + 1, // 간단한 레벨 설정
@@ -290,13 +357,13 @@ const Game: React.FC = () => {
   const [timeLeft, setTimeLeft] = useState<number>(20);
 
   useEffect(() => {
-    console.log('현재 타이머 상태:', {
-      totalTime,
-      drawTime,
-      gameTimeLeft,
-      timeLeft,
-      isTimerLoading
-    });
+    // console.log('현재 타이머 상태:', {
+    //   totalTime,
+    //   drawTime,
+    //   gameTimeLeft,
+    //   timeLeft,
+    //   isTimerLoading
+    // });
   }, [totalTime, drawTime, gameTimeLeft, timeLeft, isTimerLoading]);
 
   useEffect(() => {
@@ -900,7 +967,7 @@ useEffect(() => {
       <div className="flex w-full max-w-7xl">
         {/* 플레이어 컴포넌트 - 좌측 */}
         <div className="w-1/5 mr-9">
-        <PlayerSection 
+        <PlayerSection
           currentRound={currentRound}
           activeDrawerIndex={activeDrawerIndex}
           guesserIndex={guesserIndex}
@@ -908,12 +975,8 @@ useEffect(() => {
           playerConnections={playerConnections as any}
           isConnected={isConnected}
           playerMessages={playerMessages}
-          players={Object.values(playerConnections).map((player: any, index) => ({
-            id: index,
-            name: player.nickname || `플레이어${index + 1}`,
-            level: 1, // 기본 레벨 설정
-            avatar: player.characterUrl || `/avatars/default-${index + 1}.png` // 기본 아바타 경로
-          }))}
+          paredUser={paredUser} // paredUser 전달
+          storedPlayersList={storedPlayersList}
         />
         </div>
 
