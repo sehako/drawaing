@@ -36,7 +36,7 @@ interface UseGameWebSocketReturn {
 
 const useGameWebSocket = ({ roomId, currentPlayer }: UseGameWebSocketProps): UseGameWebSocketReturn => {
   // 고정된 세션 ID
-  const FIXED_ROOM_ID = "67e3b8c70e25f60ac596bd83";
+  const FIXED_ROOM_ID = "1";
   const FIXED_SESSION_ID = "67e3b8c70e25f60ac596bd84";
   
   const [isConnected, setIsConnected] = useState<boolean>(false);
