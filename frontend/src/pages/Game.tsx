@@ -12,6 +12,7 @@ import useGameTimer from '../hooks/useGameTimer'; // 타이머 훅 추가
 import gameTimerService from '../api/gameTimerService';
 import chatService from '../api/chatservice';
 import correctAnswerService from '../api/correctAnswerService';
+import { DrawPoint } from '../api/drawingService';
 
 interface Player {
   id: number;
@@ -181,9 +182,13 @@ const Game: React.FC = () => {
   const [context, setContext] = useState<CanvasRenderingContext2D | null>(null);
   const [currentColor, setCurrentColor] = useState<string>('red');
   const [isEraser, setIsEraser] = useState<boolean>(false);
-  const [lastPoint, setLastPoint] = useState<{ x: number; y: number } | null>(null);
+  const [lastPoint, setLastPoint] = useState<DrawPoint | null>(null);
+
+  const [playerMessages, setPlayerMessages] = useState<{[playerId: number]: string}>({});
+
+  // const [lastPoint, setLastPoint] = useState<{ x: number; y: number } | null>(null);
   
-  const [playerMessages, setPlayerMessages] = useState<{[playerId: string]: string}>({});
+  // const [playerMessages, setPlayerMessages] = useState<{[playerId: string]: string}>({});
   const [storedSessionId, setStoredSessionId] = useState<string | null>(null);
   
   const [eggCount, setEggCount] = useState(10);
@@ -1011,7 +1016,7 @@ useEffect(() => {
           setPredictions={setPredictions}
           roomId={roomId ?? ""}  // null이면 빈 문자열로 변환
           sessionId={sessionId ?? ""}  // null이면 빈 문자열로 변환
-          timeleft={timeLeft}
+          // timeleft={timeLeft}
         />
         </div>
 

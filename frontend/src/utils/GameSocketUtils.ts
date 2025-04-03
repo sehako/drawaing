@@ -124,8 +124,8 @@ export const sendGameStartMessage = (
   roomId: string,
   sessionId?: string // sessionId 파라미터 추가
 ): void => {
-  // 현재 시간에서 3초 후를 시작 시간으로 설정
-  const startTime = new Date(Date.now() + 3000).toISOString();
+  // // 현재 시간에서 5초 후를 시작 시간으로 설정 (3초에서 5초로 변경)
+  // const startTime = new Date(Date.now() + 5000).toISOString();
   
   // sessionId가 없으면 localStorage에서 가져오기 시도
   const useSessionId = sessionId || localStorage.getItem('sessionId') || undefined;
@@ -133,11 +133,11 @@ export const sendGameStartMessage = (
   // 시작 시간 정보를 포함한 메시지 생성
   const message = {
     memberId: memberId,
-    startTime: startTime,  // 시작 시간 추가
+    // startTime: startTime,  // 시작 시간 추가
     sessionId: useSessionId // sessionId 추가
   };
   
-  console.log(`게임 시작 메시지 전송 (시작 시간: ${startTime}, 세션 ID: ${useSessionId}):`, JSON.stringify(message));
+  console.log(`게임 시작 메시지 전송 (시작 시간:, 세션 ID: ${useSessionId}):`, JSON.stringify(message));
   
   // 연결 상태 확인 후 메시지 전송
   if (client && client.connected) {
