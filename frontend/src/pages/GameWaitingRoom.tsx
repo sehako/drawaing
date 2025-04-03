@@ -40,7 +40,8 @@ const GameWaitingRoom: React.FC = () => {
     players,
     currentUser,
     chatMessages,
-    gameStartInfo, // 게임 시작 정보 가져오기
+    gameStartInfo,
+    sessionId, // 세션 ID 추가
     setChatMessages,
     isLeaving,
     setIsLeaving
@@ -59,7 +60,8 @@ const GameWaitingRoom: React.FC = () => {
     console.log("플레이어 목록:", players);
     console.log("연결 상태:", isConnected);
     console.log("게임 시작 정보:", gameStartInfo);
-  }, [currentUser, isLocalHost, players, isConnected, gameStartInfo]);
+    console.log("세션 ID:", sessionId); // 세션 ID 로깅 추가
+  }, [currentUser, isLocalHost, players, isConnected, gameStartInfo, sessionId]);
 
   // 게임 시작 정보가 업데이트되면 카운트다운 시작
   useEffect(() => {
@@ -122,10 +124,12 @@ const GameWaitingRoom: React.FC = () => {
     const stateRoomId = location.state?.roomId;
     const stateRoomCode = location.state?.roomCode;
     const stateIsHost = location.state?.isHost === true;
+    const stateSessionId = location.state?.sessionId; // 추가: sessionId 확인
     
     console.log('state에서 전달된 roomId:', stateRoomId);
     console.log('state에서 전달된 roomCode:', stateRoomCode);
     console.log('state에서 전달된 isHost:', stateIsHost);
+    console.log('state에서 전달된 sessionId:', stateSessionId); // 추가
     
     // 방장 여부 설정
     if (stateIsHost) {
@@ -138,10 +142,12 @@ const GameWaitingRoom: React.FC = () => {
     const storedRoomId = localStorage.getItem('roomId'); // 웹소켓용 ID
     const storedRoomCode = localStorage.getItem('roomCode'); // 표시용 코드
     const storedIsHost = localStorage.getItem('isHost') === 'true';
+    const storedSessionId = localStorage.getItem('sessionId'); // 추가: 저장된 sessionId 확인
     
     console.log('저장된 웹소켓용 roomId:', storedRoomId);
     console.log('저장된 표시용 roomCode:', storedRoomCode);
     console.log('저장된 isHost:', storedIsHost);
+    console.log('저장된 sessionId:', storedSessionId); // 추가
     
     // 방장 정보 로컬 스토리지에서 가져오기
     if (storedIsHost && !stateIsHost) {
@@ -163,15 +169,21 @@ const GameWaitingRoom: React.FC = () => {
     setActualRoomId(roomIdToUse);
     setDisplayRoomCode(roomCodeToDisplay);
     
+    // sessionId 저장 (추가) - state에서 받았을 경우
+    if (stateSessionId) {
+      localStorage.setItem('sessionId', stateSessionId);
+    }
+    
     console.log('실제 사용할 웹소켓용 roomId:', roomIdToUse);
     console.log('화면에 표시할 roomCode:', roomCodeToDisplay);
+    console.log('사용할 sessionId:', stateSessionId || storedSessionId);
     
     // roomId가 없는 경우 경고
     if (!roomIdToUse) {
       console.warn('웹소켓 연결용 roomId를 찾을 수 없습니다.');
     }
   }, [paramRoomCode, location.state]);
-  
+
   // 컴포넌트 마운트 시 '다시 보지 않기' 설정 확인 후 모달 표시
   useEffect(() => {
     // 로컬 스토리지에서 '다시 보지 않기' 설정 확인
@@ -285,8 +297,8 @@ const GameWaitingRoom: React.FC = () => {
   const MAX_PLAYERS = 4;
 
   // 모든 플레이어가 준비 상태인지 확인
-  const allPlayersReady = players.length === MAX_PLAYERS && 
-  players.filter(player => !player.isHost).every(player => player.isReady);
+  const allPlayersReady = players.length >= 2 && 
+    players.filter(player => !player.isHost).every(player => player.isReady);
   
   // 디버깅을 위한 로그 추가
   console.log('현재 플레이어 수:', players.length);
@@ -311,8 +323,14 @@ const GameWaitingRoom: React.FC = () => {
     // 사용자가 직접 변경했음을 표시
     setUserChangedReady(true);
 
-    // 준비 상태 변경 메시지 전송
-    sendReadyStatusMessage(stompClient, currentUser.memberId!, newReadyStatus, actualRoomId);
+    // 준비 상태 변경 메시지 전송 (sessionId 추가)
+    sendReadyStatusMessage(
+      stompClient, 
+      currentUser.memberId!, 
+      newReadyStatus, 
+      actualRoomId,
+      sessionId || undefined // sessionId가 있으면 추가
+    );
   };
   
   // 게임 시작 - 웹소켓 메시지 전송
@@ -342,11 +360,17 @@ const GameWaitingRoom: React.FC = () => {
     
     console.log('게임 시작 메시지 전송:', {
       memberId: currentUser.memberId,
-      roomId: actualRoomId
+      roomId: actualRoomId,
+      sessionId: sessionId
     });
     
-    // 게임 시작 메시지 전송
-    sendGameStartMessage(stompClient, currentUser.memberId, actualRoomId);
+    // 게임 시작 메시지 전송 (sessionId 추가)
+    sendGameStartMessage(
+      stompClient, 
+      currentUser.memberId, 
+      actualRoomId,
+      sessionId || undefined // sessionId가 있으면 추가
+    );
   };
   
   // 방 나가기 함수
@@ -365,13 +389,14 @@ const GameWaitingRoom: React.FC = () => {
       const navigateTimer = setTimeout(() => {
         if (stompClient && isConnected && actualRoomId && currentUser) {
           try {
-            // 방 퇴장 메시지 전송
+            // 방 퇴장 메시지 전송 (sessionId 추가)
             sendLeaveRoomMessage(
               stompClient, 
               currentUser.memberId!, 
               currentUser.nickname, 
               currentUser.characterUrl || "", 
-              actualRoomId
+              actualRoomId,
+              sessionId || undefined // sessionId가 있으면 추가
             );
             
             console.log('방 퇴장 메시지 전송 완료');
@@ -380,7 +405,13 @@ const GameWaitingRoom: React.FC = () => {
             try {
               stompClient.unsubscribe(`/topic/room/${actualRoomId}`);
               stompClient.unsubscribe(`/topic/room/${actualRoomId}/chat`);
-              stompClient.unsubscribe(`/topic/room.wait/${actualRoomId}`); // 새로 추가된 구독 취소
+              stompClient.unsubscribe(`/topic/room.wait/${actualRoomId}`);
+              
+              // 세션 정보 구독 취소 추가
+              if (sessionId) {
+                stompClient.unsubscribe(`/topic/session.info/${actualRoomId}/${sessionId}`);
+              }
+              
               console.log('구독 취소 완료');
             } catch (error) {
               console.error('구독 취소 중 오류:', error);
@@ -390,6 +421,7 @@ const GameWaitingRoom: React.FC = () => {
             localStorage.removeItem('roomId');
             localStorage.removeItem('roomCode');
             localStorage.removeItem('isHost');
+            // sessionId는 유지 (다른 화면에서 필요할 수 있음)
             
             // 웹소켓 연결 해제
             stompClient.deactivate();
@@ -526,7 +558,7 @@ const GameWaitingRoom: React.FC = () => {
               isConnected={isConnected}
               onInputChange={handleChatInputChange}
               onSubmit={handleSendChat}
-              chatEnabled={true} // 채팅 기능 비활성화 상태
+              chatEnabled={true}
             />
           </div>
           
@@ -542,8 +574,8 @@ const GameWaitingRoom: React.FC = () => {
               customIsHost={isLocalHost}
               playerCount={players.length}
               maxPlayers={MAX_PLAYERS}
-              roomId={actualRoomId || undefined} // null을 undefined로 변환
-              // 게임 카운트다운 중에는 버튼 비활성화
+              roomId={actualRoomId || undefined}
+              sessionId={sessionId || undefined} // sessionId 전달 추가
               disabled={gameStartCountdown !== null}
             />
           </div>
