@@ -4,6 +4,8 @@ import { Client } from '@stomp/stompjs';
 export interface DrawPoint {
   x: number;
   y: number;
+  timestamp?: number;
+  isNewStroke?: boolean;
 }
 
 // 사용자별 그림 데이터 인터페이스 (변경됨)
