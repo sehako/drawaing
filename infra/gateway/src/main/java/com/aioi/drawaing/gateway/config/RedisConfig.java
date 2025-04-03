@@ -18,6 +18,8 @@ public class RedisConfig {
     private String host;
     @Value("${spring.data.redis.port}")
     private int port;
+    @Value("${spring.data.redis.password}")
+    private String password;
     @Value("${spring.data.redis.timeout}")
     private long timeout;
 
@@ -28,6 +30,7 @@ public class RedisConfig {
                 .build();
 
         RedisStandaloneConfiguration serverConfig = new RedisStandaloneConfiguration(host, port);
+        serverConfig.setPassword(password);
         return new LettuceConnectionFactory(serverConfig, clientConfig);
     }
 
