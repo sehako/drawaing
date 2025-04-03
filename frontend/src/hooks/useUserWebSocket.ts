@@ -40,6 +40,7 @@ interface UseUserWebSocketReturn {
   setCurrentUser: React.Dispatch<React.SetStateAction<Player | null>>;
   setIsLeaving: React.Dispatch<React.SetStateAction<boolean>>;
   isLeaving: boolean;
+  setGameStartInfo: React.Dispatch<React.SetStateAction<GameStartMessage | null>>;
 }
 
 const useUserWebSocket = ({
@@ -224,6 +225,8 @@ const useUserWebSocket = ({
         const data = JSON.parse(message.body);
         console.log('방 이벤트 데이터 수신:', data);
         
+
+        
         // sessionId가 있는 경우 처리 (추가)
         if (data.sessionId) {
           console.log('세션 ID 발견:', data.sessionId);
@@ -242,12 +245,24 @@ const useUserWebSocket = ({
           console.log('플레이어 준비 상태 변경 이벤트 감지');
           updatePlayerReadyStatus(data.payload || data);
         } else if (data.type === 'GAME_START') {
-          console.log('게임 시작 이벤트 감지');
-          // 게임 시작 처리 로직 - payload에 startTime 필드 확인
+          console.error('게임 시작 이벤트 감지 (전체 데이터):', data);
+          
+          // payload에 startTime 필드 확인
           if (data.payload && data.payload.startTime) {
-            console.log('게임 시작 시간 수신:', data.payload.startTime);
+            console.error('게임 시작 시간 수신:', data.payload.startTime);
+            
+            // 즉시 게임 시작 정보 설정
             setGameStartInfo({ startTime: data.payload.startTime });
+            
+            // 모든 클라이언트에 즉시 알림
+            setChatMessages(prev => [
+              ...prev, 
+              `시스템: 게임이 곧 시작됩니다. 준비하세요!`
+            ]);
+          } else {
+            console.error('게임 시작 페이로드에 startTime 없음:', data.payload);
           }
+        
         } else if (data.participants) {
           // participants 객체가 있는 경우 플레이어 목록 업데이트
           console.log('participants 객체 감지, 플레이어 목록 업데이트');
@@ -288,27 +303,35 @@ const useUserWebSocket = ({
     console.log(`게임 시작 시간 구독 시도: /topic/room.wait/${roomId}`);
     client.subscribe(`/topic/room.wait/${roomId}`, (message) => {
       try {
-        console.log('게임 시작 시간 메시지 수신:', message);
+        console.error('게임 시작 시간 메시지 수신 (FULL MESSAGE):', message);
+        console.error('메시지 본문:', message.body);
+        
         const data = JSON.parse(message.body);
-        console.log('게임 시작 시간 데이터 수신:', data);
+        console.error('게임 시작 시간 데이터 수신 (전체):', data);
         
         // startTime 필드 확인
         if (data && data.startTime) {
-          console.log('유효한 게임 시작 시간 수신:', data.startTime);
+          console.error('유효한 게임 시작 시간 수신:', data.startTime);
           
-          // 게임 시작 정보 업데이트
-          setGameStartInfo({ startTime: data.startTime });
+          // 게임 시작 정보 업데이트 (강제로 5초 이상 되도록)
+          const startTime = new Date(data.startTime);
+          const currentTime = new Date();
+          const timeUntilStart = startTime.getTime() - currentTime.getTime();
+          
+          // 최소 5초 이상 되도록 강제 설정
+          const adjustedStartTime = new Date(currentTime.getTime() + Math.max(timeUntilStart, 5000));
+          
+          setGameStartInfo({ startTime: adjustedStartTime.toISOString() });
           
           // 시스템 메시지 추가
-          const startDate = new Date(data.startTime);
-          const countdownSeconds = Math.ceil((startDate.getTime() - Date.now()) / 1000);
+          const countdownSeconds = Math.ceil((adjustedStartTime.getTime() - currentTime.getTime()) / 1000);
           
           setChatMessages(prev => [
             ...prev, 
-            `시스템: 게임이 ${countdownSeconds > 0 ? `${countdownSeconds}초 후에` : '곧'} 시작됩니다. 준비하세요!`
+            `시스템: 게임이 ${countdownSeconds}초 후에 시작됩니다. 준비하세요!`
           ]);
         } else {
-          console.warn('게임 시작 시간이 없거나 유효하지 않음:', data);
+          console.error('게임 시작 시간이 없거나 유효하지 않음:', data);
         }
       } catch (error) {
         console.error('게임 시작 메시지 파싱 오류:', error);
@@ -630,6 +653,7 @@ const useUserWebSocket = ({
     setIsLeaving,
     isLeaving,
     gameStartInfo,
+    setGameStartInfo,
     sessionId,
   };
 }

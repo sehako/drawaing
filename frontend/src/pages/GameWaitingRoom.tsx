@@ -41,6 +41,7 @@ const GameWaitingRoom: React.FC = () => {
     currentUser,
     chatMessages,
     gameStartInfo,
+    setGameStartInfo,
     sessionId, // 세션 ID 추가
     setChatMessages,
     isLeaving,
@@ -63,40 +64,68 @@ const GameWaitingRoom: React.FC = () => {
     console.log("세션 ID:", sessionId); // 세션 ID 로깅 추가
   }, [currentUser, isLocalHost, players, isConnected, gameStartInfo, sessionId]);
 
+
+  // 디버깅용 useEffect 추가 (gameStartInfo 상태 추적)
+  useEffect(() => {
+    console.error('=== gameStartInfo 변경 감지 ===');
+    console.error('gameStartInfo:', gameStartInfo);
+    console.error('actualRoomId:', actualRoomId);
+    console.error('isConnected:', isConnected);
+    console.error('stompClient:', !!stompClient);
+  }, [gameStartInfo, actualRoomId, isConnected, stompClient]);
+
   // 게임 시작 정보가 업데이트되면 카운트다운 시작
   useEffect(() => {
-    if (!gameStartInfo || !actualRoomId) return;
+    // 게임 시작 정보나 방 ID가 없으면 즉시 종료
+    if (!gameStartInfo || !actualRoomId) {
+      console.warn('게임 시작 정보 없음:', { 
+        gameStartInfo, 
+        actualRoomId,
+        gameStartInfoType: typeof gameStartInfo,
+        gameStartInfoKeys: gameStartInfo ? Object.keys(gameStartInfo) : 'N/A'
+      });
+      return;
+    }
     
-    console.log('게임 시작 정보 감지:', gameStartInfo);
+    console.log('게임 시작 정보 전체 데이터:', gameStartInfo);
+    console.log('게임 시작 정보 타입:', typeof gameStartInfo);
+    console.log('게임 시작 정보 키:', Object.keys(gameStartInfo));
     
-    // ISO 시간 문자열을 Date 객체로 변환
-    const startTime = new Date(gameStartInfo.startTime);
+    // 정확한 startTime 확인
+    const startTime = gameStartInfo.startTime 
+      ? new Date(gameStartInfo.startTime) 
+      : new Date(Date.now() + 5000); // 기본값: 5초 후
+    
     const currentTime = new Date();
-    
-    // 시작 시간과 현재 시간 차이 계산 (밀리초)
     const timeUntilStart = startTime.getTime() - currentTime.getTime();
+    const secondsUntilStart = Math.max(Math.ceil(timeUntilStart / 1000), 0);
     
-    // 시작까지 남은 시간을 초 단위로 계산 (올림)
-    const secondsUntilStart = Math.ceil(timeUntilStart / 1000);
-    
+    console.log('시작 시간:', startTime.toISOString());
+    console.log('현재 시간:', currentTime.toISOString());
     console.log(`게임 시작까지 ${secondsUntilStart}초 남음`);
     
+    // 이미 시작 시간이 지난 경우 즉시 게임 화면으로 이동
     if (secondsUntilStart <= 0) {
-      // 이미 시작 시간이 지났거나 현재 시간인 경우 즉시 이동
-      console.log('시작 시간이 이미 지났거나 현재임 - 즉시 게임 화면으로 이동');
+      console.log('시작 시간이 이미 지남 - 즉시 게임 화면으로 이동');
       navigate(`/game/${actualRoomId}`);
       return;
     }
     
-    // 카운트다운 초기화
-    setGameStartCountdown(secondsUntilStart);
+    // 5초부터 카운트다운 시작
+    const totalCountdown = secondsUntilStart;
+    setGameStartCountdown(totalCountdown);
     
-    // 카운트다운 실행
+    // 정확한 1초 간격 카운트다운 설정
     const countdownInterval = setInterval(() => {
       setGameStartCountdown(prev => {
+        // 1 이하이면 멈추고 게임 화면으로 이동
         if (prev === null || prev <= 1) {
           clearInterval(countdownInterval);
-          return null;
+          // 1초 동안 마지막 카운트다운 유지
+          setTimeout(() => {
+            navigate(`/game/${actualRoomId}`);
+          }, 1000);
+          return 1; // 마지막 1초 동안 모달 유지
         }
         return prev - 1;
       });
@@ -114,6 +143,7 @@ const GameWaitingRoom: React.FC = () => {
       clearTimeout(startGameTimer);
     };
   }, [gameStartInfo, actualRoomId, navigate]);
+
 
   // 실제 사용할 roomId 결정
   useEffect(() => {
@@ -333,7 +363,6 @@ const GameWaitingRoom: React.FC = () => {
     );
   };
   
-  // 게임 시작 - 웹소켓 메시지 전송
   const startGame = () => {
     if (!isLocalHost || !stompClient || !isConnected || !actualRoomId || !currentUser?.memberId) {
       console.error('게임을 시작할 수 없습니다:', {
