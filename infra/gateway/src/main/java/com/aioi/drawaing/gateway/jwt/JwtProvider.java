@@ -29,11 +29,11 @@ public class JwtProvider {
     public MemberInfo getMemberInfo(String accessToken, String refreshToken) {
         validateTokens(accessToken, refreshToken);
 
-        if (redisTokenService.getToken(refreshToken) == null) {
+        String memberId = parseToken(accessToken).getSubject();
+
+        if (!redisTokenService.getToken(memberId).equals(refreshToken)) {
             throw new RuntimeException();
         }
-
-        String memberId = parseToken(accessToken).getSubject();
         String role = parseToken(accessToken).get(AUTHORITIES_KEY, String.class);
         return new MemberInfo(memberId, role);
     }
