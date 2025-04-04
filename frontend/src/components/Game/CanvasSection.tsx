@@ -38,6 +38,8 @@ interface CanvasSectionProps {
   setPredictions: React.Dispatch<React.SetStateAction<{ class: string; probability: number; }[]>>;
   roomId: string;
   sessionId: string;
+  canDraw?: boolean;
+  gameTimeLeft: number; // 새로 추가
 }
 
 // 그림 데이터 저장을 위한 인터페이스
@@ -81,6 +83,8 @@ const CanvasSection: React.FC<CanvasSectionProps> = ({
   sessionId,
   canvasRef,
   context,
+  canDraw = false,
+  gameTimeLeft=0,
 }) => {
   const penSoundRef = useRef<Howl | null>(null);
   const [isPlayingSound, setIsPlayingSound] = useState(false);
@@ -543,7 +547,7 @@ const handleReceivedDrawingData = useCallback((data: DrawingData) => {
 
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     // 이미 그림을 그렸거나 완료 상태라면 그리기 불가능
-    if (hasCurrentPlayerDrawn || hasCompleted) return;
+    if (!canDraw || hasCurrentPlayerDrawn || hasCompleted) return;
   
     const canvas = canvasRef.current;
     if (!canvas || !context) return;
@@ -584,7 +588,7 @@ const handleReceivedDrawingData = useCallback((data: DrawingData) => {
     updateCursorPosition(e);
     
     // 이미 그림을 그렸거나 완료 상태라면 그리기 불가능
-    if (hasCurrentPlayerDrawn || !isDrawing || !context || !lastPoint) return;
+    if (!canDraw || hasCurrentPlayerDrawn || !isDrawing || !context || !lastPoint) return;
   
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -930,20 +934,25 @@ const handleMouseEnter = (e: React.MouseEvent<HTMLCanvasElement>) => {
   return (
     <div className="h-[580px] flex flex-col bg-gray-300">
       {/* 타이머 바 */}
-      <div className="w-full h-5 bg-gray-200">
-      <div 
-        className={`h-full ${
-          timeLeft <= 5 
-            ? 'bg-red-500 animate-[pulse_0.5s_ease-in-out_infinite]' 
-            : timeLeft <= 10 
-              ? 'bg-yellow-300' 
-              : 'bg-green-500'
-        }`}
-        style={{ 
-          width: `${timerBarWidth}%`,
-          transition: 'width 1s linear',
-        }}
-      />
+      <div className="w-full h-5 bg-gray-200 relative">
+          <span className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-black font-bold text-xs z-10">
+            {timeLeft}초
+          </span>
+        <div 
+          className={`h-full absolute top-0 left-0 z-9 ${
+            timeLeft <= 5 
+              ? 'bg-red-500 animate-[pulse_0.5s_ease-in-out_infinite]' 
+              : timeLeft <= 10 
+                ? 'bg-yellow-300' 
+                : 'bg-green-300'
+          }`}
+          style={{ 
+            width: `${timerBarWidth}%`,
+            transition: 'width 1s linear',
+          }}
+        >
+          {/* 타이머 바 안에 텍스트 추가 */}
+        </div>
       </div>
 
       {/* 캔버스 컨테이너 */}
