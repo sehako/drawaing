@@ -21,7 +21,7 @@ interface RoomFullModalProps {
           />
           
           <p className="text-lg text-center mb-6">
-            이 방은 이미 인원이 꽉 찼습니다. (최대 4명)
+            이미 인원이 꽉 찼습니다. (최대 4명)
           </p>
           
           <button 

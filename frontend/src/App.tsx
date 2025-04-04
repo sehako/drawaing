@@ -6,9 +6,12 @@ import { AuthProvider } from './contexts/AuthContext';
 import LandingPage from './pages/LandingPage';
 import GameWaitingRoom from './pages/GameWaitingRoom.tsx';
 import Game from './pages/Game.tsx';
+import GameResultPage from './pages/GameResultPage.tsx'; // Import the new GameResultPage
 import Bgm from './components/Music/Bgm.tsx';
 import BlockNavigation from './utils/block.tsx'; // 변경된 import
 import axios from 'axios';
+import HardcodedGameResultPage from './pages/HardcodeGameResultPage.tsx';
+
 
 // .env 파일의 환경변수 사용
 axios.defaults.baseURL = import.meta.env.VITE_API_URL;
@@ -34,6 +37,12 @@ const App: React.FC = () => {
               <>
                 <BlockNavigation /> {/* 이 페이지에서만 새로고침/뒤로가기 방지 */}
                 <Game />
+              </>
+            } />
+            <Route path="/result/:roomId" element={
+              <>
+                <BlockNavigation /> {/* 이 페이지에서도 새로고침/뒤로가기 방지 */}
+                <HardcodedGameResultPage />
               </>
             } />
           </Routes>

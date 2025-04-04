@@ -94,9 +94,14 @@ const PlayerSection: React.FC<PlayerSectionProps> = ({
     paredUser,
     onPlayerRoleChange 
 }) => {
-    console.log('PlayerSection에서 받은 paredUser:', paredUser);
-    console.log('현재 사용자 ID:', paredUser?.id);
-    console.log('현재 사용자 이름:', paredUser?.name);
+    useEffect(() => {
+        if (process.env.NODE_ENV === 'development') {
+            console.log('PlayerSection에서 받은 paredUser:', paredUser);
+            console.log('현재 사용자 ID:', paredUser?.id);
+            console.log('현재 사용자 이름:', paredUser?.name);
+            // console.log('storedPlayersList 원본:', storedPlayersList);
+        }
+    }, []); // 빈 의존성 배열로 마운트 시에만 실행되도록 함
     
     // 기본 플레이어 데이터 추가
     const defaultPlayers: Player[] = [
@@ -160,7 +165,12 @@ const PlayerSection: React.FC<PlayerSectionProps> = ({
     // 현재 라운드의 플레이어 배치
     const currentPositions = getCurrentPositions();
     
-    console.log('현재 포지션 배치:', currentPositions);
+    // 개발 환경에서만 로그 출력
+useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+        console.log('현재 포지션 배치:', currentPositions);
+    }
+}, [currentRound]); // 라운드가 변경될 때만 로그 출력
     
     // 문자열로 된 avatar가 들어왔을 때 실제 이미지로 변환
     const getAvatarImage = (avatarStr: string | undefined): string => {
@@ -289,25 +299,27 @@ const PlayerSection: React.FC<PlayerSectionProps> = ({
         return permissions;
     };
     // 추가: 라운드/역할 변경시 권한 업데이트 및 부모 컴포넌트에 알림
-    // 역할 및 권한 변경시 부모 컴포넌트에 전달
-    useEffect(() => {
-        const currentRole = getCurrentPlayerRole();
-        const permissions = calculatePlayerPermissions(currentRole);
-        
-        if (onPlayerRoleChange) {
-            onPlayerRoleChange({
-                role: currentRole,
-                isCurrentPlayer: !!currentRole,
-                currentPositions,
-                playerPermissions: permissions
-            });
-        }
-        
-        // 디버깅용 로그
+// 역할 및 권한 변경시 부모 컴포넌트에 전달
+useEffect(() => {
+    const currentRole = getCurrentPlayerRole();
+    const permissions = calculatePlayerPermissions(currentRole);
+    
+    if (onPlayerRoleChange) {
+        onPlayerRoleChange({
+            role: currentRole,
+            isCurrentPlayer: !!currentRole,
+            currentPositions,
+            playerPermissions: permissions
+        });
+    }
+    
+    // 디버깅용 로그는 최초 렌더링과 중요한 상태 변경 시에만 출력
+    if (process.env.NODE_ENV === 'development') {
         console.log('현재 플레이어 역할:', currentRole);
         console.log('현재 포지션 배치:', currentPositions);
         console.log('현재 플레이어 권한:', permissions);
-    }, [currentRound, activeDrawerIndex, paredUser]);
+    }
+}, [currentRound, activeDrawerIndex, paredUser?.id]); // paredUser 객체 대신 id만 의존성으로 사용
 
     // 플레이어 접속 상태 가져오기 (수정)
     const getPlayerConnectionStatus = (playerName: string): boolean => {
