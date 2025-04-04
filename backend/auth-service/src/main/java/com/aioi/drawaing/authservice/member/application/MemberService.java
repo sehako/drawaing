@@ -32,7 +32,6 @@ import com.aioi.drawaing.authservice.ranking.infrastructure.repository.DrawingGa
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -115,7 +114,7 @@ public class MemberService {
                         "https://i.pinimg.com/736x/8d/88/5f/8d885f3de74052403323f56445d83dab.jpg") // 임시로 넣어둠, 고칠 예정
                 .build();
         memberRepository.save(member);
-        drawingGameRecordRepository.save(CreateDrawingGameRecord(member));
+        drawingGameRecordRepository.save(DrawingGameRecord.from(member));
         return ApiResponseEntity.from(SuccessCode.SUCCESS_MEMBER_REGISTER, MemberResponse.of(member));
     }
 
@@ -196,7 +195,7 @@ public class MemberService {
                 .build();
         log.info("게스트 회원가입 member: {}", member);
         memberRepository.save(member);
-        drawingGameRecordRepository.save(CreateDrawingGameRecord(member));
+        drawingGameRecordRepository.save(DrawingGameRecord.from(member));
         return member;
     }
 
@@ -266,20 +265,6 @@ public class MemberService {
                 break;
             }
         }
-
         return new LevelInfo(newLevel, totalExp);
-    }
-
-    private DrawingGameRecord CreateDrawingGameRecord(Member member) {
-        return DrawingGameRecord.builder()
-                .member(member)
-                .playCount(0)
-                .achievedAt(LocalDateTime.now())
-                .win(0)
-                .draw(0)
-                .lose(0)
-                .rankScore(0)
-                .lastPlayedAt(LocalDateTime.now())
-                .build();
     }
 }
