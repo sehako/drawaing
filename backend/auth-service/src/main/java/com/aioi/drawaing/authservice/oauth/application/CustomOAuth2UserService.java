@@ -10,7 +10,6 @@ import com.aioi.drawaing.authservice.oauth.domain.info.OAuth2UserInfoFactory;
 import com.aioi.drawaing.authservice.oauth.exception.OAuthProviderMissMatchException;
 import com.aioi.drawaing.authservice.ranking.domain.DrawingGameRecord;
 import com.aioi.drawaing.authservice.ranking.infrastructure.repository.DrawingGameRecordRepository;
-import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.InternalAuthenticationServiceException;
@@ -66,7 +65,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             updateUser(savedUser, userInfo);
         } else {
             savedUser = createUser(userInfo, providerType);
-            drawingGameRecordRepository.save(CreateDrawingGameRecord(savedUser));
+            drawingGameRecordRepository.save(DrawingGameRecord.from(savedUser));
         }
 
         return UserPrincipal.create(savedUser, user.getAttributes());
@@ -92,18 +91,5 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             member.setNickname(userInfo.getName());
         }
         member.setCharacterImage(userInfo.getImageUrl());
-    }
-
-    private DrawingGameRecord CreateDrawingGameRecord(Member member) {
-        return DrawingGameRecord.builder()
-                .member(member)
-                .playCount(0)
-                .achievedAt(LocalDateTime.now())
-                .win(0)
-                .draw(0)
-                .lose(0)
-                .rankScore(0)
-                .lastPlayedAt(LocalDateTime.now())
-                .build();
     }
 }
