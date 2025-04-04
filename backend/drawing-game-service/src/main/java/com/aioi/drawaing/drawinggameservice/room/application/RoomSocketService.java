@@ -98,11 +98,12 @@ public class RoomSocketService {
         roomMessagePublisher.publishRoomStart("/topic/room.wait/"+roomId, new RoomStartInfo(LocalDateTime.now().plusSeconds(5)));
         try {
             Thread.sleep(5000);
-        } catch (InterruptedException e) {
+        } catch (Exception e) {
             log.error(e.getMessage());
             throw new RuntimeException(e);
         }
 
+//        log.info("test{}", room.getAddRoomParticipantInfos());
         // 게임 시작 로직
         drawingService.startSession(roomId, room.getSessionId(), room.getAddRoomParticipantInfos());
     }
