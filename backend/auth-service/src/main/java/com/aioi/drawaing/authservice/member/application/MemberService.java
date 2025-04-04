@@ -116,7 +116,7 @@ public class MemberService {
                 .build();
         memberRepository.save(member);
         drawingGameRecordRepository.save(CreateDrawingGameRecord(member));
-        return ApiResponseEntity.from(SuccessCode.SUCCESS_MEMBER_REGISTER, processLogin(member, response));
+        return ApiResponseEntity.from(SuccessCode.SUCCESS_MEMBER_REGISTER, MemberResponse.of(member));
     }
 
     @Transactional
