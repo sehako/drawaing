@@ -22,9 +22,7 @@ public class CorsConfig {
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/auth/**", config);
-        source.registerCorsConfiguration("/game/api/v1/drawing/room/**", config);
-        source.registerCorsConfiguration("/game-test/api/v1/drawing/room/**", config);
+        source.registerCorsConfiguration("/**", config);
         return new CorsWebFilter(source);
     }
 }
