@@ -1,6 +1,7 @@
 package com.aioi.drawaing.drawinggameservice.room.application;
 
 import com.aioi.drawaing.drawinggameservice.drawing.application.DrawingService;
+import com.aioi.drawaing.drawinggameservice.drawing.domain.Session;
 import com.aioi.drawaing.drawinggameservice.room.application.dto.AddRoomParticipantInfo;
 import com.aioi.drawaing.drawinggameservice.room.application.dto.RoomStartInfo;
 import com.aioi.drawaing.drawinggameservice.room.domain.Room;
@@ -64,6 +65,11 @@ public class RoomSocketService {
             log.error("모든 참여자가 준비되지 않았습니다.");
             throw new RuntimeException("모든 참여자가 준비되지 않았습니다.");
         }
+
+        Session session = drawingService.createSession(roomId);
+        room.updateSessionId(session.getId());
+        room.deleteParticipants();
+        repository.save(room);
 
         //게임 대기방에서 실제 게임으로 넘어가는 중간 대기 시간을 처리하는 함수
         transitionToGame(roomId, room);
