@@ -72,8 +72,23 @@ public class Session {
         return participants.entrySet().stream()
                 .collect(Collectors.toMap(
                         Map.Entry::getKey, // 기존 Long 키 유지
-                        entry -> new ParticipantScoreInfo(this.humanWin, this.humanWin*100+entry.getValue().getBonusPointsDrawing()+entry.getValue().getBonusPointsGuessing()) // 값 변환
+                        entry -> {
+                            int score = calculateScore(entry);
+                            return new ParticipantScoreInfo(this.humanWin, score, Math.max(10, score), calculateExp()); // 값 변환
+                        }
                 ));
+    }
+
+    private int calculateExp(){
+        return 10+(isHumanWin()?10:0)+this.humanWin;
+    }
+
+    private boolean isHumanWin(){
+        return this.humanWin > this.roundCount-this.humanWin;
+    }
+
+    private int calculateScore(Map.Entry<Long, Participant> entry){
+        return this.humanWin*2-(this.roundCount-this.humanWin)*2+entry.getValue().getBonusPointsDrawing()+entry.getValue().getBonusPointsGuessing();
     }
 
     public void win(WinParticipantInfo winParticipantInfo, int correctScore, int drawScore){
