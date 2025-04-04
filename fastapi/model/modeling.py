@@ -4,18 +4,23 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.models as models
 
-class ModifiedShuffleNetV2(nn.Module):
+class ModifiedMnasNet(nn.Module): # 쓰지 말 것. 속도도 느린데 성능도 안 좋게 나옴...
     def __init__(self, num_classes):
-        super(ModifiedShuffleNetV2, self).__init__()
+        super(ModifiedMnasNet, self).__init__()
         
-        # ShuffleNetV2 모델 불러옴
-        shufflenet_v2 = models.shufflenet_v2_x0_5(weights=None)  # 작은 버전 사용 (0.5x). 만든 모델을 불러오므로 가중치는 초기상태로.
+        # MnasNet 모델 불러오기 (pretrained=False)
+        mnasnet = models.mnasnet1_0(weights=None)  # pretrained=False로 설정
         
-        # 마지막 fully connected layer를 num_classes에 맞게 수정
-        shufflenet_v2.fc = nn.Linear(shufflenet_v2.fc.in_features, num_classes)
+        # 수동으로 받은 모델의 state_dict을 불러오기
+        model_path = 'model/mnasnet1.0_top1_73.512-f206786ef8.pth'  # 수동으로 다운로드한 모델의 경로
+        mnasnet.load_state_dict(torch.load(model_path))  # 모델 가중치 로드
+        mnasnet.load_state_dict(state_dict, strict=False)  # strict=False 옵션 추가
+        
+        # 마지막 classifier 레이어 수정
+        mnasnet.classifier[1] = nn.Linear(mnasnet.classifier[1].in_features, num_classes)
         
         # 모델 설정
-        self.model = shufflenet_v2
+        self.model = mnasnet
     
     def forward(self, x):
         return self.model(x)

@@ -4,9 +4,10 @@ import torchvision.transforms as transforms
 import torchvision.models as models
 from PIL import Image
 from io import BytesIO
-from model.modeling import ModifiedShuffleNetV2  # 모델 클래스 임포트. 필요하다니 불러옴...
+from model.modeling import ModifiedMnasNet  # 모델 클래스 임포트. 필요하다니 불러옴...
 from fastapi.middleware.cors import CORSMiddleware
 import base64  # 추가
+import os
 
 app = FastAPI()
 
@@ -23,8 +24,8 @@ app.add_middleware(
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # 모델 로드 (사전에 학습된 CNN 모델)
-model = ModifiedShuffleNetV2(num_classes=50)  # 클래스 수를 맞춰서 초기화
-model.load_state_dict(torch.load("shufflenet05_50_100_72.pth", map_location=device))
+model = ModifiedMnasNet(num_classes=50)  # 클래스 수를 맞춰서 초기화
+model.load_state_dict(torch.load("resnet50_smaller75.pth", map_location=device))
 model.to(device)  # 모델을 GPU 또는 CPU로 이동
 model.eval()
 
@@ -48,12 +49,12 @@ class_labels = ['airplane', 'ant', 'apple', 'axe', 'banana',
                 'truck', 'umbrella', 'watermelon', 'windmill']
 
 # 이미지 변환 함수
-def transform_image(image_bytes):
+def transform_image(image_bytes, save_transformed_image=True):
     image = Image.open(BytesIO(image_bytes)).convert('RGB')  # RGBA나 RGB 이미지를 먼저 불러온 후
     print(f"Original Image Size: {image.size}")  # 이미지 크기 확인
 
     transform = transforms.Compose([
-        transforms.Resize((64, 64)),
+        transforms.Resize((112, 112)),
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.5004, 0.4997, 0.5000], std=[0.2895, 0.2899, 0.2895])  # 새로운 평균값과 표준편차
     ])
@@ -61,15 +62,36 @@ def transform_image(image_bytes):
     image_tensor = transform(image).unsqueeze(0)
     print(f"Transformed Image Tensor Shape: {image_tensor.shape}")  # 변환된 텐서 크기 확인
 
+    if save_transformed_image:
+        # 텐서를 PIL 이미지로 변환하여 저장
+        transformed_image = transforms.ToPILImage()(image_tensor.squeeze(0))
+        transformed_image.save("transformed_image.png")
+        print("Transformed image saved as 'transformed_image.png'")
+
     return image_tensor
+
+# 이미지 저장 함수
+def save_image(image_bytes, filename="image.png"):
+    # 파일 경로 설정
+    save_path = os.path.join("saved_images", filename)
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)  # 저장할 디렉토리 없으면 생성
+    with open(save_path, "wb") as f:
+        f.write(image_bytes)
+    print(f"Image saved at {save_path}")
 
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
     image_bytes = await file.read()
-    image_tensor = transform_image(image_bytes).to(device)
+    
+    # 이미지를 서버에 저장
+    # save_image(image_bytes, filename="image.png")
+    
+    # 이미지 변환
+    image_tensor = transform_image(image_bytes, save_transformed_image=True).to(device)
 
     with torch.no_grad():
         outputs = model(image_tensor)
+        print("Raw outputs:", outputs)
         probabilities = torch.nn.functional.softmax(outputs, dim=1)  # 확률 변환
         top_probs, top_indices = torch.topk(probabilities, 10, dim=1)  # 상위 10개 예측
 
@@ -77,7 +99,7 @@ async def predict(file: UploadFile = File(...)):
         {"class": class_labels[idx.item()], "probability": round(prob.item(), 4)}  # 확률값을 포함
         for idx, prob in zip(top_indices[0], top_probs[0])
     ]
-
+    print(top_predictions)
     return {
         "predictions": top_predictions,
     }

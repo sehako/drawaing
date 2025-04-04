@@ -282,7 +282,7 @@ const GameWaitingRoom: React.FC = () => {
   };
   
   // 플레이어 최대 인원
-  const MAX_PLAYERS = 2;
+  const MAX_PLAYERS = 4;
 
   // 모든 플레이어가 준비 상태인지 확인
   const allPlayersReady = players.length >= 2 && players.every(player => 
