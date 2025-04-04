@@ -186,13 +186,14 @@ public class MemberService {
     private Member guestSignUp() {
         String randomNickname = generateUniqueNickname();
         log.info("nickname: {}", randomNickname);
+        String tmp = "https://i.pinimg.com/736x/8d/88/5f/8d885f3de74052403323f56445d83dab.jpg";
         Member member = Member.builder()
                 .nickname(randomNickname)
                 .role(RoleType.ROLE_GUEST)
                 .providerType(ProviderType.GUEST)
-                .characterImage(
-                        "https://i.pinimg.com/736x/8d/88/5f/8d885f3de74052403323f56445d83dab.jpg") // 임시로 넣어둠, 고칠 예정
+                .characterImage(tmp) // 임시로 넣어둠, 고칠 예정
                 .build();
+        log.info("tmp: {}", tmp);
         log.info("게스트 회원가입 member: {}", member);
         memberRepository.save(member);
         drawingGameRecordRepository.save(DrawingGameRecord.from(member));
