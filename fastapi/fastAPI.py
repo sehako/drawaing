@@ -24,29 +24,21 @@ app.add_middleware(
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # 모델 로드 (사전에 학습된 CNN 모델)
-model = ModifiedMnasNet(num_classes=50)  # 클래스 수를 맞춰서 초기화
-model.load_state_dict(torch.load("resnet50_smaller75.pth", map_location=device))
+model = ModifiedMnasNet(num_classes=90)  # 클래스 수를 맞춰서 초기화
+model.load_state_dict(torch.load("mnasnet10_112__79.pth", map_location=device))
 model.to(device)  # 모델을 GPU 또는 CPU로 이동
 model.eval()
 
 # 클래스 라벨 리스트 (실제 학습 데이터에 맞게 수정)
-class_labels = ['airplane', 'ant', 'apple', 'axe', 'banana', 
-                'barn', 'basket', 'bat', 'bear', 'bed', 
-                'bee', 'bird', 'bread', 'broccoli', 'broom', 
-                'bucket', 'bush', 'butterfly', 'carrot', 'cat', 
-                'chair', 'clock', 'cloud', 'cow', 'cup', 
-                'dog', 'door', 'duck', 'eyeglasses', 'feather', 
-                'fence', 'fish', 'flower', 'frog', 'garden hose', 
-                'grapes', 'grass', 'hammer', 'hedgehog', 'horse', 
-                'house', 'key', 'ladder', 'leaf', 'light bulb', 
-                'moon', 'mosquito', 'mountain', 'mouse', 'mushroom', 
-                'onion', 'peanut', 'pear', 'peas', 'pencil', 
-                'pig', 'pineapple', 'potato', 'rabbit', 'raccoon', 
-                'rain', 'rainbow', 'rake', 'river', 'sandwich', 
-                'saw', 'sheep', 'shovel', 'snail', 'snake', 
-                'snowflake', 'snowman', 'spider', 'star', 'strawberry', 
-                'sun', 'swan', 'table', 'tractor', 'tree', 
-                'truck', 'umbrella', 'watermelon', 'windmill']
+class_labels = ['airplane', 'ant', 'apple', 'axe', 'banana', 'barn', 'basket', 'bat', 'bear', 'bed', 
+                'bee', 'bird', 'bread', 'broccoli', 'broom', 'bucket', 'bush', 'butterfly', 'cactus', 'candle', 'carrot', 'cat', 
+                'chair', 'clock', 'cloud', 'cow', 'cup', 'dog', 'door', 'duck', 'eyeglasses', 'fan', 'feather', 
+                'fence', 'fish', 'flower', 'frog', 'guitar', 'grapes', 'grass', 'hammer', 'hedgehog', 'horse', 
+                'house', 'key', 'ladder', 'leaf', 'light bulb', 'moon', 'mosquito', 'mountain', 'mouse', 'mushroom', 
+                'onion', 'peanut', 'pear', 'peas', 'pencil', 'pig', 'pineapple', 'potato', 'rabbit', 'raccoon', 
+                'rain', 'rainbow', 'rake', 'river', 'sandwich', 'saw', 'sheep', 'shovel', 'snail', 'snake', 
+                'snowflake', 'snowman', 'soccer ball', 'spider', 'star', 'strawberry', 'sun', 'swan', 'table', 'tent', 'tractor', 'tree', 
+                'truck', 'umbrella', 'watermelon', 'whale', 'windmill']
 
 # 이미지 변환 함수
 def transform_image(image_bytes, save_transformed_image=True):
