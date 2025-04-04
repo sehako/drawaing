@@ -10,6 +10,7 @@ import com.aioi.drawaing.authservice.ranking.infrastructure.repository.DrawingGa
 import com.aioi.drawaing.authservice.ranking.presentation.request.GameResultRequest;
 import com.aioi.drawaing.authservice.ranking.presentation.response.GameRecordResponse;
 import com.aioi.drawaing.authservice.ranking.presentation.response.RankingResponse;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -50,19 +51,6 @@ public class RankingService {
         return responses;
     }
 
-    private DrawingGameRecord getOrCreateRecord(Long memberId) {
-        Member member = memberService.getMember(memberId);
-        return drawingGameRecordRepository.findById(memberId)
-                .orElseGet(() -> DrawingGameRecord.builder()
-                        .member(member)
-                        .playCount(0)
-                        .win(0)
-                        .draw(0)
-                        .lose(0)
-                        .rankScore(0)
-                        .build());
-    }
-
     public PageResponse<?> getDrawingGameRanking(String rankingType, int page, int size) {
         PageRequest pageRequest = PageRequest.of(page, size);
 
@@ -72,16 +60,62 @@ public class RankingService {
         return PageResponse.from(resultPage);
     }
 
+    public GameRecordResponse getDrawingGameRecordByMemberId(Long memberId) {
+        DrawingGameRecord record = getOrCreateRecord(memberId);
+        return GameRecordResponse.from(drawingGameRecordRepository.save(record));
+    }
+
+    private DrawingGameRecord getOrCreateRecord(Long memberId) {
+        Member member = memberService.getMember(memberId);
+        return drawingGameRecordRepository.findByMemberId(memberId)
+                .orElseGet(() -> DrawingGameRecord.builder()
+                        .member(member)
+                        .playCount(0)
+                        .achievedAt(LocalDateTime.now())
+                        .win(0)
+                        .draw(0)
+                        .lose(0)
+                        .rankScore(0)
+                        .lastPlayedAt(LocalDateTime.now())
+                        .build());
+    }
+
+    public Integer getRankingByMemberId(String rankingType, Long memberId) {
+        RankingType type = parseRankingType(rankingType);
+        Integer rank = getRankBytype(type, memberId);
+        log.info("{} Rank By MemberId={} : {}", type, memberId, rank);
+        if (rank == null) {
+            throw new IllegalArgumentException("rank is null");
+        }
+        return drawingGameRecordRepository.findScoreRankByMemberId(memberId);
+    }
+
+    private Integer getRankBytype(RankingType type, Long memberId) {
+        switch (type) {
+            case SCORE:
+                return drawingGameRecordRepository.findScoreRankByMemberId(memberId);
+            case PLAY:
+                return drawingGameRecordRepository.findPlayCountRankByMemberId(memberId);
+            case POINT:
+                return drawingGameRecordRepository.findPointRankByMemberId(memberId);
+            case LEVEL:
+                return drawingGameRecordRepository.findLevelRankByMemberId(memberId);
+            default:
+                log.error("처리할 수 없는 랭킹 타입: {}", type);
+                throw new IllegalArgumentException("처리할 수 없는 랭킹 타입: " + type);
+        }
+    }
+
     private Page<RankingResponse> getRankingData(RankingType type, PageRequest pageRequest) {
         switch (type) {
             case SCORE:
-                return drawingGameRecordRepository.findByScoreRanking(pageRequest);
+                return drawingGameRecordRepository.findRankingByScore(pageRequest);
             case PLAY:
-                return drawingGameRecordRepository.findByPlayCountRanking(pageRequest);
+                return drawingGameRecordRepository.findRankingByPlayCount(pageRequest);
             case POINT:
-                return drawingGameRecordRepository.findByPointRanking(pageRequest);
+                return drawingGameRecordRepository.findRankingByPoint(pageRequest);
             case LEVEL:
-                return drawingGameRecordRepository.findByLevelRanking(pageRequest);
+                return drawingGameRecordRepository.findRankingByLevel(pageRequest);
             default:
                 log.error("처리할 수 없는 랭킹 타입: {}", type);
                 throw new IllegalArgumentException("처리할 수 없는 랭킹 타입: " + type);
@@ -105,4 +139,5 @@ public class RankingService {
             throw new IllegalArgumentException("유효하지 않은 결과 타입: " + gameStatus);
         }
     }
+
 }
