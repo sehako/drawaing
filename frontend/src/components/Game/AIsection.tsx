@@ -24,6 +24,7 @@ interface AISectionProps {
   setIsWrongGuess?: React.Dispatch<React.SetStateAction<boolean>>;
   guessSubmitCount?: number; // 추가: 현재까지 사용한 제출 횟수
   maxGuessSubmitCount?: number; // 추가: 최대 제출 가능 횟수
+  canAnswer?: boolean;
 }
 
 const AISection: React.FC<AISectionProps> = ({
@@ -47,6 +48,7 @@ const AISection: React.FC<AISectionProps> = ({
   setIsWrongGuess = () => {},
   guessSubmitCount = 0,
   maxGuessSubmitCount = 3, // 기본값 3으로 설정
+  canAnswer = false, // 기본값을 false로 설정
 }) => {
   const [isPassModalOpen, setIsPassModalOpen] = useState(false);
   const [isCorrectModalOpen, setIsCorrectModalOpen] = useState(false);
@@ -182,21 +184,25 @@ useEffect(() => {
               : '패스'}
           </button>
           <button 
-            onClick={(e) => {
-              e.preventDefault();
-              handleGuessSubmit(e as unknown as React.FormEvent);
-            }}
-            disabled={guessSubmitCount >= maxGuessSubmitCount}
-            className={`h-[52px] w-full text-white font-medium rounded-[10px] 
-              ${guessSubmitCount < maxGuessSubmitCount 
+          onClick={(e) => {
+            e.preventDefault();
+            handleGuessSubmit(e as unknown as React.FormEvent);
+          }}
+          disabled={!canAnswer || guessSubmitCount >= maxGuessSubmitCount}
+          className={`h-[52px] w-full text-white font-medium rounded-[10px] 
+            ${!canAnswer 
+              ? 'bg-green-500 opacity-50 cursor-not-allowed' 
+              : guessSubmitCount < maxGuessSubmitCount 
                 ? 'bg-green-500 hover:bg-green-600' 
                 : 'bg-green-500 opacity-50 cursor-not-allowed'
-              }`}
-          >
-            {guessSubmitCount < maxGuessSubmitCount 
+            }`}
+        >
+          {!canAnswer 
+            ? '정답 제출 불가' 
+            : guessSubmitCount < maxGuessSubmitCount 
               ? `제출 (${maxGuessSubmitCount - guessSubmitCount}회)` 
               : '제출 횟수 소진'}
-          </button>
+        </button>
         </div>
       </div>
       

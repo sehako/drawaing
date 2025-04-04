@@ -1,4 +1,4 @@
-import React from 'react';
+import React,{useEffect} from 'react';
 
 // 기존 이미지 import
 import baby from '../../assets/Game/baby.png';
@@ -11,6 +11,15 @@ import max from '../../assets/Game/max.png';
 interface PlayerConnectionMap {
   [name: string]: boolean;
 }
+export interface PlayerPermissions {
+    canDraw: boolean;    // 그림 그리기 권한
+    canGuess: boolean;   // 정답 입력 권한 
+    canSeeWord: boolean; // 제시어 확인 권한
+    canAnswer: boolean;
+  }
+
+
+export type PlayerRole = "정답자" | "순서1" | "순서2" | "순서3";
 
 interface PlayerSectionProps {
     currentRound: number;
@@ -22,6 +31,12 @@ interface PlayerSectionProps {
     playerMessages: { [key: string]: string };
     storedPlayersList: Array<{ id: number; name: string; level: number; avatar: string }>;
     paredUser?: any; // 새로운 props 추가
+    onPlayerRoleChange?: (roleInfo: {
+        role: PlayerRole | null;
+        isCurrentPlayer: boolean;
+        currentPositions: PositionMap;
+        playerPermissions: PlayerPermissions;
+      }) => void;
 }
 
 interface Player {
@@ -49,7 +64,7 @@ type PlayerList = {
 }
 
 // 포지션별 배치 타입
-interface PositionMap {
+export interface PositionMap {
   "정답자": string;
   "순서1": string;
   "순서2": string;
@@ -76,7 +91,8 @@ const PlayerSection: React.FC<PlayerSectionProps> = ({
     playerConnections = {},
     playerMessages = {},
     storedPlayersList = [], // 기본값 빈 배열 제공
-    paredUser
+    paredUser,
+    onPlayerRoleChange 
 }) => {
     console.log('PlayerSection에서 받은 paredUser:', paredUser);
     console.log('현재 사용자 ID:', paredUser?.id);
@@ -106,18 +122,25 @@ const PlayerSection: React.FC<PlayerSectionProps> = ({
     // 현재 사용자 ID (paredUser의 id 값)
     const currentUserId = paredUser?.id?.toString();
     
-    // 라운드별 플레이어 배치 정의 생성 함수
+    // 라운드별 플레이어 배치 정의 생성 함수 (수정)
     const generateRoundPositions = (): RoundPositions => {
         const rounds: RoundPositions = {};
+        
+        // 플레이어 배열이 비어있으면 빈 객체 반환
+        if (!playerArray || playerArray.length === 0) {
+            return rounds;
+        }
+        
+        // 실제 플레이어 이름 사용
         const playerCount = playerArray.length;
         
         // 4라운드 각각에 대해 포지션 계산
         for (let round = 1; round <= 4; round++) {
             rounds[round] = {
-                "정답자": `플레이어${((round - 1) % playerCount) + 1}`,
-                "순서1": `플레이어${((round) % playerCount) + 1}`,
-                "순서2": `플레이어${((round + 1) % playerCount) + 1}`,
-                "순서3": `플레이어${((round + 2) % playerCount) + 1}`
+                "정답자": playerArray[(round - 1) % playerCount]?.name || `플레이어${((round - 1) % playerCount) + 1}`,
+                "순서1": playerArray[round % playerCount]?.name || `플레이어${(round % playerCount) + 1}`,
+                "순서2": playerArray[(round + 1) % playerCount]?.name || `플레이어${((round + 1) % playerCount) + 1}`,
+                "순서3": playerArray[(round + 2) % playerCount]?.name || `플레이어${((round + 2) % playerCount) + 1}`
             };
         }
         
@@ -161,20 +184,33 @@ const PlayerSection: React.FC<PlayerSectionProps> = ({
         }
     };
 
-    // 포지션 이름으로부터 해당 플레이어의 인덱스 찾기
+    // 포지션 이름으로부터 해당 플레이어의 인덱스 찾기 (수정)
     const getPlayerIndexFromPosition = (position: keyof PositionMap): number => {
         const playerName = currentPositions[position];
         if (!playerName) return 0;
         
-        // "플레이어1"에서 숫자 부분만 추출하여 0-기반 인덱스로 변환
-        const playerNumber = parseInt(playerName.replace('플레이어', ''), 10);
-        return playerNumber - 1; // 1-기반 번호를 0-기반 인덱스로 변환
+        // 이름으로 playerArray에서 인덱스 찾기
+        const index = playerArray.findIndex(p => p.name === playerName);
+        if (index !== -1) {
+            return index;
+        }
+        
+        // 찾지 못한 경우 0 반환
+        return 0;
     };
     
-    // 포지션에 해당하는 플레이어 정보 가져오기
+    // 포지션에 해당하는 플레이어 정보 가져오기 (수정)
     const getPlayerByPosition = (position: keyof PositionMap): Player => {
-        const index = getPlayerIndexFromPosition(position);
-        return playerArray[index] || defaultPlayers[index];
+        const playerName = currentPositions[position];
+        
+        // 이름으로 playerArray에서 찾기
+        const player = playerArray.find(p => p.name === playerName);
+        if (player) {
+            return player;
+        }
+        
+        // 찾지 못한 경우 첫 번째 기본 플레이어 반환
+        return defaultPlayers[0];
     };
     
     // 플레이어 이름 표시 (현재 사용자인 경우 "(나)" 추가)
@@ -190,16 +226,101 @@ const PlayerSection: React.FC<PlayerSectionProps> = ({
         return player.name;
     };
 
-    // 플레이어 접속 상태 가져오기
+    // 추가: 현재 플레이어가 맡고 있는 역할 찾기
+    const getCurrentPlayerRole = (): PlayerRole | null => {
+        if (!paredUser) return null;
+        
+        // 현재 포지션 배치에서 현재 플레이어 찾기
+        for (const [role, playerName] of Object.entries(currentPositions)) {
+            const index = getPlayerIndexFromPosition(role as keyof PositionMap);
+            const player = playerArray[index];
+            
+            // paredUser와 일치하는 플레이어 찾기
+            if ((currentUserId && player?.id?.toString() === currentUserId) || 
+                (paredUser.name && player?.name === paredUser.name)) {
+                return role as PlayerRole;
+            }
+        }
+        return null;
+    };
+
+
+    // 추가: 역할에 따른 권한 계산
+    const calculatePlayerPermissions = (role: PlayerRole | null): PlayerPermissions => {
+        if (!role) return { canDraw: false, canGuess: false, canSeeWord: false, canAnswer: false };
+        
+        // 기본 권한 설정
+        const permissions = {
+            canDraw: false,
+            canGuess: false,
+            canSeeWord: false,
+            canAnswer: false  // 추가된 속성
+        };
+        
+        // 현재 턴에 그림을 그릴 수 있는 사람 설정
+        if ((activeDrawerIndex === 0 && role === "순서1") || 
+            (activeDrawerIndex === 1 && role === "순서2") || 
+            (activeDrawerIndex === 2 && role === "순서3")) {
+            permissions.canDraw = true;
+        }
+        
+        // 제시어를 볼 수 있는 사람 설정
+        if (role === "순서1" || 
+            (activeDrawerIndex >= 1 && role === "순서2") || 
+            (activeDrawerIndex >= 2 && role === "순서3")) {
+            permissions.canSeeWord = true;
+        }
+        
+    // 정답을 맞출 수 있는 사람 설정 (canGuess와 canAnswer 모두 설정)
+    if (role === "정답자") {
+        // 정답자는 항상 정답 맞추기 가능
+        permissions.canGuess = true;
+        permissions.canAnswer = true;
+    } else if (role === "순서2" && activeDrawerIndex === 0) {
+        // 첫번째 턴에서 두번째 순서 사람은 정답 맞추기 가능
+        permissions.canGuess = true;
+        permissions.canAnswer = true;
+    } else if (role === "순서3" && (activeDrawerIndex === 0 || activeDrawerIndex === 1)) {
+        // 첫번째, 두번째 턴에서 세번째 순서 사람은 정답 맞추기 가능
+        permissions.canGuess = true;
+        permissions.canAnswer = true;
+    }
+        
+        return permissions;
+    };
+    // 추가: 라운드/역할 변경시 권한 업데이트 및 부모 컴포넌트에 알림
+    // 역할 및 권한 변경시 부모 컴포넌트에 전달
+    useEffect(() => {
+        const currentRole = getCurrentPlayerRole();
+        const permissions = calculatePlayerPermissions(currentRole);
+        
+        if (onPlayerRoleChange) {
+            onPlayerRoleChange({
+                role: currentRole,
+                isCurrentPlayer: !!currentRole,
+                currentPositions,
+                playerPermissions: permissions
+            });
+        }
+        
+        // 디버깅용 로그
+        console.log('현재 플레이어 역할:', currentRole);
+        console.log('현재 포지션 배치:', currentPositions);
+        console.log('현재 플레이어 권한:', permissions);
+    }, [currentRound, activeDrawerIndex, paredUser]);
+
+    // 플레이어 접속 상태 가져오기 (수정)
     const getPlayerConnectionStatus = (playerName: string): boolean => {
-        // 플레이어 접속 상태가 명시적으로 false로 설정되지 않은 한 true로 간주
+        // 플레이어 ID로 접속 상태 찾기 시도
+        const player = playerArray.find(p => p.name === playerName);
+        if (player) {
+            return playerConnections[player.id] ?? true;
+        }
+        
+        // 이름으로 직접 접속 상태 찾기
         return playerConnections[playerName] ?? true;
     };
 
-    // 접속 상태 텍스트 표시
-    const getConnectionStatusText = (playerName: string): string => {
-        return getPlayerConnectionStatus(playerName) ? '(접속중)' : '(접속하지 않음)';
-    };
 
     // 말풍선 컴포넌트
     const SpeechBubble = ({ message }: { message: string }) => {
@@ -290,20 +411,13 @@ const PlayerSection: React.FC<PlayerSectionProps> = ({
                     <div className="text-sm text-gray-600">
                         Lv.{player?.level || 1}
                     </div>
-                    <div className={`text-xs font-medium ${getPlayerConnectionStatus(currentPositions[position]) ? 'text-green-600' : 'text-red-600'}`}>
-                        {getConnectionStatusText(currentPositions[position])}
-                    </div>
-                    <div className="flex justify-center w-full mt-1 mb-2">
-                        <button className="text-lg cursor-pointer bg-slate-100 mr-1">👍</button>
-                        <button className="text-lg cursor-pointer bg-slate-100 ml-1">👎</button>
-                    </div>
                 </div>
             </div>
         );
     };
 
     return (
-        <div className="h-[580px] w-[250px] flex flex-col overflow-hidden">
+        <div className="h-[580px] w-[250px] flex flex-col overflow-hidden mt-2">
             {/* 디버그 정보 표시 */}
             <div className="hidden">
                 <p>현재 플레이어 ID: {currentUserId}</p>
