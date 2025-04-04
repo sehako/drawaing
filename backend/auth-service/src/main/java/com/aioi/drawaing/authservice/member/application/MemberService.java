@@ -27,6 +27,8 @@ import com.aioi.drawaing.authservice.member.presentation.request.MemberReqDto.Si
 import com.aioi.drawaing.authservice.member.presentation.response.MemberResponse;
 import com.aioi.drawaing.authservice.oauth.domain.entity.ProviderType;
 import com.aioi.drawaing.authservice.oauth.domain.entity.RoleType;
+import com.aioi.drawaing.authservice.ranking.domain.DrawingGameRecord;
+import com.aioi.drawaing.authservice.ranking.infrastructure.repository.DrawingGameRecordRepository;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -47,6 +49,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class MemberService {
     private final MemberRepository memberRepository;
+    private final DrawingGameRecordRepository drawingGameRecordRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final RedisTemplate<String, String> redisTemplate;
@@ -110,8 +113,9 @@ public class MemberService {
                 .characterImage(
                         "https://i.pinimg.com/736x/8d/88/5f/8d885f3de74052403323f56445d83dab.jpg") // 임시로 넣어둠, 고칠 예정
                 .build();
-
-        return ApiResponseEntity.from(SuccessCode.SUCCESS_MEMBER_REGISTER, processLogin(member, response));
+        memberRepository.save(member);
+        drawingGameRecordRepository.save(DrawingGameRecord.from(member));
+        return ApiResponseEntity.from(SuccessCode.SUCCESS_MEMBER_REGISTER, MemberResponse.of(member));
     }
 
     @Transactional
@@ -191,6 +195,7 @@ public class MemberService {
                 .build();
         log.info("게스트 회원가입 member: {}", member);
         memberRepository.save(member);
+        drawingGameRecordRepository.save(DrawingGameRecord.from(member));
         return member;
     }
 
@@ -260,7 +265,6 @@ public class MemberService {
                 break;
             }
         }
-
         return new LevelInfo(newLevel, totalExp);
     }
 }

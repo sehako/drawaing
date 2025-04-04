@@ -26,7 +26,7 @@ public class DrawingGameRecord {
     @Column(name = "drawing_game_record_id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id", unique = true, nullable = false)
     private Member member;
@@ -76,6 +76,19 @@ public class DrawingGameRecord {
             this.maximumScore = this.rankScore;
             this.achievedAt = LocalDateTime.now();
         }
+    }
+
+    public static DrawingGameRecord from(Member member) {
+        return DrawingGameRecord.builder()
+                .member(member)
+                .playCount(0)
+                .achievedAt(LocalDateTime.now())
+                .win(0)
+                .draw(0)
+                .lose(0)
+                .rankScore(0)
+                .lastPlayedAt(LocalDateTime.now())
+                .build();
     }
 
 }
