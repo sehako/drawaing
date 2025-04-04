@@ -16,6 +16,7 @@ import com.aioi.drawaing.drawinggameservice.drawing.presentation.dto.AddSessionP
 import com.aioi.drawaing.drawinggameservice.drawing.presentation.dto.DrawInfo;
 import com.aioi.drawaing.drawinggameservice.drawing.presentation.dto.WinParticipantInfo;
 import com.aioi.drawaing.drawinggameservice.room.application.dto.AddRoomParticipantInfo;
+import com.aioi.drawaing.drawinggameservice.room.domain.Room;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
