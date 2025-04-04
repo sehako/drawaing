@@ -12,8 +12,9 @@ import useGameTimer from '../hooks/useGameTimer'; // 타이머 훅 추가
 import gameTimerService from '../api/gameTimerService';
 import chatService from '../api/chatservice';
 import correctAnswerService from '../api/correctAnswerService';
+import background from '../assets/Game/background.jpg'
 import { DrawPoint } from '../api/drawingService';
-
+import { PlayerPermissions, PlayerRole, PositionMap } from '../components/Game/PlayerSection'; // 경로는 실제 PlayerSection 컴포넌트 위치에 맞게 조정
 interface Player {
   id: number;
   name: string;
@@ -186,10 +187,19 @@ const Game: React.FC = () => {
 
   const [playerMessages, setPlayerMessages] = useState<{[playerId: number]: string}>({});
 
+
+  const [currentPlayerRole, setCurrentPlayerRole] = useState<PlayerRole | null>(null);
+
   // const [lastPoint, setLastPoint] = useState<{ x: number; y: number } | null>(null);
   
   // const [playerMessages, setPlayerMessages] = useState<{[playerId: string]: string}>({});
   const [storedSessionId, setStoredSessionId] = useState<string | null>(null);
+  const [playerPermissions, setPlayerPermissions] = useState<PlayerPermissions>({
+    canDraw: false,
+    canGuess: false,
+    canSeeWord: false,
+    canAnswer: false
+  });
   
   const [eggCount, setEggCount] = useState(10);
   const [aiAnswer, setAiAnswer] = useState<string>('');
@@ -213,7 +223,21 @@ const Game: React.FC = () => {
       default: return 0;
     }
   };
-  
+
+  const handlePlayerRoleChange = (roleInfo: {
+    role: PlayerRole | null;
+    isCurrentPlayer: boolean;
+    currentPositions: PositionMap;
+    playerPermissions: PlayerPermissions;
+  }) => {
+    setCurrentPlayerRole(roleInfo.role);
+    setPlayerPermissions(roleInfo.playerPermissions);
+    
+    // 디버깅용 로그
+    console.log('Game.tsx - 받은 플레이어 역할:', roleInfo.role);
+    console.log('Game.tsx - 받은 플레이어 권한:', roleInfo.playerPermissions);
+  };
+
   const [predictions, setPredictions] = useState<{ class: string; probability: number }[]>([]);
   
   // 웹소켓 훅 사용 - roomId가 null일 때도 빈 문자열로 처리하도록 수정
@@ -221,6 +245,22 @@ const Game: React.FC = () => {
     roomId: roomId ?? "", // null이면 빈 문자열로 변환
     currentPlayer
   });
+
+  const handleStartDrawing = () => {
+    if (playerPermissions.canDraw) {
+      setIsDrawing(true);
+    } else {
+      // 그림 그리기 권한 없음 알림
+      alert('현재 그림을 그릴 수 없습니다.');
+    }
+  };
+  const renderQuizWord = () => {
+    if (playerPermissions.canSeeWord) {
+      return <div>{quizWord}</div>;
+    } else {
+      return <div>???</div>; // 제시어 숨기기
+    }
+  };
 
   useEffect(() => {
     const savedUser = localStorage.getItem('currentUser');
@@ -570,6 +610,11 @@ const handleGuessSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
 
   if (isGameOver) return;
+  
+  if (!playerPermissions.canGuess || !playerPermissions.canAnswer) {
+    alert('현재 정답을 맞출 수 없습니다.');
+    return;
+  }
 
   // 제출 횟수가 최대치에 도달했으면 더 이상 제출 불가
   if (guessSubmitCount >= MAX_GUESS_SUBMIT_COUNT) {
@@ -651,7 +696,7 @@ const handleGuessSubmit = async (e: React.FormEvent) => {
           drawingPlayerIndex++;
         }
       }
-      
+    
       // 현재 그림을 그리는 사람의 ID 구하기
       const drawingMemberId = realIndex + 1; // 인덱스는 0부터 시작하므로 +1
       
@@ -893,7 +938,7 @@ useEffect(() => {
 
 
   return (
-    <div className="flex justify-center items-center w-full min-h-screen bg-cover bg-[url('/backgrounds/wooden-bg.jpg')] px-[150px] py-4 box-border flex-col">
+  <div className="flex justify-center items-center w-full min-h-screen bg-cover bg-[background] px-[150px] py-4 box-border flex-col">
       {isGameOver && (
         <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
           <div className="bg-yellow-100 rounded-xl p-8 text-center border-4 border-yellow-500 shadow-lg max-w-2xl w-full">
@@ -933,45 +978,43 @@ useEffect(() => {
       
       {/* 게임 정보 헤더 */}
       <div className="w-full max-w-7xl h-[100px] mb-4">
-        <div className="flex justify-center items-center p-2.5 rounded-t-lg h-full">
-          <div className="flex items-center w-full">
-            <div className="flex-1 text-left pl-10">
-              <div className="text-6xl font-bold text-gray-800 whitespace-nowrap">ROUND {currentRound}</div>
-            </div>
-            <div className="flex-1 flex justify-center items-center">
-              <div className="relative flex items-center justify-center w-[200px] h-full">
-                <img 
-                  src={word} 
-                  alt="Word background" 
-                  className="absolute w-full h-auto object-cover mb-5"
-                  />
-                <div className="relative z-10 text-white text-3xl font-bold text-center mt-6">
-                  {quizWord}
-                </div>
-              </div>
-            </div>
-            {/* <div><p>{</p></div> */}
-            <div>
-              사람 {humanRoundWinCount} : {aiRoundWinCount} AI
-            </div>
-            <div className="flex-1 text-right pr-10">
-              <div className="text-lg text-gray-700 text-5xl">
-                {/* 남은시간: {isTimerLoading ? '로딩 중...' : `${timeLeft}초`}
-                 */}
-                     남은시간: {timeLeft}초
-
-              </div>
-            </div>
-            <div className="bg-yellow-100 px-6 py-1 rounded-full border-2 border-yellow-400 text-xl font-bold shadow-md">
-              남은 시간: {formatGameTime(gameTimeLeft)}
+      <div className="flex justify-center items-center p-2.5 rounded-t-lg h-[150px] bg-yellow-200 mt-[-20px]">
+      <div className="flex items-center w-full justify-between">
+        <div className="text-5xl font-bold text-gray-800 whitespace-nowrap pl-10 ml-[-20px]">
+          ROUND {currentRound}
+        </div>
+        
+        <div className="flex items-center space-x-4 mr-10">
+          <div className="text-right text-7xl">
+            사람 {humanRoundWinCount}
+          </div>
+          
+          <div className="relative flex items-center justify-center w-[200px] h-full mt-[-30px]">
+            <img 
+              src={word} 
+              alt="Word background" 
+              className="absolute w-full h-auto object-cover mb-5"
+            />
+            <div className="relative z-10 text-white text-3xl font-bold text-center mt-6">
+              {playerPermissions.canSeeWord ? quizWord : '???'}
             </div>
           </div>
+          
+          <div className="text-left text-7xl">
+            {aiRoundWinCount} AI
+          </div>
         </div>
+        
+        <div className="bg-yellow-100 px-6 py-1 rounded-full border-2 border-yellow-400 text-xl font-bold shadow-md mr-5">
+          남은 시간: {formatGameTime(gameTimeLeft)}
+        </div>
+      </div>
+    </div>
       </div>
 
       <div className="flex w-full max-w-7xl">
         {/* 플레이어 컴포넌트 - 좌측 */}
-        <div className="w-1/5 mr-9">
+        <div className="w-1/5 mr-4 mt-[-4px]">
         <PlayerSection
           currentRound={currentRound}
           activeDrawerIndex={activeDrawerIndex}
@@ -982,6 +1025,7 @@ useEffect(() => {
           playerMessages={playerMessages}
           paredUser={paredUser} // paredUser 전달
           storedPlayersList={storedPlayersList}
+          onPlayerRoleChange={handlePlayerRoleChange}
         />
         </div>
 
@@ -999,7 +1043,6 @@ useEffect(() => {
           showCorrectAnswer={showCorrectAnswer}
           quizWord={quizWord}
           currentRound={currentRound}
-          timeLeft={timeLeft}
           hasCompleted={hasCompleted}
           setHasCompleted={setHasCompleted} // 이 함수를 통해 그림 지운 후 다시 그리기 가능
           handleColorChange={handleColorChange}
@@ -1016,7 +1059,10 @@ useEffect(() => {
           setPredictions={setPredictions}
           roomId={roomId ?? ""}  // null이면 빈 문자열로 변환
           sessionId={sessionId ?? ""}  // null이면 빈 문자열로 변환
-          // timeleft={timeLeft}
+          canDraw={playerPermissions.canDraw}
+          timeLeft={timeLeft}
+          gameTimeLeft={gameTimeLeft}
+
         />
         </div>
 
@@ -1043,6 +1089,7 @@ useEffect(() => {
           setIsWrongGuess={setIsWrongGuess}
           guessSubmitCount={guessSubmitCount}
           maxGuessSubmitCount={MAX_GUESS_SUBMIT_COUNT}
+          canAnswer={playerPermissions.canAnswer}
         />
         </div>
       </div>
