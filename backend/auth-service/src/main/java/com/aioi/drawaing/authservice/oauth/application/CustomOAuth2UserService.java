@@ -8,6 +8,9 @@ import com.aioi.drawaing.authservice.oauth.domain.entity.UserPrincipal;
 import com.aioi.drawaing.authservice.oauth.domain.info.OAuth2UserInfo;
 import com.aioi.drawaing.authservice.oauth.domain.info.OAuth2UserInfoFactory;
 import com.aioi.drawaing.authservice.oauth.exception.OAuthProviderMissMatchException;
+import com.aioi.drawaing.authservice.ranking.domain.DrawingGameRecord;
+import com.aioi.drawaing.authservice.ranking.infrastructure.repository.DrawingGameRecordRepository;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.InternalAuthenticationServiceException;
@@ -27,6 +30,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     private static final String ALREADY_SIGNED_UP_LOCAL = "already_signed_up_local";
 
     private final MemberRepository memberRepository;
+    private final DrawingGameRecordRepository drawingGameRecordRepository;
 
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
@@ -62,13 +66,14 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             updateUser(savedUser, userInfo);
         } else {
             savedUser = createUser(userInfo, providerType);
+            drawingGameRecordRepository.save(CreateDrawingGameRecord(savedUser));
         }
 
         return UserPrincipal.create(savedUser, user.getAttributes());
     }
 
     private Member createUser(OAuth2UserInfo userInfo, ProviderType providerType) {
-        Member user = Member.builder()
+        Member member = Member.builder()
                 .email(userInfo.getEmail())
                 .nickname(userInfo.getName())
                 .providerType(providerType)
@@ -79,14 +84,26 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 .characterImage(
                         "https://i.pinimg.com/736x/8d/88/5f/8d885f3de74052403323f56445d83dab.jpg") // 임시로 넣어둠, 고칠 예정
                 .build();
-
-        return memberRepository.saveAndFlush(user);
+        return memberRepository.saveAndFlush(member);
     }
 
-    private void updateUser(Member user, OAuth2UserInfo userInfo) {
-        if (userInfo.getName() != null && !user.getUsername().equals(userInfo.getName())) {
-            user.setNickname(userInfo.getName());
+    private void updateUser(Member member, OAuth2UserInfo userInfo) {
+        if (userInfo.getName() != null && !member.getUsername().equals(userInfo.getName())) {
+            member.setNickname(userInfo.getName());
         }
-        user.setCharacterImage(userInfo.getImageUrl());
+        member.setCharacterImage(userInfo.getImageUrl());
+    }
+
+    private DrawingGameRecord CreateDrawingGameRecord(Member member) {
+        return DrawingGameRecord.builder()
+                .member(member)
+                .playCount(0)
+                .achievedAt(LocalDateTime.now())
+                .win(0)
+                .draw(0)
+                .lose(0)
+                .rankScore(0)
+                .lastPlayedAt(LocalDateTime.now())
+                .build();
     }
 }

@@ -27,9 +27,12 @@ import com.aioi.drawaing.authservice.member.presentation.request.MemberReqDto.Si
 import com.aioi.drawaing.authservice.member.presentation.response.MemberResponse;
 import com.aioi.drawaing.authservice.oauth.domain.entity.ProviderType;
 import com.aioi.drawaing.authservice.oauth.domain.entity.RoleType;
+import com.aioi.drawaing.authservice.ranking.domain.DrawingGameRecord;
+import com.aioi.drawaing.authservice.ranking.infrastructure.repository.DrawingGameRecordRepository;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -47,6 +50,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class MemberService {
     private final MemberRepository memberRepository;
+    private final DrawingGameRecordRepository drawingGameRecordRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final RedisTemplate<String, String> redisTemplate;
@@ -110,7 +114,8 @@ public class MemberService {
                 .characterImage(
                         "https://i.pinimg.com/736x/8d/88/5f/8d885f3de74052403323f56445d83dab.jpg") // 임시로 넣어둠, 고칠 예정
                 .build();
-
+        memberRepository.save(member);
+        drawingGameRecordRepository.save(CreateDrawingGameRecord(member));
         return ApiResponseEntity.from(SuccessCode.SUCCESS_MEMBER_REGISTER, processLogin(member, response));
     }
 
@@ -191,6 +196,7 @@ public class MemberService {
                 .build();
         log.info("게스트 회원가입 member: {}", member);
         memberRepository.save(member);
+        drawingGameRecordRepository.save(CreateDrawingGameRecord(member));
         return member;
     }
 
@@ -262,5 +268,18 @@ public class MemberService {
         }
 
         return new LevelInfo(newLevel, totalExp);
+    }
+
+    private DrawingGameRecord CreateDrawingGameRecord(Member member) {
+        return DrawingGameRecord.builder()
+                .member(member)
+                .playCount(0)
+                .achievedAt(LocalDateTime.now())
+                .win(0)
+                .draw(0)
+                .lose(0)
+                .rankScore(0)
+                .lastPlayedAt(LocalDateTime.now())
+                .build();
     }
 }
