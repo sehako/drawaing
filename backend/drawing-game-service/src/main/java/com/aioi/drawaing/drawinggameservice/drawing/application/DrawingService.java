@@ -176,6 +176,10 @@ public class DrawingService {
         drawMessagePublisher.publishRoundResult("/topic/session.round-result/"+roomId+"/"+sessionId, new RoundResult(true, session.getRoundCount()));
     }
 
+    public void saveSession(Session session) {
+        sessionRepository.save(session);
+    }
+
     public void lose(String roomId, String sessionId){
         Session session = findSession(sessionId);
         session.incrementRoundCount();
