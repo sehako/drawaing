@@ -72,23 +72,26 @@ const ScoreExplanationModal: React.FC<{ onClose: () => void }> = ({ onClose }) =
         
         <div className="space-y-4 text-amber-900">
           <div>
-            <h3 className="text-xl font-bold mb-1">라운드 승리</h3>
-            <p>각 라운드에서 이긴 횟수를 나타냅니다. 라운드에서 승리할 때마다 승리 카운트가 올라갑니다.</p>
-          </div>
-          
-          <div>
-            <h3 className="text-xl font-bold mb-1">획득 계란</h3>
-            <p>게임을 통해 획득한 계란의 총 개수입니다. 계란은 특별한 게임 보상으로 사용됩니다.</p>
-          </div>
-          
-          <div>
-            <h3 className="text-xl font-bold mb-1">랭킹 점수</h3>
-            <p>랭킹 시스템에 반영되는 점수입니다. 계산 공식:</p>
+            <h3 className="text-xl font-bold mb-1">점수</h3>
+            <p>점수 = 사람 이긴 횟수×2 - 진 횟수×2 + 그림 추가 점수 + 맞췄을 때 추가 점수</p>
             <ul className="list-disc pl-5 mt-2">
-              <li>기본 점수: 참여 보너스 10점</li>
-              <li>승리 보너스: 라운드 승리당 20점</li>
-              <li>계란 보너스: 획득 계란당 5점</li>
+              <li>그림 추가 점수: <br />(참여자 수-그림 번째)×2 → 현재 4명 기준 6, 4, 2점</li>
+              <li>맞췄을 때 추가 점수: <br />(라운드 총 시간-라운드 지난 시간)÷10 → 0~6점</li>
+              <ul className="list-disc pl-5 mt-1">
+                <li>라운드 총 시간: <br />그림 그리는 시간 × (참여자 수-1)</li>
+                <li>라운드 지난 시간: <br />(그림 그리는 시간-남은 시간) + 그림 번째×그림 그리는 시간</li>
+              </ul>
             </ul>
+          </div>
+          
+          <div>
+            <h3 className="text-xl font-bold mb-1">계란</h3>
+            <p>기본 계란 갯수(10) + 이긴 라운드 - 진 라운드</p>
+          </div>
+          
+          <div>
+            <h3 className="text-xl font-bold mb-1">경험치</h3>
+            <p>최소 경험치(10) + 이긴 라운드 수×1 + 이겼을 때 보너스 경험치(10)</p>
           </div>
         </div>
         
