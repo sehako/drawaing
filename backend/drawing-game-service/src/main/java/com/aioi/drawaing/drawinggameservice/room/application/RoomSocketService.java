@@ -66,10 +66,6 @@ public class RoomSocketService {
             throw new RuntimeException("모든 참여자가 준비되지 않았습니다.");
         }
 
-        Session session = drawingService.createSession(roomId);
-        room.updateSessionId(session.getId());
-        room.deleteParticipants();
-        repository.save(room);
 
         //게임 대기방에서 실제 게임으로 넘어가는 중간 대기 시간을 처리하는 함수
         transitionToGame(roomId, room);
@@ -109,8 +105,15 @@ public class RoomSocketService {
             throw new RuntimeException(e);
         }
 
+        Session session = drawingService.createSession(roomId);
+
         // 게임 시작 로직
         drawingService.startSession(roomId, room.getSessionId(), room.getAddRoomParticipantInfos());
+
+
+        room.updateSessionId(session.getId());
+        room.deleteParticipants();
+        repository.save(room);
     }
 
     private void validateJoinRoom(Room room, Long memberId) {
