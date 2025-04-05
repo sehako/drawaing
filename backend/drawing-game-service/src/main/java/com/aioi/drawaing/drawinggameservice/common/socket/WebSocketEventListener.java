@@ -26,14 +26,14 @@ public class WebSocketEventListener {
 
         String authToken = headerAccessor.getFirstNativeHeader("Authorization");
         log.info("🔑 Received STOMP Authorization header: {}", authToken);
-        try{
-            String parse = BearerParser.parse(authToken);
-            String userId = jwtProvider.getUserId(parse);
-            log.info("userId!!!!!!!!!!!{}", userId);
-        }catch (Exception e){
-            log.error("JWT Parsing Error");
-            throw new RuntimeException("JWT Parsing Error");
-        }
+//        try{
+//            String parse = BearerParser.parse(authToken);
+//            String userId = jwtProvider.getUserId(parse);
+//            log.info("userId!!!!!!!!!!!{}", userId);
+//        }catch (Exception e){
+//            log.error("JWT Parsing Error");
+//            throw new RuntimeException("JWT Parsing Error");
+//        }
 
         String sessionId = headerAccessor.getSessionId();
         log.info("STOMP Connected at: {}, sessionId: {}", LocalDateTime.now(), sessionId);
