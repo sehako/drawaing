@@ -8,6 +8,7 @@ interface PlayerResult {
   winCnt: number;
   point: number;
   score: number;
+  exp?: number;
 }
 
 interface GameResults {
@@ -24,8 +25,8 @@ interface PlayerResultProps {
 const ScoreExplanationModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50">
-      <div className="absolute inset-0 bg-black bg-opacity-50" onClick={onClose}></div>
-      <div className="relative z-50 bg-amber-100 p-8 rounded-xl shadow-2xl border-4 border-amber-500 max-w-lg w-full mx-4">
+      <div className="absolute inset-0 bg-black bg-opacity-70" onClick={onClose}></div>
+      <div className="relative z-50 bg-amber-100 p-8 rounded-xl shadow-2xl border-4 border-amber-600 max-w-lg w-full mx-4">
         <h2 className="text-3xl font-bold mb-4 text-amber-800">점수 계산 방식</h2>
         
         <div className="space-y-4 text-amber-900">
@@ -52,7 +53,7 @@ const ScoreExplanationModal: React.FC<{ onClose: () => void }> = ({ onClose }) =
         
         <button 
           onClick={onClose}
-          className="mt-6 w-full py-3 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg transition duration-200"
+          className="mt-6 w-full py-3 bg-red-500 rounded-full border-4 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] hover:shadow-none hover:translate-y-1 hover:translate-x-1 text-white font-bold transition-all duration-200"
         >
           닫기
         </button>
@@ -61,64 +62,69 @@ const ScoreExplanationModal: React.FC<{ onClose: () => void }> = ({ onClose }) =
   );
 };
 
-// Player Result Card Component
+// Player Result Card Component - PlayerSlot 스타일 적용
 const PlayerResultCard: React.FC<PlayerResultProps> = ({ player, result, rank }) => {
-  // Custom colors for different ranks
-  const getRankColor = (rank: number) => {
-    switch(rank) {
-      case 1: return 'text-yellow-500'; // Gold
-      case 2: return 'text-gray-400';   // Silver
-      case 3: return 'text-amber-700';  // Bronze
-      default: return 'text-gray-700';  // Default
-    }
-  };
-
+  // 순위에 따른 배경 색상 설정
   const getRankBgColor = (rank: number) => {
     switch(rank) {
-      case 1: return 'bg-yellow-100';
-      case 2: return 'bg-gray-100';
-      case 3: return 'bg-amber-100';
-      default: return 'bg-white';
+      case 1: return 'bg-yellow-400';
+      case 2: return 'bg-gray-300';
+      case 3: return 'bg-amber-500';
+      default: return 'bg-amber-400';
     }
   };
 
   return (
-    <div className={`relative rounded-xl shadow-lg p-4 border-2 ${rank === 1 ? 'border-yellow-400' : (rank === 2 ? 'border-gray-400' : (rank === 3 ? 'border-amber-600' : 'border-gray-200'))} ${getRankBgColor(rank)}`}>
-      {/* Rank Badge */}
-      <div className={`absolute -top-3 -right-3 w-10 h-10 rounded-full flex items-center justify-center font-bold text-white ${rank === 1 ? 'bg-yellow-500' : (rank === 2 ? 'bg-gray-400' : (rank === 3 ? 'bg-amber-700' : 'bg-gray-500'))}`}>
-        {rank}
-      </div>
-      
-      {/* Player Info */}
-      <div className="flex items-center mb-3">
-        <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-amber-500">
-          <img 
-            src={player?.characterUrl || "/images/default-avatar.png"} 
-            alt="캐릭터" 
-            className="w-full h-full object-cover"
-          />
+    <div 
+      className={`flex flex-col items-center ${getRankBgColor(rank)} rounded-2xl sm:rounded-3xl border-4 sm:border-8 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] sm:shadow-[8px_8px_0_0_rgba(0,0,0,1)] p-2 sm:p-4 relative h-full`}
+    >
+      {/* 플레이어 정보 */}
+      <div className="w-full h-full flex flex-col items-center justify-between">
+        {/* 순위 메달 표시 */}
+        <div className="absolute -top-4 sm:-top-6 left-1/2 -translate-x-1/2 w-8 h-8 sm:w-12 sm:h-12 text-red-500 filter drop-shadow-[2px_2px_0_rgba(0,0,0,1)] z-10">
+          <div className="flex items-center justify-center w-10 h-10 rounded-full bg-white border-4 border-black">
+            <span className="text-2xl font-bold">{rank}</span>
+          </div>
         </div>
-        <div className="ml-3">
-          <h3 className="text-lg font-bold">{player?.nickname || "플레이어"}</h3>
-          <p className={`font-bold ${getRankColor(rank)}`}>
-            총점: {result.score}점
-          </p>
+        
+        {/* 캐릭터 이미지 컨테이너 */}
+        <div className="relative w-full flex-grow flex items-center justify-center mb-1 sm:mb-2">
+          {/* 캐릭터 이미지 */}
+          <div className="relative w-full aspect-square">
+            <img 
+              src={player.characterUrl || "/images/default-avatar.png"} 
+              alt={`${player.nickname} 캐릭터`}
+              className="w-full h-full object-cover rounded-xl sm:rounded-2xl border-2 sm:border-4 border-black"
+            />
+            
+            {/* 총점 오버레이 */}
+            <div className="absolute bottom-2 sm:bottom-4 left-0 right-0 flex justify-center">
+              <div className="bg-black bg-opacity-70 text-white text-lg sm:text-xl px-2 py-1 rounded-lg font-bold">{result.score}점</div>
+            </div>
+          </div>
         </div>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-2 text-center">
-        <div className="bg-amber-50 p-2 rounded-lg">
-          <p className="text-xs text-amber-700">라운드 승리</p>
-          <p className="text-xl font-bold text-amber-900">{result.winCnt}회</p>
+        
+        {/* 닉네임 */}
+        <div className="w-full mt-1">
+          <div className="text-black text-lg sm:text-xl font-bold text-center truncate">
+            {player.nickname}
+          </div>
         </div>
-        <div className="bg-amber-50 p-2 rounded-lg">
-          <p className="text-xs text-amber-700">획득 계란</p>
-          <p className="text-xl font-bold text-amber-900">{result.point}개</p>
-        </div>
-        <div className="bg-amber-50 p-2 rounded-lg">
-          <p className="text-xs text-amber-700">랭킹 점수</p>
-          <p className="text-xl font-bold text-amber-900">{result.score}점</p>
+        
+        {/* 결과 통계 */}
+        <div className="w-full mt-2 grid grid-cols-3 gap-1 sm:gap-2">
+          <div className="bg-white rounded-lg border-2 border-black p-1 text-center">
+            <p className="text-xs font-bold text-amber-800">승리</p>
+            <p className="text-lg font-bold text-amber-900">{result.winCnt}회</p>
+          </div>
+          <div className="bg-white rounded-lg border-2 border-black p-1 text-center">
+            <p className="text-xs font-bold text-amber-800">계란</p>
+            <p className="text-lg font-bold text-amber-900">{result.point}개</p>
+          </div>
+          <div className="bg-white rounded-lg border-2 border-black p-1 text-center">
+            <p className="text-xs font-bold text-amber-800">점수</p>
+            <p className="text-lg font-bold text-amber-900">{result.score}점</p>
+          </div>
         </div>
       </div>
     </div>
@@ -239,23 +245,60 @@ const GameResultPage: React.FC = () => {
           alt="닭장 배경"
         />
         {/* Background gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-amber-800/30"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-amber-800/50"></div>
       </div>
       
       {/* Content container */}
       <div className="relative z-10 flex flex-col min-h-screen max-w-7xl mx-auto p-4 sm:p-6">
-        {/* Header */}
-        <div className="bg-amber-100 rounded-xl shadow-lg p-4 mb-6 border-2 border-amber-500 flex justify-between items-center">
-          <h1 className="text-2xl sm:text-3xl font-bold text-amber-800">게임 결과</h1>
-          <button
-            onClick={() => setShowExplanationModal(true)}
-            className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg font-bold transition duration-200"
-          >
-            점수 계산 방식
-          </button>
+        {/* 헤더 (GameRoomHeader 스타일 적용) */}
+        <div className="flex justify-between items-center mb-6 z-20">
+          {/* 방 이름 나무 판자 */}
+          <div className="relative">
+            {/* 나무 판자 배경 */}
+            <div className="relative bg-amber-800 rounded-lg px-4 py-3 transform rotate-1 border-4 border-amber-900 shadow-[5px_5px_0_0_rgba(0,0,0,0.3)]">
+              {/* 나뭇결 효과 */}
+              <div className="absolute inset-0 opacity-10">
+                <div className="w-full h-1 bg-amber-950 rounded-full my-1"></div>
+                <div className="w-full h-1 bg-amber-950 rounded-full my-2"></div>
+                <div className="w-full h-1 bg-amber-950 rounded-full my-3"></div>
+                <div className="w-full h-1 bg-amber-950 rounded-full my-1"></div>
+                <div className="w-full h-1 bg-amber-950 rounded-full my-2"></div>
+              </div>
+              
+              {/* 게임 결과 텍스트 */}
+              <div className="flex flex-col items-start">
+                <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-amber-100 drop-shadow-[2px_2px_0_rgba(0,0,0,0.5)]">
+                  게임 결과
+                </h1>
+              </div>
+              
+              {/* 나무 판자 못 효과 */}
+              <div className="absolute -top-2 -left-1 w-4 h-4 bg-gray-600 rounded-full border-2 border-gray-800"></div>
+              <div className="absolute -bottom-2 -right-1 w-4 h-4 bg-gray-600 rounded-full border-2 border-gray-800"></div>
+            </div>
+          </div>
+          
+          {/* 버튼 그룹 */}
+          <div className="flex space-x-2">
+            {/* 점수 계산 방식 버튼 */}
+            <button 
+              onClick={() => setShowExplanationModal(true)}
+              className="px-1 sm:px-2 md:px-4 py-1 md:py-2 bg-blue-500 rounded-full flex items-center justify-center border-2 sm:border-4 border-black shadow-[2px_2px_0_0_rgba(0,0,0,1)] sm:shadow-[4px_4px_0_0_rgba(0,0,0,1)] hover:shadow-none hover:translate-y-1 hover:translate-x-1 text-white text-xs sm:text-sm md:text-base font-bold transition-all duration-200"
+            >
+              점수 계산 방식
+            </button>
+            
+            {/* 대기실로 돌아가기 버튼 */}
+            <button 
+              onClick={handleReturnToWaitingRoom}
+              className="px-1 sm:px-2 md:px-4 py-1 md:py-2 bg-red-500 rounded-full flex items-center justify-center border-2 sm:border-4 border-black shadow-[2px_2px_0_0_rgba(0,0,0,1)] sm:shadow-[4px_4px_0_0_rgba(0,0,0,1)] hover:shadow-none hover:translate-y-1 hover:translate-x-1 text-white text-xs sm:text-sm md:text-base font-bold transition-all duration-200"
+            >
+              대기실로 돌아가기
+            </button>
+          </div>
         </div>
         
-        {/* Results grid */}
+        {/* Results grid - PlayerSlot과 동일한 스타일 적용 */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6 flex-grow">
           {rankSortedPlayers.map((playerData) => (
             <PlayerResultCard 
@@ -265,16 +308,6 @@ const GameResultPage: React.FC = () => {
               rank={playerData.rank}
             />
           ))}
-        </div>
-        
-        {/* Bottom button area */}
-        <div className="flex justify-end mb-4">
-          <button
-            onClick={handleReturnToWaitingRoom}
-            className="bg-amber-600 hover:bg-amber-700 text-white px-6 py-3 rounded-lg font-bold text-lg transition duration-200 shadow-lg"
-          >
-            대기실로 돌아가기
-          </button>
         </div>
       </div>
     </div>
