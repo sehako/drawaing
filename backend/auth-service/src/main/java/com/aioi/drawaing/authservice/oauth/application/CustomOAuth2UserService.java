@@ -12,6 +12,7 @@ import com.aioi.drawaing.authservice.ranking.domain.DrawingGameRecord;
 import com.aioi.drawaing.authservice.ranking.infrastructure.repository.DrawingGameRecordRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
@@ -30,6 +31,9 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
     private final MemberRepository memberRepository;
     private final DrawingGameRecordRepository drawingGameRecordRepository;
+
+    @Value("${ImageUrl.defaultCharacter}")
+    private String defaultCharacter;
 
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
@@ -80,8 +84,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 .level(1)
                 .exp(0)
                 .point(0)
-                .characterImage(
-                        "https://i.pinimg.com/736x/8d/88/5f/8d885f3de74052403323f56445d83dab.jpg") // 임시로 넣어둠, 고칠 예정
+                .characterImage(defaultCharacter)
                 .build();
         return memberRepository.saveAndFlush(member);
     }
