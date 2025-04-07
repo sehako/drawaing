@@ -29,7 +29,7 @@ public class RoomService {
         Session session = drawingService.createSession(room.getId());
 
         room.updateSessionId(session.getId());
-        return new RoomInfo(roomRepository.save( room).getId(), room.getCode());
+        return new RoomInfo(roomRepository.save( room).getId(), room.getCode(), room.getTitle());
     }
 
     public RoomId findRoomByCode(String code) {
