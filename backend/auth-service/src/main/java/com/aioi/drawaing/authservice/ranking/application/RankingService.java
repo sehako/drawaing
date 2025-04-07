@@ -9,6 +9,7 @@ import com.aioi.drawaing.authservice.ranking.domain.RankingType;
 import com.aioi.drawaing.authservice.ranking.infrastructure.repository.DrawingGameRecordRepository;
 import com.aioi.drawaing.authservice.ranking.presentation.request.GameResultRequest;
 import com.aioi.drawaing.authservice.ranking.presentation.response.GameRecordResponse;
+import com.aioi.drawaing.authservice.ranking.presentation.response.PersonalRankingResponse;
 import com.aioi.drawaing.authservice.ranking.presentation.response.RankingResponse;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -80,17 +81,17 @@ public class RankingService {
                         .build());
     }
 
-    public Integer getRankingByMemberId(String rankingType, Long memberId) {
+    public PersonalRankingResponse getRankingByMemberId(String rankingType, Long memberId) {
         RankingType type = parseRankingType(rankingType);
-        Integer rank = getRankBytype(type, memberId);
+        PersonalRankingResponse rank = getRankByType(type, memberId);
         log.info("{} Rank By MemberId={} : {}", type, memberId, rank);
         if (rank == null) {
             throw new IllegalArgumentException("rank is null");
         }
-        return drawingGameRecordRepository.findScoreRankByMemberId(memberId);
+        return rank;
     }
 
-    private Integer getRankBytype(RankingType type, Long memberId) {
+    private PersonalRankingResponse getRankByType(RankingType type, Long memberId) {
         switch (type) {
             case SCORE:
                 return drawingGameRecordRepository.findScoreRankByMemberId(memberId);

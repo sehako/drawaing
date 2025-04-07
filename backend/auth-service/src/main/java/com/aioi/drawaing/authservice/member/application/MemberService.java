@@ -248,9 +248,9 @@ public class MemberService {
         String adjective = NicknameCategory.ADJECTIVE.getWord(uuid.getLeastSignificantBits());
         String noun = NicknameCategory.NOUN.getWord(uuid.getMostSignificantBits());
 
-        String randomNumber = String.format("%04d", Math.abs(uuid.hashCode() % 10000));
+        //String randomNumber = String.format("%04d", Math.abs(uuid.hashCode() % 10000)); 랜덤 넘버 삭제
 
-        return adjective + noun + randomNumber;
+        return adjective + noun;
     }
 
     private LevelInfo calculateNewLevel(int currentLevel, int currentExp, int addedExp) {
