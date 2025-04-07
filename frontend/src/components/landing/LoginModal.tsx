@@ -146,7 +146,7 @@ const LoginModal: React.FC<LoginModalProps> = ({
             {/* 카카오 로그인 버튼 */}
             <button 
               type="button"
-              onClick={() => handleSocialLogin('카카오')}
+              onClick={() => handleSocialLogin('kakao')}
               className="w-full p-0 rounded-lg overflow-hidden border-2 border-black shadow-[2px_2px_0_0_rgba(0,0,0,1)] hover:shadow-[3px_3px_0_0_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:-translate-x-0.5 active:shadow-[1px_1px_0_0_rgba(0,0,0,1)] active:translate-x-0 active:translate-y-0 transition-all duration-200"
               disabled={isLoading}
             >
@@ -160,7 +160,7 @@ const LoginModal: React.FC<LoginModalProps> = ({
             {/* 네이버 로그인 버튼 */}
             <button 
               type="button"
-              onClick={() => handleSocialLogin('네이버')}
+              onClick={() => handleSocialLogin('naver')}
               className="w-full p-0 rounded-lg overflow-hidden border-2 border-black shadow-[2px_2px_0_0_rgba(0,0,0,1)] hover:shadow-[3px_3px_0_0_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:-translate-x-0.5 active:shadow-[1px_1px_0_0_rgba(0,0,0,1)] active:translate-x-0 active:translate-y-0 transition-all duration-200"
               disabled={isLoading}
             >
