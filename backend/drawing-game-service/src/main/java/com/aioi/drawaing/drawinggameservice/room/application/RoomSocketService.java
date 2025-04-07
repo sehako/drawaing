@@ -137,4 +137,8 @@ public class RoomSocketService {
         return repository.findById(roomId)
                 .orElseThrow(() -> new RuntimeException("방을 찾을 수 없습니다: " + roomId));
     }
+
+    public void temp(String roomId, String request) {
+        roomMessagePublisher.publishTemp("/topic/temp/"+roomId, request);
+    }
 }
