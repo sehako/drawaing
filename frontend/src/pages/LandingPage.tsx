@@ -276,7 +276,8 @@ const handleJoinRoom = async (inputRoomCode?: string) => {
       // 로컬 스토리지에 방 코드와 ID 모두 저장 (명확히 구분)
       localStorage.setItem('roomCode', codeToJoin);
       localStorage.setItem('roomId', data.result.roomId);
-      
+      localStorage.setItem('roomTitle', data.result.title)
+
       // 대기실 페이지로 이동 - URL에는 roomCode를 사용
       navigate(`/waiting-room/${codeToJoin}`, {
         state: { 
