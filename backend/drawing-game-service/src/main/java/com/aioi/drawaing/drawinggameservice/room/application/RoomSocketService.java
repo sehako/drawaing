@@ -9,6 +9,7 @@ import com.aioi.drawaing.drawinggameservice.room.domain.RoomParticipant;
 import com.aioi.drawaing.drawinggameservice.room.infrastructure.repository.RoomRepository;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Objects;
 
 import com.aioi.drawaing.drawinggameservice.room.presentation.RoomMessagePublisher;
@@ -108,7 +109,7 @@ public class RoomSocketService {
 
 //        log.info("test{}", room.getAddRoomParticipantInfos());
         // 게임 시작 로직
-        scheduleGameStart(roomId, room.getSessionId(), room);
+        scheduleGameStart(roomId, room.getSessionId(), room.getAddRoomParticipantInfos());
 //        drawingService.startSession(roomId, room.getSessionId(), room.getAddRoomParticipantInfos());
 
         room.updateSessionId(session.getId());
@@ -116,10 +117,10 @@ public class RoomSocketService {
         repository.save(room);
     }
 
-    private void scheduleGameStart(String roomId, String sessionId, Room room) {
+    private void scheduleGameStart(String roomId, String sessionId, List<AddRoomParticipantInfo> addParticipantInfos) {
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
         scheduler.schedule(() -> {
-            drawingService.startSession(roomId, sessionId, room.getAddRoomParticipantInfos());
+            drawingService.startSession(roomId, sessionId, addParticipantInfos);
         }, 5, TimeUnit.SECONDS);
     }
 
