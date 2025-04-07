@@ -19,7 +19,7 @@ public record MemberLoginResponse(
     public static MemberLoginResponse of(Member member, String accessToken) {
         return MemberLoginResponse.builder()
                 .memberId(member.getId())
-                .nickname(member.getNickname())
+                .nickname(removeTrailingNumbers(member.getNickname()))
                 .email(member.getEmail())
                 .characterImage(member.getCharacterImage())
                 .providerType(member.getProviderType())
@@ -28,5 +28,10 @@ public record MemberLoginResponse(
                 .point(member.getPoint())
                 .AccessToken(accessToken)
                 .build();
+    }
+
+    private static String removeTrailingNumbers(String input) {
+        // 정규식: 끝부분의 숫자를 제거
+        return input.replaceAll("\\d+$", "");
     }
 }

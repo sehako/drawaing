@@ -1,7 +1,6 @@
 package com.aioi.drawaing.authservice.oauth.application.handler;
 
 
-
 import static com.aioi.drawaing.authservice.common.jwt.JwtTokenProvider.getRefreshTokenExpireTimeCookie;
 import static com.aioi.drawaing.authservice.oauth.infrastructure.repository.OAuth2AuthorizationRequestBasedOnCookieRepository.REDIRECT_URI_PARAM_COOKIE_NAME;
 import static com.aioi.drawaing.authservice.oauth.infrastructure.repository.OAuth2AuthorizationRequestBasedOnCookieRepository.REFRESH_TOKEN;
@@ -9,11 +8,8 @@ import static com.aioi.drawaing.authservice.oauth.infrastructure.repository.OAut
 import com.aioi.drawaing.authservice.common.jwt.JwtTokenProvider;
 import com.aioi.drawaing.authservice.common.jwt.TokenInfo;
 import com.aioi.drawaing.authservice.common.util.CookieUtil;
-import com.aioi.drawaing.authservice.oauth.domain.entity.ProviderType;
 import com.aioi.drawaing.authservice.oauth.domain.entity.RoleType;
 import com.aioi.drawaing.authservice.oauth.domain.entity.UserPrincipal;
-import com.aioi.drawaing.authservice.oauth.domain.info.OAuth2UserInfo;
-import com.aioi.drawaing.authservice.oauth.domain.info.OAuth2UserInfoFactory;
 import com.aioi.drawaing.authservice.oauth.infrastructure.repository.OAuth2AuthorizationRequestBasedOnCookieRepository;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -29,7 +25,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
@@ -75,13 +70,13 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
         String targetUrl = redirectUri.orElse(getDefaultTargetUrl());
         log.info("=========targetUrl: " + targetUrl);
-        OAuth2AuthenticationToken authToken = (OAuth2AuthenticationToken) authentication;
-        ProviderType providerType = ProviderType.valueOf(authToken.getAuthorizedClientRegistrationId().toUpperCase());
+        //OAuth2AuthenticationToken authToken = (OAuth2AuthenticationToken) authentication;
+        //ProviderType providerType = ProviderType.valueOf(authToken.getAuthorizedClientRegistrationId().toUpperCase());
 
         UserPrincipal user = (UserPrincipal) authentication.getPrincipal();
 
         //OidcUser user = ((OidcUser) authentication.getPrincipal());
-        OAuth2UserInfo userInfo = OAuth2UserInfoFactory.getOAuth2UserInfo(providerType, user.getAttributes());
+        //OAuth2UserInfo userInfo = OAuth2UserInfoFactory.getOAuth2UserInfo(providerType, user.getAttributes());
         Collection<? extends GrantedAuthority> authorities = ((OidcUser) authentication.getPrincipal()).getAuthorities();
 
         RoleType roleType =
