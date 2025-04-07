@@ -14,6 +14,11 @@ import java.util.Objects;
 import com.aioi.drawaing.drawinggameservice.room.presentation.RoomMessagePublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
@@ -98,28 +103,24 @@ public class RoomSocketService {
 
     public void transitionToGame(String roomId, Room room) {
         roomMessagePublisher.publishRoomStart("/topic/room.wait/"+roomId, new RoomStartInfo(LocalDateTime.now().plusSeconds(5)));
-        try {
-            Thread.sleep(10000);
-        } catch (InterruptedException e) {
-            log.error(e.getMessage());
-            throw new RuntimeException(e);
-        }
 
         Session session = drawingService.createSession(roomId);
 
         // 게임 시작 로직
-        drawingService.startSession(roomId, room.getSessionId(), room.getAddRoomParticipantInfos());
-
+        scheduleGameStart(roomId, room);
+//        drawingService.startSession(roomId, room.getSessionId(), room.getAddRoomParticipantInfos());
 
         room.updateSessionId(session.getId());
         room.deleteParticipants();
         repository.save(room);
     }
 
-    public void temp(String roomId, String request) {
-        roomMessagePublisher.publishTemp("/topic/temp/"+roomId, request);
+    private void scheduleGameStart(String roomId, Room room) {
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+        scheduler.schedule(() -> {
+            drawingService.startSession(roomId, room.getSessionId(), room.getAddRoomParticipantInfos());
+        }, 5, TimeUnit.SECONDS);
     }
-
 
     private void validateJoinRoom(Room room, Long memberId) {
         if (room.getParticipants().size() >= 4) {
@@ -136,6 +137,4 @@ public class RoomSocketService {
         return repository.findById(roomId)
                 .orElseThrow(() -> new RuntimeException("방을 찾을 수 없습니다: " + roomId));
     }
-
-
 }
