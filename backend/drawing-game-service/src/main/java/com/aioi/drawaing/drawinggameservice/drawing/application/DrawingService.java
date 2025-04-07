@@ -16,6 +16,7 @@ import com.aioi.drawaing.drawinggameservice.drawing.presentation.dto.AddSessionP
 import com.aioi.drawaing.drawinggameservice.drawing.presentation.dto.DrawInfo;
 import com.aioi.drawaing.drawinggameservice.drawing.presentation.dto.WinParticipantInfo;
 import com.aioi.drawaing.drawinggameservice.room.application.dto.AddRoomParticipantInfo;
+import com.aioi.drawaing.drawinggameservice.room.domain.Room;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -134,16 +135,16 @@ public class DrawingService {
         Session session = findSession(sessionId);
         log.info("endSession: {}", sessionId);
 
-        try {
-            AuthResponse win = authServiceClient.updateRanking(new GameResultRequest(1L, "WIN", 10));
-            log.info(win.data());
-            AuthResponse authResponse = authServiceClient.updateMemberExp(new MemberExpUpdateRequest(1L, 10, 10));
-            log.info(authResponse.data());
-        } catch (FeignException e) {
-//            log.error(e.getMessage());
-            log.error("❌ Feign 요청 실패: {}", e.getMessage(), e); // ✅ 올바른 로깅 방식
-            throw new RuntimeException(e);
-        }
+//        try {
+//            AuthResponse win = authServiceClient.updateRanking(new GameResultRequest(1L, "WIN", 10));
+//            log.info(win.data());
+//            AuthResponse authResponse = authServiceClient.updateMemberExp(new MemberExpUpdateRequest(1L, 10, 10));
+//            log.info(authResponse.data());
+//        } catch (FeignException e) {
+////            log.error(e.getMessage());
+//            log.error("❌ Feign 요청 실패: {}", e.getMessage(), e); // ✅ 올바른 로깅 방식
+//            throw new RuntimeException(e);
+//        }
 
         drawMessagePublisher.publishGameResult("/topic/session.result/"+roomId+"/"+sessionId, session.toParticipantScoreInfo());
     }
@@ -173,6 +174,10 @@ public class DrawingService {
 //        System.out.println(session.getHumanWin());
         sessionRepository.save(session);
         drawMessagePublisher.publishRoundResult("/topic/session.round-result/"+roomId+"/"+sessionId, new RoundResult(true, session.getRoundCount()));
+    }
+
+    public void saveSession(Session session) {
+        sessionRepository.save(session);
     }
 
     public void lose(String roomId, String sessionId){

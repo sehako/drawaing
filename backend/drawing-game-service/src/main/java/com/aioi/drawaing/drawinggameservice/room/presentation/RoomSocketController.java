@@ -50,6 +50,12 @@ public class RoomSocketController {
                          @Payload RoomRequest request) {
         roomSocketService.leaveRoom(roomId, request.memberId());
     }
+
+    @MessageMapping("/temp/{roomId}")
+    public void temp(@DestinationVariable String roomId, @Payload String request) {
+        roomSocketService.temp(roomId, request);
+    }
+
     // 필요한가?
     @MessageExceptionHandler
     public void handleException(Exception e, SimpMessageHeaderAccessor headerAccessor) {

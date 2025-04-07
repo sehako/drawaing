@@ -78,4 +78,9 @@ public class Room {
         return this.participants.size();
     }
 
+    public void deleteParticipants() {
+        this.hostId = null;
+        this.participants.clear();
+    }
+
 }
