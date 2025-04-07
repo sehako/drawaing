@@ -106,6 +106,7 @@ public class RoomSocketService {
 
         Session session = drawingService.createSession(roomId);
 
+//        log.info("test{}", room.getAddRoomParticipantInfos());
         // 게임 시작 로직
         scheduleGameStart(roomId, room.getSessionId(), room);
 //        drawingService.startSession(roomId, room.getSessionId(), room.getAddRoomParticipantInfos());

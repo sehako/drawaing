@@ -9,8 +9,10 @@ import java.util.stream.Collectors;
 
 import lombok.Builder;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+@Slf4j
 @Getter
 @Builder
 @Document(collection = "rooms")
@@ -38,7 +40,10 @@ public class Room {
 
     public List<AddRoomParticipantInfo> getAddRoomParticipantInfos() {
         return participants.entrySet().stream()
-                .map(entry -> new AddRoomParticipantInfo(entry.getKey(), entry.getValue().getNickname(), entry.getValue().getCharacterUrl()))
+                .map(entry -> {
+                    log.info("getAddRoomParticipantInfos: {}, {}", entry.getKey(), entry.getValue().getNickname());
+                    return new AddRoomParticipantInfo(entry.getKey(), entry.getValue().getNickname(), entry.getValue().getCharacterUrl());
+                })
                 .collect(Collectors.toList());
     }
 
