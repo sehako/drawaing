@@ -102,12 +102,6 @@ public class RoomSocketService {
 
     public void transitionToGame(String roomId, Room room) {
         roomMessagePublisher.publishRoomStart("/topic/room.wait/"+roomId, new RoomStartInfo(LocalDateTime.now().plusSeconds(5)));
-        try {
-            Thread.sleep(5000);
-        } catch (Exception e) {
-            log.error(e.getMessage());
-            throw new RuntimeException(e);
-        }
 
         Session session = drawingService.createSession(roomId);
 
