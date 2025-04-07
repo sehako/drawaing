@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
 interface GameRoomHeaderProps {
   roomName: string;
@@ -17,6 +17,30 @@ const GameRoomHeader: React.FC<GameRoomHeaderProps> = ({
   onLeaveRoom,
   onCopyRoomCode
 }) => {
+  const [roomTitle, setRoomTitle] = useState<string>("");
+  const [isLocalHost, setIsLocalHost] = useState<boolean>(false);
+
+  useEffect(() => {
+    // 로컬 스토리지에서 방장 여부 확인
+    const storedIsHost = localStorage.getItem('isHost') === 'true';
+    setIsLocalHost(storedIsHost);
+
+    // 방장인 경우와 일반 플레이어인 경우에 따라 방 제목 설정
+    if (storedIsHost) {
+      // 방장인 경우 생성 시 입력한 제목 사용 (로컬 스토리지에서 가져옴)
+      const createdRoomTitle = localStorage.getItem('roomTitle');
+      if (createdRoomTitle) {
+        setRoomTitle(createdRoomTitle);
+      } else {
+        // 없는 경우 props로 전달된 값 사용
+        setRoomTitle(roomName || "닭장");
+      }
+    } else {
+      // 일반 플레이어인 경우 props로 전달된 값 사용 (서버에서 온 데이터)
+      setRoomTitle(roomName || "닭장");
+    }
+  }, [roomName]);
+
   return (
     <div className="flex justify-between items-center mb-6 z-20">
       {/* 방 이름 나무 판자와 복사하기 버튼 컨테이너 */}
@@ -37,7 +61,7 @@ const GameRoomHeader: React.FC<GameRoomHeaderProps> = ({
             {/* 방 이름 텍스트 */}
             <div className="flex flex-col items-start">
               <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold font-['Press_Start_2P'] text-amber-100 drop-shadow-[2px_2px_0_rgba(0,0,0,0.5)]">
-                {roomName} <span className="mt-1 text-xs sm:text-sm text-amber-200">방 코드: {displayRoomCode || '로딩 중...'} {/* 복사하기 버튼 */}
+                {roomTitle} <span className="mt-1 text-xs sm:text-sm text-amber-200">방 코드: {displayRoomCode || '로딩 중...'} {/* 복사하기 버튼 */}
         {displayRoomCode && (
           <button
             onClick={onCopyRoomCode}
