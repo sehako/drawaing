@@ -588,7 +588,7 @@ client.subscribe(`/topic/room.wait/${roomId}`, (message) => {
         console.log('나가는 중이거나 컴포넌트가 언마운트되어 모니터링 중지');
         clearInterval(interval);
       }
-    }, 10000); // 10초마다 확인
+    }, 30000); // 30초마다 확인
     
     return () => {
       console.log('모니터링 정리');
