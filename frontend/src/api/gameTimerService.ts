@@ -46,8 +46,8 @@ const gameTimerService = {
         // console.log('STOMP: ' + str);
       },
       reconnectDelay: 5000,
-      heartbeatIncoming: 4000,
-      heartbeatOutgoing: 4000
+      heartbeatIncoming: 30000,
+      heartbeatOutgoing: 30000
     });
     
     client.onConnect = (frame) => {
