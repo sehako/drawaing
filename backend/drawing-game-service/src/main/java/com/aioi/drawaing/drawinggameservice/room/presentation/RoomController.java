@@ -25,5 +25,4 @@ public class RoomController {
         return ApiResponse.onSuccess(SuccessStatus.ROOM_CODE_FOUND, roomService.findRoomByCode(code));
     }
 
-
 }
