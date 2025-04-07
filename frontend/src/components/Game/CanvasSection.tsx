@@ -8,14 +8,14 @@ import pen_sound from '../../assets/Sound/drawing_sound.mp3';
 import { Howl } from 'howler';
 import drawingService, { DrawPoint } from '../../api/drawingService';
 
-
 interface CanvasSectionProps {
-  canvasRef: React.MutableRefObject<HTMLCanvasElement | null>;
+  canvasRef: React.RefObject<HTMLCanvasElement | null>;
   context: CanvasRenderingContext2D | null;
   isDrawing: boolean;
   setIsDrawing: React.Dispatch<React.SetStateAction<boolean>>;
-  lastPoint: { x: number; y: number } | null;
-  setLastPoint: React.Dispatch<React.SetStateAction<{ x: number; y: number } | null>>;
+  // 수정할 부분
+  lastPoint: DrawPoint | null;
+  setLastPoint: React.Dispatch<React.SetStateAction<DrawPoint | null>>;
   currentColor: string;
   isEraser: boolean;
   showCorrectAnswer: boolean;
@@ -27,18 +27,19 @@ interface CanvasSectionProps {
   handleColorChange: (color: string) => void;
   handleEraserToggle: () => void;
   handleNextPlayer: () => void;
-  currentDrawer: { name: string };
+  currentDrawer: { id: number; name: string; level: number; avatar: string };
   calculateCurrentDrawerPlayerIndex: () => number;
   guess: string;
   setGuess: React.Dispatch<React.SetStateAction<string>>;
-  handleGuessSubmit: (e: React.FormEvent) => void;
+  handleGuessSubmit: (e: React.FormEvent) => Promise<void>;
   handlePass: () => void;
   activeDrawerIndex: number;
   handleCanvasSubmit: (blob: Blob) => Promise<any>;
-  setPredictions: React.Dispatch<React.SetStateAction<any[]>>;
-  roomId: string;  // 추가
-  sessionId: string | null;  // 추가
-  
+  setPredictions: React.Dispatch<React.SetStateAction<{ class: string; probability: number; }[]>>;
+  roomId: string;
+  sessionId: string;
+  canDraw?: boolean;
+  gameTimeLeft: number; // 새로 추가
 }
 
 // 그림 데이터 저장을 위한 인터페이스
@@ -82,12 +83,14 @@ const CanvasSection: React.FC<CanvasSectionProps> = ({
   sessionId,
   canvasRef,
   context,
+  canDraw = false,
+  gameTimeLeft=0,
 }) => {
   const penSoundRef = useRef<Howl | null>(null);
   const [isPlayingSound, setIsPlayingSound] = useState(false);
 
   const [isMouseButtonDown, setIsMouseButtonDown] = useState(false);
-  const [drawingPoints, setDrawingPoints] = useState<Array<{x: number, y: number}>>([]);
+  const [drawingPoints, setDrawingPoints] = useState<Array<{x: number, y: number, timestamp?: number, isNewStroke?: boolean}>>([]);
 
 
   const [lastSoundTime, setLastSoundTime] = useState(0);
@@ -126,7 +129,7 @@ const CanvasSection: React.FC<CanvasSectionProps> = ({
   const currentUserId = userIds[activeDrawerIndex];
   const [allDrawingData, setAllDrawingData] = useState<DrawingData>({});
   const [receivedDrawingData, setReceivedDrawingData] = useState<DrawingData>({});
-
+  
   const handleReceivedDrawingPoints = useCallback((points: Array<{x: number, y: number}>) => {
     // console.log('서버에서 받은 그리기 포인트:', points);
     setReceivedDrawingPoints(prevPoints => [...prevPoints, ...points]);
@@ -332,21 +335,23 @@ const CanvasSection: React.FC<CanvasSectionProps> = ({
 
 // sendDrawingData 함수 내에 로그 추가
 const sendDrawingData = useCallback(() => {
-  if (!roomId || !sessionId || drawingPoints.length === 0) {
-    // console.log('전송 취소: 좌표 없음 또는 roomId/sessionId 없음');
+  if (!roomId || !sessionId || drawingPoints.length < 2) {
     return;
   }
   
-  // 사용자 ID를 키로 하는 데이터 구조 생성
-  const drawingData: DrawingData = {
-    [currentUserId]: drawingPoints
-  };
-  
-  // console.log(`전송 시도: ${drawingPoints.length}개 좌표, roomId=${roomId}, sessionId=${sessionId}, userId=${currentUserId}`);
-  const success = drawingService.sendDrawingPoints(roomId, sessionId, currentUserId, drawingPoints);
+  // 그림 포인트 전송
+  const success = drawingService.sendDrawingPoints(
+    roomId, 
+    sessionId, 
+    currentUserId, 
+    drawingPoints
+  );
   
   if (success) {
-    setDrawingPoints([]);
+    // 마지막 점만 유지하면서 isNewStroke는 false로 설정
+    // 이렇게 하면 다음 배치에서 이전 선과 연결됨
+    const lastPoint = drawingPoints[drawingPoints.length - 1];
+    setDrawingPoints([{...lastPoint, isNewStroke: false}]);
   }
 }, [drawingPoints, roomId, sessionId, currentUserId]);
 
@@ -472,21 +477,48 @@ const clearCurrentDrawing = () => {
 };
 
 const handleReceivedDrawingData = useCallback((data: DrawingData) => {
-  // console.log('서버에서 받은 그리기 데이터:', data);
-  
   // 새로운 그리기 데이터를 상태에 병합
   setReceivedDrawingData(prevData => {
+    // 새 객체 생성 (참조 변경을 위해)
     const newData = { ...prevData };
     
     // 각 사용자 ID에 대해
-    Object.keys(data).forEach(userId => {
-      const numUserId = parseInt(userId);
+    Object.entries(data).forEach(([userIdStr, points]) => {
+      const numUserId = parseInt(userIdStr);
+      
+      // 빈 배열은 지우기 이벤트로 처리
+      if (points.length === 0) {
+        delete newData[numUserId];
+        return;
+      }
+      
+      // 해당 사용자의 데이터가 없으면 초기화
       if (!newData[numUserId]) {
         newData[numUserId] = [];
       }
       
-      // 해당 사용자의 포인트 추가
-      newData[numUserId] = [...newData[numUserId], ...data[numUserId]];
+      // 새 포인트를 기존 포인트에 추가 - 선이 연결되도록 확인
+      if (newData[numUserId].length > 0 && points.length > 0) {
+        const lastExistingPoint = newData[numUserId][newData[numUserId].length - 1];
+        const firstNewPoint = points[0];
+        
+        // 두 점 사이의 거리 계산
+        const distance = Math.sqrt(
+          Math.pow(firstNewPoint.x - lastExistingPoint.x, 2) + 
+          Math.pow(firstNewPoint.y - lastExistingPoint.y, 2)
+        );
+        
+        // 거리가 멀면 선 연결을 위해 중간점 추가
+        if (distance > 10) {
+          newData[numUserId].push({
+            x: (lastExistingPoint.x + firstNewPoint.x) / 2,
+            y: (lastExistingPoint.y + firstNewPoint.y) / 2
+          });
+        }
+      }
+      
+      // 새 포인트 추가
+      newData[numUserId] = [...newData[numUserId], ...points];
     });
     
     return newData;
@@ -515,7 +547,7 @@ const handleReceivedDrawingData = useCallback((data: DrawingData) => {
 
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     // 이미 그림을 그렸거나 완료 상태라면 그리기 불가능
-    if (hasCurrentPlayerDrawn || hasCompleted) return;
+    if (!canDraw || hasCurrentPlayerDrawn || hasCompleted) return;
   
     const canvas = canvasRef.current;
     if (!canvas || !context) return;
@@ -525,25 +557,38 @@ const handleReceivedDrawingData = useCallback((data: DrawingData) => {
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
     
-    // 정확한 좌표 계산 (커서 끝점 조정: -1, -1 픽셀 오프셋)
+    // 정확한 좌표 계산
     const x = (e.clientX - rect.left - 1) * scaleX;
     const y = (e.clientY - rect.top - 1) * scaleY;
   
-    setLastPoint({ x, y });
+    // 새 선 시작을 표시하여 시작점 저장
+    const newPoint = {
+      x,
+      y,
+      timestamp: Date.now(),
+      isNewStroke: true // 새로운 선 시작
+    };
+    
+    setLastPoint(newPoint);
     setIsDrawing(true);
+    
+    // 새 점 저장
+    setDrawingPoints([newPoint]);
   
+    // 시작점 그리기
     context.beginPath();
     context.arc(x, y, isEraser ? 10 : 2, 0, Math.PI * 2);
     context.fillStyle = isEraser ? 'white' : currentColor;
     context.fill();
   };
+  
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     // 항상 커서 위치 업데이트
     updateCursorPosition(e);
     
     // 이미 그림을 그렸거나 완료 상태라면 그리기 불가능
-    if (hasCurrentPlayerDrawn || !isDrawing || !context || !lastPoint) return;
+    if (!canDraw || hasCurrentPlayerDrawn || !isDrawing || !context || !lastPoint) return;
   
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -557,89 +602,38 @@ const handleReceivedDrawingData = useCallback((data: DrawingData) => {
     const x = (e.clientX - rect.left - 1) * scaleX;
     const y = (e.clientY - rect.top - 1) * scaleY;
   
-    // 이전 위치와 현재 위치의 거리 계산
-    const dx = x - lastPoint.x;
-    const dy = y - lastPoint.y;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-
-    if (isDrawing && !hasCurrentPlayerDrawn && !hasCompleted) {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      
-      // 좌표 계산...
-      const rect = canvas.getBoundingClientRect();
-      const scaleX = canvas.width / rect.width;
-      const scaleY = canvas.height / rect.height;
-      const x = (e.clientX - rect.left - 1) * scaleX;
-      const y = (e.clientY - rect.top - 1) * scaleY;
-      
-      // 좌표 저장
-      setDrawingPoints(prev => {
-        const newPoints = [...prev, {x, y}];
-        // console.log(`좌표 추가: (${x}, ${y}), 총 ${newPoints.length}개`);
-        return newPoints;
-      });
-    }
-
-    // 빠른 움직임 감지 (거리가 큰 경우)
-    if (distance > 10) { // 10픽셀 이상 떨어진 경우
-      // 두 점 사이를 부드럽게 보간
-      sendDrawingData();
-      const steps = Math.max(Math.floor(distance / 5), 5); // 최소 5개 점
-      
-      for (let i = 1; i <= steps; i++) {
-        // 선형 보간으로 중간 점 계산
-        const t = i / steps;
-        const ix = lastPoint.x + dx * t;
-        const iy = lastPoint.y + dy * t;
-        
-        // 중간 점들 그리기
-        context.beginPath();
-        context.arc(ix, iy, isEraser ? 10 : 2, 0, Math.PI * 2);
-        context.fillStyle = isEraser ? 'white' : currentColor;
-        context.fill();
-        
-        // 이전 점과 연결
-        if (i > 1) {
-          const prevX = lastPoint.x + dx * (i - 1) / steps;
-          const prevY = lastPoint.y + dy * (i - 1) / steps;
-          
-          context.beginPath();
-          context.moveTo(prevX, prevY);
-          context.lineTo(ix, iy);
-          context.strokeStyle = isEraser ? 'white' : currentColor;
-          context.lineWidth = isEraser ? 20 : 5;
-          context.lineCap = 'round';
-          context.stroke();
-        }
-      }
-    } else {
-      // 일반적인 그리기 (거리가 작은 경우)
-      context.beginPath();
-      context.moveTo(lastPoint.x, lastPoint.y);
-      context.lineTo(x, y);
-      context.strokeStyle = isEraser ? 'white' : currentColor;
-      context.lineWidth = isEraser ? 20 : 5;
-      context.lineCap = 'round';
-      context.stroke();
-    }
-  
-    // 좌표 업데이트
+    // 새 점에 타임스탬프 추가
+    const newPoint = {
+      x,
+      y,
+      timestamp: Date.now(),
+      isNewStroke: false // 연속된 선
+    };
+    
+    // 현재 좌표를 그림 포인트 배열에 추가
+    setDrawingPoints(prev => [...prev, newPoint]);
+    
+    // 캔버스에 선 그리기
+    context.beginPath();
+    context.moveTo(lastPoint.x, lastPoint.y);
+    context.lineTo(x, y);
+    context.strokeStyle = isEraser ? 'white' : currentColor;
+    context.lineWidth = isEraser ? 20 : 5;
+    context.lineCap = 'round';
+    context.lineJoin = 'round';
+    context.stroke();
+    
+    // 마지막 좌표 업데이트
     setLastPoint({ x, y });
     
-    // 마우스 이동 거리에 따른 소리 제어
-    if (!isEraser && penSoundRef.current) {
-      // 거리 임계값을 낮춤 (5픽셀 -> 1픽셀)
-      if (distance > 1) { 
-        const now = Date.now();
-        // 시간 간격도 줄임 (200ms -> 150ms)
-        if (now - lastSoundTime > 200) {
-          penSoundRef.current.play('draw');
-          setLastSoundTime(now);
-        }
-      }
+    // 자주 데이터 전송
+    const now = Date.now();
+    if (now - lastSendTimeRef.current > 30) {
+      sendDrawingData();
+      lastSendTimeRef.current = now;
     }
   };
+
 
 const handleMouseUp = () => {
   if (isDrawing) {
@@ -804,29 +798,57 @@ const handleMouseEnter = (e: React.MouseEvent<HTMLCanvasElement>) => {
   
     if (!isDrawing) {
       Object.entries(receivedDrawingData).forEach(([userIdStr, points]) => {
-        // 모든 사용자의 그림을 검은색으로 표시
-points.forEach((point: DrawPoint, index: number) => {
-          // 개별 점 그리기
-          context.beginPath();
-          context.arc(point.x, point.y, 2, 0, Math.PI * 2);
-          context.fillStyle = 'black'; // 모든 유저 검은색으로 통일
-          context.fill();
-  
-          // 연속된 점들을 선으로 연결
-          if (index > 0) {
-            const prevPoint = points[index - 1];
-            context.beginPath();
-            context.moveTo(prevPoint.x, prevPoint.y);
-            context.lineTo(point.x, point.y);
-            context.strokeStyle = 'black'; // 모든 선 검은색
-            context.lineWidth = 5;
-            context.lineCap = 'round';
-            context.stroke();
+        // 빈 배열인 경우 지우기 이벤트로 처리
+        if (points.length === 0) return;
+        
+        // 타임스탬프로 정렬 (순서 보장)
+        const sortedPoints = [...points].sort((a, b) => 
+          (a.timestamp || 0) - (b.timestamp || 0)
+        );
+        
+        // 선 시작점을 찾아 별도의 그룹으로 분리
+        let strokeGroups: DrawPoint[][] = [];
+        let currentGroup: DrawPoint[] = [];
+        
+        sortedPoints.forEach(point => {
+          if (point.isNewStroke && currentGroup.length > 0) {
+            // 새 선 시작 - 이전 그룹 저장하고 새 그룹 시작
+            strokeGroups.push([...currentGroup]);
+            currentGroup = [point];
+          } else {
+            // 기존 선 계속 - 현재 그룹에 점 추가
+            currentGroup.push(point);
           }
+        });
+        
+        // 마지막 그룹 추가
+        if (currentGroup.length > 0) {
+          strokeGroups.push(currentGroup);
+        }
+        
+        // 각 그룹(선)을 별도로 그리기
+        strokeGroups.forEach(group => {
+          if (group.length < 2) return; // 점이 2개 미만이면 선을 그릴 수 없음
+          
+          context.beginPath();
+          context.strokeStyle = 'black';
+          context.lineWidth = 5;
+          context.lineCap = 'round';
+          context.lineJoin = 'round';
+          
+          // 시작점으로 이동
+          context.moveTo(group[0].x, group[0].y);
+          
+          // 나머지 점으로 선 그리기
+          for (let i = 1; i < group.length; i++) {
+            context.lineTo(group[i].x, group[i].y);
+          }
+          
+          context.stroke();
         });
       });
   
-      // 그린 후 포인트 초기화
+      // 그린 후 데이터 초기화
       setReceivedDrawingData({});
     }
   }, [receivedDrawingData, context, isDrawing, canvasRef]);
@@ -912,20 +934,25 @@ points.forEach((point: DrawPoint, index: number) => {
   return (
     <div className="h-[580px] flex flex-col bg-gray-300">
       {/* 타이머 바 */}
-      <div className="w-full h-5 bg-gray-200">
-      <div 
-        className={`h-full ${
-          timeLeft <= 5 
-            ? 'bg-red-500 animate-[pulse_0.5s_ease-in-out_infinite]' 
-            : timeLeft <= 10 
-              ? 'bg-yellow-300' 
-              : 'bg-green-500'
-        }`}
-        style={{ 
-          width: `${timerBarWidth}%`,
-          transition: 'width 1s linear',
-        }}
-      />
+      <div className="w-full h-5 bg-gray-200 relative">
+          <span className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-black font-bold text-xs z-10">
+            {timeLeft}초
+          </span>
+        <div 
+          className={`h-full absolute top-0 left-0 z-9 ${
+            timeLeft <= 5 
+              ? 'bg-red-500 animate-[pulse_0.5s_ease-in-out_infinite]' 
+              : timeLeft <= 10 
+                ? 'bg-yellow-300' 
+                : 'bg-green-300'
+          }`}
+          style={{ 
+            width: `${timerBarWidth}%`,
+            transition: 'width 1s linear',
+          }}
+        >
+          {/* 타이머 바 안에 텍스트 추가 */}
+        </div>
       </div>
 
       {/* 캔버스 컨테이너 */}
@@ -986,8 +1013,8 @@ points.forEach((point: DrawPoint, index: number) => {
                     isOpen={true}
                     onClose={() => setIsColorPickerOpen(false)} 
                     onColorSelect={handleColorSelect}
-                    initialColor={currentColor}
-                  />
+                    initialColor={'#000000'}  // 기본 색상을 검정색으로 설정
+                    />
                 </div>
               )}
               

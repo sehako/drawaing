@@ -4,7 +4,7 @@ import SignupModal from '../components/landing/SignupModal';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import DrawingLogo from '../components/landing/DrawingLogo';
-import RoomFullModal from '../components/landing/RoomfullModal'; // 새로 만든 모달 컴포넌트 import
+import RoomFullModal from '../components/landing/RoomFullModal'; // 새로 만든 모달 컴포넌트 import
 
 // 쿠키에서 토큰 가져오기 함수
 const getAuthToken = () => {
@@ -191,7 +191,7 @@ const handleCreateRoom = async () => {
   }
 };
 
-// 방 참가 함수 수정 - 인원 수 확인 로직 추가
+// 방 참가 함수 수정
 const handleJoinRoom = async (inputRoomCode?: string) => {
   const codeToJoin = inputRoomCode || roomCode;
   if (!codeToJoin) {
@@ -230,16 +230,12 @@ const handleJoinRoom = async (inputRoomCode?: string) => {
     console.log('방 정보 조회 성공:', data);
     
     if (data.result && data.result.roomId) {
-      // 서버 내부용 roomId와 표시용 roomCode 구분
-      const actualRoomId = data.result.roomId; // 웹소켓 연결용 ID
+      // 새로운 로직: totalParticipants 확인
+      const totalParticipants = data.result.totalParticipants || 0;
       
-      console.log('실제 웹소켓용 roomId:', actualRoomId);
-      console.log('표시용 roomCode:', codeToJoin);
-      
-      // 여기에 방 인원 수 확인 로직 추가
-      if (data.result.participants && data.result.participants.length >= 4) {
-        // 방 인원이 이미 4명 이상인 경우 모달 표시
-        console.log('방 인원 초과! 현재 인원:', data.result.participants.length);
+      // 방 인원이 4명 이상인 경우 모달 표시
+      if (totalParticipants >= 4) {
+        console.log('방 인원 초과! 현재 인원:', totalParticipants);
         setShowRoomFullModal(true);
         return; // 더 이상 진행하지 않고 함수 종료
       }
@@ -248,13 +244,13 @@ const handleJoinRoom = async (inputRoomCode?: string) => {
       
       // 로컬 스토리지에 방 코드와 ID 모두 저장 (명확히 구분)
       localStorage.setItem('roomCode', codeToJoin);
-      localStorage.setItem('roomId', actualRoomId);
+      localStorage.setItem('roomId', data.result.roomId);
       
       // 대기실 페이지로 이동 - URL에는 roomCode를 사용
       navigate(`/waiting-room/${codeToJoin}`, {
         state: { 
           roomCode: codeToJoin,
-          roomId: actualRoomId, // 웹소켓 연결용 ID 전달
+          roomId: data.result.roomId, // 웹소켓 연결용 ID 전달
           roomTitle: data.result.title || '새로운 게임방',
           isDirectJoin: true
         }
