@@ -116,6 +116,11 @@ public class RoomSocketService {
         repository.save(room);
     }
 
+    public void temp(String roomId, String request) {
+        roomMessagePublisher.publishTemp("/topic/temp/"+roomId, request);
+    }
+
+
     private void validateJoinRoom(Room room, Long memberId) {
         if (room.getParticipants().size() >= 4) {
             log.error("방이 이미 꽉 찼습니다.");
@@ -131,4 +136,6 @@ public class RoomSocketService {
         return repository.findById(roomId)
                 .orElseThrow(() -> new RuntimeException("방을 찾을 수 없습니다: " + roomId));
     }
+
+
 }
