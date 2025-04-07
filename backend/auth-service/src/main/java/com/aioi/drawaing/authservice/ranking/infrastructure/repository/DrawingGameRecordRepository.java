@@ -1,6 +1,7 @@
 package com.aioi.drawaing.authservice.ranking.infrastructure.repository;
 
 import com.aioi.drawaing.authservice.ranking.domain.DrawingGameRecord;
+import com.aioi.drawaing.authservice.ranking.presentation.response.PersonalRankingResponse;
 import com.aioi.drawaing.authservice.ranking.presentation.response.RankingResponse;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
@@ -19,6 +20,7 @@ public interface DrawingGameRecordRepository extends JpaRepository<DrawingGameRe
                 WITH RankedScores AS (
                     SELECT 
                         m.member_id AS memberId,
+                        dgr.rank_score AS `value`,
                         RANK() OVER (ORDER BY dgr.maximum_score DESC, dgr.achieved_at ASC) AS `rank`
                     FROM 
                         drawing_game_record dgr
@@ -27,46 +29,49 @@ public interface DrawingGameRecordRepository extends JpaRepository<DrawingGameRe
                     WHERE 
                         m.role != 'ROLE_GUEST'
                 )
-                SELECT `rank`
+                SELECT `rank`, `value`
                 FROM RankedScores 
                 WHERE memberId= :memberId;
             """, nativeQuery = true)
-    Integer findScoreRankByMemberId(@Param("memberId") Long memberId);
+    PersonalRankingResponse findScoreRankByMemberId(@Param("memberId") Long memberId);
 
     @Query(value = """
                 WITH PlayCountRanking AS (
                     SELECT 
                         m.member_id AS memberId,
+                        dgr.play_count AS `value`,
                         RANK() OVER (ORDER BY dgr.play_count DESC, dgr.last_played_at ASC) AS `rank`
                     FROM drawing_game_record dgr
                     JOIN member m ON dgr.member_id = m.member_id
                     WHERE m.role != 'ROLE_GUEST'
                 )
-                SELECT `rank`
+                SELECT `rank`, `value`
                 FROM PlayCountRanking 
                 WHERE memberId = :memberId
             """, nativeQuery = true)
-    Integer findPlayCountRankByMemberId(@Param("memberId") Long memberId);
+    PersonalRankingResponse findPlayCountRankByMemberId(@Param("memberId") Long memberId);
 
     @Query(value = """
                 WITH PointRanking AS (
                     SELECT 
                         m.member_id AS memberId,
+                        m.point AS `value`,
                         RANK() OVER (ORDER BY m.point DESC, dgr.last_played_at ASC) AS `rank`
                     FROM drawing_game_record dgr
                     JOIN member m ON dgr.member_id = m.member_id
                     WHERE m.role != 'ROLE_GUEST'
                 )
-                SELECT `rank`
+                SELECT `rank`, `value`
                 FROM PointRanking 
                 WHERE memberId = :memberId
             """, nativeQuery = true)
-    Integer findPointRankByMemberId(@Param("memberId") Long memberId);
+    PersonalRankingResponse findPointRankByMemberId(@Param("memberId") Long memberId);
 
     @Query(value = """
                 WITH LevelRanking AS (
                     SELECT 
                         m.member_id AS memberId,
+                        m.level AS `value`,
                         RANK() OVER (
                             ORDER BY 
                                 m.level DESC, 
@@ -77,16 +82,17 @@ public interface DrawingGameRecordRepository extends JpaRepository<DrawingGameRe
                     JOIN member m ON dgr.member_id = m.member_id
                     WHERE m.role != 'ROLE_GUEST'
                 )
-                SELECT `rank`
+                SELECT `rank`, `value`
                 FROM LevelRanking 
                 WHERE memberId = :memberId
             """, nativeQuery = true)
-    Integer findLevelRankByMemberId(@Param("memberId") Long memberId);
+    PersonalRankingResponse findLevelRankByMemberId(@Param("memberId") Long memberId);
 
     // 랭킹 점수 랭킹 조회
     @Query("""
                 SELECT
                     m.id as memberId,
+                    m.characterImage as characterImage,
                     m.nickname as nickname,
                     dgr.maximumScore as value,
                     dgr.achievedAt as lastPlayedAt
@@ -101,6 +107,7 @@ public interface DrawingGameRecordRepository extends JpaRepository<DrawingGameRe
     @Query("""
                 SELECT
                     m.id as memberId,
+                    m.characterImage as characterImage,
                     m.nickname as nickname,
                     dgr.playCount as value,
                     dgr.lastPlayedAt as lastPlayedAt
@@ -115,6 +122,7 @@ public interface DrawingGameRecordRepository extends JpaRepository<DrawingGameRe
     @Query("""
                 SELECT
                     m.id as memberId,
+                    m.characterImage as characterImage,
                     m.nickname as nickname,
                     m.point as value,
                     dgr.lastPlayedAt as lastPlayedAt
@@ -129,6 +137,7 @@ public interface DrawingGameRecordRepository extends JpaRepository<DrawingGameRe
     @Query("""
                 SELECT
                     m.id as memberId,
+                    m.characterImage as characterImage,
                     m.nickname as nickname,
                     m.level as value,
                     dgr.lastPlayedAt as lastPlayedAt

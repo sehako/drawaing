@@ -5,6 +5,8 @@ import java.time.LocalDateTime;
 public interface RankingResponse {
     Long getMemberId();
 
+    String getCharacterImage();
+
     String getNickname();
 
     Integer getValue();
