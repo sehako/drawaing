@@ -107,7 +107,7 @@ public class RoomSocketService {
         Session session = drawingService.createSession(roomId);
 
         // 게임 시작 로직
-        scheduleGameStart(roomId, room);
+        scheduleGameStart(roomId, room.getSessionId(), room);
 //        drawingService.startSession(roomId, room.getSessionId(), room.getAddRoomParticipantInfos());
 
         room.updateSessionId(session.getId());
@@ -115,10 +115,10 @@ public class RoomSocketService {
         repository.save(room);
     }
 
-    private void scheduleGameStart(String roomId, Room room) {
+    private void scheduleGameStart(String roomId, String sessionId, Room room) {
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
         scheduler.schedule(() -> {
-            drawingService.startSession(roomId, room.getSessionId(), room.getAddRoomParticipantInfos());
+            drawingService.startSession(roomId, sessionId, room.getAddRoomParticipantInfos());
         }, 5, TimeUnit.SECONDS);
     }
 
