@@ -457,7 +457,7 @@ const handleJoinRoom = async (inputRoomCode?: string) => {
                   </>
                 )}
               </div>
-
+              
             <div className="flex flex-col items-center px-4 relative">
               <div className="absolute top-20 left-0 w-full h-full">
                 <ChickenCharacters />
@@ -507,6 +507,20 @@ const handleJoinRoom = async (inputRoomCode?: string) => {
                     className="w-64 h-20 bg-[#888888] rounded-full flex items-center justify-center border-4 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] hover:shadow-[6px_6px_0_0_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 active:shadow-[2px_2px_0_0_rgba(0,0,0,1)] active:translate-x-0 active:translate-y-0 transition-all duration-200"
                   >
                     <span className="text-3xl font-bold text-black font-['Press_Start_2P'] tracking-tight">방 찾기</span>
+                  </button>
+                </div>
+                {/* 랭킹 보기 버튼 */}
+              <div
+                  className={`transition-all duration-1000 ${
+                    isPageLoaded ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-10'
+                  }`}
+                  style={{ transitionDelay: '1.4s' }}
+                >
+                  <button
+                    onClick={() => navigate('/ranking')} // 랭킹 페이지로 이동
+                    className="w-64 h-20 bg-[#4CAF50] rounded-full flex items-center justify-center border-4 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] hover:shadow-[6px_6px_0_0_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 active:shadow-[2px_2px_0_0_rgba(0,0,0,1)] active:translate-x-0 active:translate-y-0 transition-all duration-200"
+                  >
+                    <span className="text-3xl font-bold text-black font-['Press_Start_2P'] tracking-tight">랭킹 보기</span>
                   </button>
                 </div>
               </div>

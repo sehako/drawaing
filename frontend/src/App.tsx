@@ -11,6 +11,7 @@ import Bgm from './components/Music/Bgm.tsx';
 import BlockNavigation from './utils/block.tsx'; // 변경된 import
 import axios from 'axios';
 import HardcodedGameResultPage from './pages/HardcodeGameResultPage.tsx';
+import RankingPage from './pages/RankingPage.tsx';
 
 
 // .env 파일의 환경변수 사용
@@ -45,7 +46,9 @@ const App: React.FC = () => {
                 <HardcodedGameResultPage />
               </>
             } />
+            <Route path="/ranking" element={<RankingPage />} />
           </Routes>
+          
         </MusicProvider>
       </AuthProvider>
     </BrowserRouter>
