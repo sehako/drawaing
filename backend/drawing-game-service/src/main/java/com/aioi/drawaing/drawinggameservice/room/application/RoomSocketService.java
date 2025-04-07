@@ -66,7 +66,6 @@ public class RoomSocketService {
             throw new RuntimeException("모든 참여자가 준비되지 않았습니다.");
         }
 
-
         //게임 대기방에서 실제 게임으로 넘어가는 중간 대기 시간을 처리하는 함수
         transitionToGame(roomId, room);
     }
@@ -98,6 +97,8 @@ public class RoomSocketService {
 
     public void transitionToGame(String roomId, Room room) {
         roomMessagePublisher.publishRoomStart("/topic/room.wait/"+roomId, new RoomStartInfo(LocalDateTime.now().plusSeconds(5)));
+
+        log.info("😴 Thread going to sleep");
         try {
             Thread.sleep(10000);
         } catch (InterruptedException e) {
@@ -105,6 +106,7 @@ public class RoomSocketService {
             throw new RuntimeException(e);
         }
 
+        log.info("🎨 Creating session...");
         Session session = drawingService.createSession(roomId);
 
         // 게임 시작 로직
