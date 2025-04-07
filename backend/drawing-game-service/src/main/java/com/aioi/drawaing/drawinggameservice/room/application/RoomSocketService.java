@@ -71,6 +71,7 @@ public class RoomSocketService {
             throw new RuntimeException("모든 참여자가 준비되지 않았습니다.");
         }
 
+
         //게임 대기방에서 실제 게임으로 넘어가는 중간 대기 시간을 처리하는 함수
         transitionToGame(roomId, room);
     }
@@ -106,7 +107,7 @@ public class RoomSocketService {
         Session session = drawingService.createSession(roomId);
 
         // 게임 시작 로직
-        scheduleGameStart(roomId, room);
+        scheduleGameStart(roomId, room.getSessionId(), room);
 //        drawingService.startSession(roomId, room.getSessionId(), room.getAddRoomParticipantInfos());
 
         room.updateSessionId(session.getId());
@@ -114,10 +115,10 @@ public class RoomSocketService {
         repository.save(room);
     }
 
-    private void scheduleGameStart(String roomId, Room room) {
+    private void scheduleGameStart(String roomId, String sessionId, Room room) {
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
         scheduler.schedule(() -> {
-            drawingService.startSession(roomId, room.getSessionId(), room.getAddRoomParticipantInfos());
+            drawingService.startSession(roomId, sessionId, room.getAddRoomParticipantInfos());
         }, 5, TimeUnit.SECONDS);
     }
 
