@@ -212,7 +212,7 @@ public class MemberService {
         CookieUtil.addCookie(response, REFRESH_TOKEN, tokenInfo.getRefreshToken(),
                 getRefreshTokenExpireTimeCookie());
 
-        return MemberLoginResponse.of(MemberResponse.from(member), tokenInfo.getAccessToken());
+        return MemberLoginResponse.of(member, tokenInfo.getAccessToken());
     }
 
     private Member processGuestSignUp(String refreshToken) {
