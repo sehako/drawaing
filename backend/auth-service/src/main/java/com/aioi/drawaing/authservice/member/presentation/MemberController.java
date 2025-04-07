@@ -33,6 +33,15 @@ import org.springframework.web.bind.annotation.RestController;
 public class MemberController {
     private final MemberService memberService;
 
+
+    @Operation(summary = "AccessToken 으로 회원 정보 조회")
+    @GetMapping("/info")
+    public ResponseEntity<?> getInfo(HttpServletRequest request) {
+        long memberId = Long.parseLong(request.getParameter("member-id"));
+        log.info("AccessToken으로 회원 정보 조회 memberId: {},  ", memberId);
+        return ApiResponseEntity.onSuccess(memberService.get(memberId));
+    }
+
     @Operation(summary = "회원 정보 조회")
     @GetMapping("/{member_id}")
     public ResponseEntity<?> get(@PathVariable("member_id") Long memberId) {
