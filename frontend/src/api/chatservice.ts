@@ -41,13 +41,13 @@ class ChatMessageService {
           passcode: ''
         },
         debug: (str) => {
-          console.log('STOMP 채팅 서비스:', str);
+          // console.log('STOMP 채팅 서비스:', str);
         },
         reconnectDelay: 5000,
       });
 
       client.onConnect = () => {
-        console.log('STOMP 채팅 서비스 연결 성공');
+        // console.log('STOMP 채팅 서비스 연결 성공');
         this.stompClient = client;
         
         // 모든 등록된 방에 대해 구독 재설정
@@ -60,7 +60,7 @@ class ChatMessageService {
       };
 
       client.onStompError = (frame) => {
-        console.error('STOMP 채팅 서비스 오류:', frame);
+        // console.error('STOMP 채팅 서비스 오류:', frame);
         reject(new Error(`STOMP 연결 오류: ${frame.headers?.message || 'Unknown error'}`));
       };
 
@@ -91,10 +91,10 @@ class ChatMessageService {
             const chatMessage: ChatMessage = JSON.parse(message.body);
             
             // 로깅
-            console.group('💬 채팅 메시지 수신');
-            console.log('원본 메시지:', message.body);
-            console.log('파싱된 데이터:', chatMessage);
-            console.groupEnd();
+            // console.group('💬 채팅 메시지 수신');
+            // console.log('원본 메시지:', message.body);
+            // console.log('파싱된 데이터:', chatMessage);
+            // console.groupEnd();
 
             callback(chatMessage);
           } catch (error) {
@@ -111,7 +111,7 @@ class ChatMessageService {
         this.chatMessageCallbacks.delete(key);
       };
     } catch (error) {
-      console.error('채팅 메시지 구독 중 오류:', error);
+      // console.error('채팅 메시지 구독 중 오류:', error);
       return () => {};
     }
   }
@@ -125,7 +125,7 @@ public sendMessage(
   message: string
 ): boolean {
   if (!this.stompClient || !this.stompClient.connected) {
-    console.warn('STOMP 클라이언트가 연결되지 않았습니다.');
+    // console.warn('STOMP 클라이언트가 연결되지 않았습니다.');
     return false;
   }
 
@@ -139,14 +139,14 @@ public sendMessage(
     
     // 형식에 맞게 로깅 (예시 이미지와 동일하게)
     const formattedMessage = JSON.stringify(chatMessage, null, 2);
-    console.log(formattedMessage); // 들여쓰기 포맷 적용된 JSON 문자열 출력
+    // console.log(formattedMessage); // 들여쓰기 포맷 적용된 JSON 문자열 출력
     
     // 또는 객체 형태로 직접 출력
-    console.log({
-      "userId": userId,
-      "message": message,
-      "createdAt": chatMessage.createdAt
-    });
+    // console.log({
+    //   "userId": userId,
+    //   "message": message,
+    //   "createdAt": chatMessage.createdAt
+    // });
 
     // 메시지 발행
     this.stompClient.publish({
@@ -156,7 +156,7 @@ public sendMessage(
 
     return true;
   } catch (error) {
-    console.error('메시지 전송 오류:', error);
+    // console.error('메시지 전송 오류:', error);
     return false;
   }
 }
@@ -166,7 +166,7 @@ public sendMessage(
       this.stompClient.deactivate();
       this.stompClient = null;
       this.chatMessageCallbacks.clear();
-      console.log('STOMP 채팅 서비스 연결 종료');
+      // console.log('STOMP 채팅 서비스 연결 종료');
     }
   }
 }

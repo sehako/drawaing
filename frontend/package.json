@@ -19,6 +19,7 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.3.0",
+    "sockjs-client": "^1.6.1",
     "tailwindcss": "^3.4.17",
     "use-sound": "^5.0.0"
   },

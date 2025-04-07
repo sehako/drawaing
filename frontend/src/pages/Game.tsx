@@ -12,7 +12,9 @@ import useGameTimer from '../hooks/useGameTimer'; // 타이머 훅 추가
 import gameTimerService from '../api/gameTimerService';
 import chatService from '../api/chatservice';
 import correctAnswerService from '../api/correctAnswerService';
-
+import background from '../assets/Game/background.jpg'
+import { DrawPoint } from '../api/drawingService';
+import { PlayerPermissions, PlayerRole, PositionMap } from '../components/Game/PlayerSection'; // 경로는 실제 PlayerSection 컴포넌트 위치에 맞게 조정
 interface Player {
   id: number;
   name: string;
@@ -36,17 +38,19 @@ const Game: React.FC = () => {
   // ReadyButton과 동일한 방식으로 선언 - 초기값 null로 설정
   const [roomId, setRoomId] = useState<string | null>(null);
   const navigate = useNavigate();
-  
+  const [storedPlayersList, setStoredPlayersList] = useState<Array<{ id: number; name: string; level: number; avatar: string }>>([]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [passCount, setPassCount] = useState<number>(0);
   const MAX_PASS_COUNT = 3;
+  const [paredUser, setParedUser] = useState<any>(null);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   
   // ReadyButton과 일관된 방식으로 roomId 초기화 및 업데이트
   useEffect(() => {
-    // 우선순위: URL 파라미터 > localStorage
     const storedRoomId = localStorage.getItem('roomId');    
     const roomIdToUse = storedRoomId;
+
     
     console.log('Game.tsx - roomId 설정 과정:');
     console.log('- URL 파라미터 roomId:', storedRoomId);
@@ -55,6 +59,7 @@ const Game: React.FC = () => {
     
     // 결정된 roomId 설정 (null일 경우를 대비해 빈 문자열로 변환)
     setRoomId(storedRoomId || '');
+
     
     // 결정된 roomId를 localStorage에 저장 (다른 컴포넌트와 공유)
     if (storedRoomId) {
@@ -62,6 +67,8 @@ const Game: React.FC = () => {
     }
   }, [storedRoomId]);
 
+  const [currentUserId, setCurrentUserId] = useState<string>("");
+  
   // roomId가 없으면 기본 방으로 리다이렉트
   useEffect(() => {
     if (!storedRoomId) {
@@ -97,17 +104,48 @@ const Game: React.FC = () => {
   }, []);
   
   useEffect(() => {
+    try {
+      const storedPlayersListStr = localStorage.getItem('playersList');
+      if (storedPlayersListStr) {
+        const parsedPlayersList = JSON.parse(storedPlayersListStr);
+        
+        // PlayerSection에서 필요한 형태로 데이터 변환
+        const formattedPlayersList = parsedPlayersList.map((player: any) => ({
+          id: parseInt(player.id), 
+          name: player.nickname,
+          level: 1, // 기본 레벨 설정
+          avatar: player.characterUrl || 'default_character'
+        }));
+        
+        console.log('변환된 플레이어 목록:', formattedPlayersList);
+        setStoredPlayersList(formattedPlayersList);
+        
+        // 현재 사용자 찾기
+        const currentPlayerId = localStorage.getItem('playerNumber');
+        if (currentPlayerId) {
+          const user = formattedPlayersList.find((p: any) => p.id.toString() === currentPlayerId);
+          if (user) {
+            setCurrentUser(user);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('플레이어 목록 로드 중 오류:', error);
+    }
+  }, []);
+
+  useEffect(() => {
     if (!localStorage.getItem('playerNumber')) {
       localStorage.setItem('playerNumber', '1'); // 초기값으로 1 설정
     }
   }, []);
-
+  
   // 현재 플레이어 닉네임 설정
   const [currentPlayer, setCurrentPlayer] = useState<string>(() => {
     const playerNumber = localStorage.getItem('playerNumber') || "1";
     return getPlayerNickname(playerNumber);
   });
-
+  
   // 플레이어 번호에 따른 닉네임 반환 함수
   function getPlayerNickname(playerNumber: string): string {
     switch (playerNumber) {
@@ -118,8 +156,8 @@ const Game: React.FC = () => {
       default: return "플레이어";
     }
   }
-
-
+  
+  
   const [currentRound, setCurrentRound] = useState<number>(1);
   const [quizWord, setQuizWord] = useState<string>('바나나');
   const [activeDrawerIndex, setActiveDrawerIndex] = useState<number>(0);
@@ -140,16 +178,29 @@ const Game: React.FC = () => {
   // 정답 제출 횟수 제한 추가
   const [guessSubmitCount, setGuessSubmitCount] = useState<number>(0);
   const MAX_GUESS_SUBMIT_COUNT = 3;
-
+  
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [context, setContext] = useState<CanvasRenderingContext2D | null>(null);
   const [currentColor, setCurrentColor] = useState<string>('red');
   const [isEraser, setIsEraser] = useState<boolean>(false);
-  const [lastPoint, setLastPoint] = useState<{ x: number; y: number } | null>(null);
+  const [lastPoint, setLastPoint] = useState<DrawPoint | null>(null);
 
   const [playerMessages, setPlayerMessages] = useState<{[playerId: number]: string}>({});
-  const [storedSessionId, setStoredSessionId] = useState<string | null>(null);
 
+
+  const [currentPlayerRole, setCurrentPlayerRole] = useState<PlayerRole | null>(null);
+
+  // const [lastPoint, setLastPoint] = useState<{ x: number; y: number } | null>(null);
+  
+  // const [playerMessages, setPlayerMessages] = useState<{[playerId: string]: string}>({});
+  const [storedSessionId, setStoredSessionId] = useState<string | null>(null);
+  const [playerPermissions, setPlayerPermissions] = useState<PlayerPermissions>({
+    canDraw: false,
+    canGuess: false,
+    canSeeWord: false,
+    canAnswer: false
+  });
+  
   const [eggCount, setEggCount] = useState(10);
   const [aiAnswer, setAiAnswer] = useState<string>('');
   const [aiImages] = useState<string[]>([
@@ -162,7 +213,7 @@ const Game: React.FC = () => {
     { id: 2, name: 'Player 3', level: 25, avatar: '/avatars/angry-bird.png' },
     { id: 3, name: 'Player 4', level: 16, avatar: '/avatars/yellow-bird.png' },
   ]);
-
+  
   const mapUserIdToPlayerId = (userId: number): number => {
     switch(userId) {
       case 1: return 0; // userId 1은 첫 번째 플레이어 (플레이어1)
@@ -173,96 +224,147 @@ const Game: React.FC = () => {
     }
   };
 
-  const [predictions, setPredictions] = useState<{ class: string; probability: number }[]>([]);
+  const handlePlayerRoleChange = (roleInfo: {
+    role: PlayerRole | null;
+    isCurrentPlayer: boolean;
+    currentPositions: PositionMap;
+    playerPermissions: PlayerPermissions;
+  }) => {
+    setCurrentPlayerRole(roleInfo.role);
+    setPlayerPermissions(roleInfo.playerPermissions);
+    
+    // 디버깅용 로그
+    console.log('Game.tsx - 받은 플레이어 역할:', roleInfo.role);
+    console.log('Game.tsx - 받은 플레이어 권한:', roleInfo.playerPermissions);
+  };
 
+  const [predictions, setPredictions] = useState<{ class: string; probability: number }[]>([]);
+  
   // 웹소켓 훅 사용 - roomId가 null일 때도 빈 문자열로 처리하도록 수정
   const { isConnected, playerConnections, sessionId, sendMessage } = useGameWebSocket({
     roomId: roomId ?? "", // null이면 빈 문자열로 변환
     currentPlayer
   });
-  
-    // playerConnections 객체로부터 플레이어 정보를 동적으로 업데이트하는 useEffect 추가
-useEffect(() => {
-  // 웹소켓 연결이 없거나 playerConnections가 비어있으면 처리하지 않음
-  if (!isConnected || Object.keys(playerConnections).length === 0) return;
-  
-  console.log('방 접속 정보로부터 플레이어 정보 업데이트:', playerConnections);
-  
-  // 기본 아바타 이미지 배열
-  const avatars = [
-    '/avatars/chick.png',
-    '/avatars/muscular.png',
-    '/avatars/angry-bird.png',
-    '/avatars/yellow-bird.png'
-  ];
-  
-  // 기본 레벨 배열
-  const defaultLevels = [1, 50, 25, 16];
-  
-  // 업데이트할 플레이어 배열 초기화
-  const updatedPlayers: Player[] = [];
-  
-  // playerConnections 객체를 순회하며 플레이어 정보 추출
-  Object.entries(playerConnections).forEach(([playerNumber, info]: [string, any]) => {
-    if (info && typeof info === 'object') {
-      const playerIndex = parseInt(playerNumber) - 1;
-      const isConnected = info.isConnected || false;
-      
-      // 연결된 플레이어만 추가
-      if (isConnected) {
-        // 기본 닉네임 (연결 정보에 nickname이 없는 경우)
-        const defaultNickname = getPlayerNickname(playerNumber);
+
+  const handleStartDrawing = () => {
+    if (playerPermissions.canDraw) {
+      setIsDrawing(true);
+    } else {
+      // 그림 그리기 권한 없음 알림
+      alert('현재 그림을 그릴 수 없습니다.');
+    }
+  };
+  const renderQuizWord = () => {
+    if (playerPermissions.canSeeWord) {
+      return <div>{quizWord}</div>;
+    } else {
+      return <div>???</div>; // 제시어 숨기기
+    }
+  };
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem('currentUser');
+    if (savedUser) {
+      const parsedUser = JSON.parse(savedUser);
+      console.log('로컬 스토리지에서 가져온 currentUser:', parsedUser);
+      setParedUser(parsedUser); // 상태에 저장
+    } else {
+      console.log('로컬 스토리지에 currentUser가 없습니다.');
+    }
+  }, []);
+
+  // playerConnections 객체로부터 플레이어 정보를 동적으로 업데이트하는 useEffect 추가
+  useEffect(() => {
+    // 로컬 스토리지에서 ID 정보 가져오기
+    const storedUserId = localStorage.getItem('userId');
+    
+    // GameWaitingRoom에서 설정된 ID를 확인
+    if (storedUserId) {
+      console.log('로컬 스토리지에서 사용자 ID 불러옴:', storedUserId);
+      setCurrentUserId(storedUserId);
+    } else {
+      // 웹소켓 커넥션에서 ID 정보 확인
+      if (playerConnections && Object.keys(playerConnections).length > 0) {
+        const playerIds = Object.keys(playerConnections);
+        console.log('사용 가능한 플레이어 ID 목록:', playerIds);
         
-        // 플레이어 정보 구성
-        updatedPlayers.push({
-          id: playerIndex,
-          name: info.nickname || defaultNickname,
-          level: defaultLevels[playerIndex % defaultLevels.length],
-          avatar: avatars[playerIndex % avatars.length]
-        });
+        // 첫 번째 ID를 기본값으로 설정
+        const newUserId = playerIds[0];
+        localStorage.setItem('userId', newUserId);
+        setCurrentUserId(newUserId);
+        console.log('새 사용자 ID 설정:', newUserId);
       }
     }
-  });
-  
-  // 플레이어가 하나도 없는 경우, 현재 플레이어만 추가
-  if (updatedPlayers.length === 0) {
-    const playerNumber = localStorage.getItem('playerNumber') || "1";
-    const playerIndex = parseInt(playerNumber) - 1;
+  }, [playerConnections]);
+  useEffect(() => {
+    // 웹소켓 연결이 없거나 playerConnections가 비어있으면 처리하지 않음
+    if (!isConnected || Object.keys(playerConnections).length === 0) return;
     
-    updatedPlayers.push({
-      id: playerIndex,
-      name: currentPlayer,
-      level: defaultLevels[playerIndex % defaultLevels.length],
-      avatar: avatars[playerIndex % avatars.length]
-    });
-  }
-  
-  // 플레이어 수가 4명 미만인 경우, 남은 슬롯을 대기 중 상태로 채움
-  while (updatedPlayers.length < 4) {
-    const nextIndex = updatedPlayers.length;
-    updatedPlayers.push({
-      id: nextIndex,
-      name: `대기 중...`,
-      level: 0,
-      avatar: '/avatars/default.png'
-    });
-  }
-  
-  // 플레이어 순서대로 정렬 (id 기준)
-  updatedPlayers.sort((a, b) => a.id - b.id);
-  
-  console.log('업데이트된 플레이어 정보:', updatedPlayers);
-  
-  // players 상태 업데이트
-  setPlayers(updatedPlayers);
-  
-}, [isConnected, playerConnections, currentPlayer]);
+    console.log('방 접속 정보로부터 플레이어 정보 업데이트:', playerConnections);
+    
+    // 업데이트할 플레이어 배열 초기화
+    const updatedPlayers: Player[] = [];
+    
+    // playerConnections 객체를 순회하며 플레이어 정보 추출
+    Object.entries(playerConnections).forEach(([playerNumber, info]: [string, any]) => {
+      if (info && typeof info === 'object') {
+        const playerIndex = parseInt(playerNumber) - 1;
+        const isConnected = info.isConnected || false;
+        
+        // 연결된 플레이어만 추가
+        if (isConnected) {
+          updatedPlayers.push({
+              id: playerIndex,
+              name: info.nickname || `플레이어${playerNumber}`,
+              level: playerIndex + 1, // 간단한 레벨 설정
+              avatar: info.characterUrl || `https://placehold.co/400/gray/white?text=Player${playerNumber}`
+            });
+          }
+        }
+      });
+      
+      // 플레이어 수가 4명 미만인 경우, 남은 슬롯을 대기 중 상태로 채움
+      while (updatedPlayers.length < 4) {
+        const nextIndex = updatedPlayers.length;
+        updatedPlayers.push({
+          id: nextIndex,
+          name: `대기 중...`,
+          level: 0,
+          avatar: `https://placehold.co/400/gray/white?text=Waiting`
+        });
+      }
+      
+      console.log('업데이트된 플레이어 정보:', updatedPlayers);
+      
+      // players 상태 업데이트 (Game.tsx의 상태)
+      setPlayers(updatedPlayers);
+      
+    }, [isConnected, playerConnections]);
+
 
   // 웹소켓 연결 완료 후 타이머 정보 가져오기 위한 상태 추가
   const [isGameTimerReady, setIsGameTimerReady] = useState<boolean>(false);
 
   const [chatMessages, setChatMessages] = useState<Array<{userId: number, message: string, timestamp: string}>>([]);
 
+  const handleChatMessage = (message: string, playerNumber: string) => {
+  const playerIndex = parseInt(playerNumber) - 1;
+  
+  // 플레이어 메시지 업데이트
+  setPlayerMessages(prev => ({
+    ...prev,
+    [playerIndex]: message
+  }));
+  
+  // 5초 후 메시지 자동 제거
+  setTimeout(() => {
+    setPlayerMessages(prev => {
+      const updated = { ...prev };
+      delete updated[playerIndex];
+      return updated;
+    });
+  }, 5000);
+};
 
   // 웹소켓 연결 상태 및 세션 ID 유효 여부 체크
   useEffect(() => {
@@ -464,7 +566,7 @@ const transitionToNextRound = () => {
   // 3초 뒤에 실행 (RoundTransition 모달의 카운트다운 시간과 일치)
   setTimeout(() => {
     setCurrentRound(prev => prev + 1);
-    setGuesserIndex((guesserIndex + 1) % 4);
+    setGuesserIndex((prev) => (prev + 1) % 4);
     setActiveDrawerIndex(0);
     
     // 캔버스 초기화
@@ -508,6 +610,11 @@ const handleGuessSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
 
   if (isGameOver) return;
+  
+  if (!playerPermissions.canGuess || !playerPermissions.canAnswer) {
+    alert('현재 정답을 맞출 수 없습니다.');
+    return;
+  }
 
   // 제출 횟수가 최대치에 도달했으면 더 이상 제출 불가
   if (guessSubmitCount >= MAX_GUESS_SUBMIT_COUNT) {
@@ -589,7 +696,7 @@ const handleGuessSubmit = async (e: React.FormEvent) => {
           drawingPlayerIndex++;
         }
       }
-      
+    
       // 현재 그림을 그리는 사람의 ID 구하기
       const drawingMemberId = realIndex + 1; // 인덱스는 0부터 시작하므로 +1
       
@@ -831,7 +938,7 @@ useEffect(() => {
 
 
   return (
-    <div className="flex justify-center items-center w-full min-h-screen bg-cover bg-[url('/backgrounds/wooden-bg.jpg')] px-[150px] py-4 box-border flex-col">
+  <div className="flex justify-center items-center w-full min-h-screen bg-cover bg-[background] px-[150px] py-4 box-border flex-col">
       {isGameOver && (
         <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
           <div className="bg-yellow-100 rounded-xl p-8 text-center border-4 border-yellow-500 shadow-lg max-w-2xl w-full">
@@ -871,46 +978,44 @@ useEffect(() => {
       
       {/* 게임 정보 헤더 */}
       <div className="w-full max-w-7xl h-[100px] mb-4">
-        <div className="flex justify-center items-center p-2.5 rounded-t-lg h-full">
-          <div className="flex items-center w-full">
-            <div className="flex-1 text-left pl-10">
-              <div className="text-6xl font-bold text-gray-800 whitespace-nowrap">ROUND {currentRound}</div>
-            </div>
-            <div className="flex-1 flex justify-center items-center">
-              <div className="relative flex items-center justify-center w-[200px] h-full">
-                <img 
-                  src={word} 
-                  alt="Word background" 
-                  className="absolute w-full h-auto object-cover mb-5"
-                  />
-                <div className="relative z-10 text-white text-3xl font-bold text-center mt-6">
-                  {quizWord}
-                </div>
-              </div>
-            </div>
-            
-            <div>
-              사람 {humanRoundWinCount} : {aiRoundWinCount} AI
-            </div>
-            <div className="flex-1 text-right pr-10">
-              <div className="text-lg text-gray-700 text-5xl">
-                {/* 남은시간: {isTimerLoading ? '로딩 중...' : `${timeLeft}초`}
-                 */}
-                     남은시간: {timeLeft}초
-
-              </div>
-            </div>
-            <div className="bg-yellow-100 px-6 py-1 rounded-full border-2 border-yellow-400 text-xl font-bold shadow-md">
-              남은 시간: {formatGameTime(gameTimeLeft)}
+      <div className="flex justify-center items-center p-2.5 rounded-t-lg h-[150px] bg-yellow-200 mt-[-20px]">
+      <div className="flex items-center w-full justify-between">
+        <div className="text-5xl font-bold text-gray-800 whitespace-nowrap pl-10 ml-[-20px]">
+          ROUND {currentRound}
+        </div>
+        
+        <div className="flex items-center space-x-4 mr-10">
+          <div className="text-right text-7xl">
+            사람 {humanRoundWinCount}
+          </div>
+          
+          <div className="relative flex items-center justify-center w-[200px] h-full mt-[-30px]">
+            <img 
+              src={word} 
+              alt="Word background" 
+              className="absolute w-full h-auto object-cover mb-5"
+            />
+            <div className="relative z-10 text-white text-3xl font-bold text-center mt-6">
+              {playerPermissions.canSeeWord ? quizWord : '???'}
             </div>
           </div>
+          
+          <div className="text-left text-7xl">
+            {aiRoundWinCount} AI
+          </div>
         </div>
+        
+        <div className="bg-yellow-100 px-6 py-1 rounded-full border-2 border-yellow-400 text-xl font-bold shadow-md mr-5">
+          남은 시간: {formatGameTime(gameTimeLeft)}
+        </div>
+      </div>
+    </div>
       </div>
 
       <div className="flex w-full max-w-7xl">
         {/* 플레이어 컴포넌트 - 좌측 */}
-        <div className="w-1/5 mr-9">
-        <PlayerSection 
+        <div className="w-1/5 mr-4 mt-[-4px]">
+        <PlayerSection
           currentRound={currentRound}
           activeDrawerIndex={activeDrawerIndex}
           guesserIndex={guesserIndex}
@@ -918,7 +1023,9 @@ useEffect(() => {
           playerConnections={playerConnections as any}
           isConnected={isConnected}
           playerMessages={playerMessages}
-          players={players} // 추가된 부분
+          paredUser={paredUser} // paredUser 전달
+          storedPlayersList={storedPlayersList}
+          onPlayerRoleChange={handlePlayerRoleChange}
         />
         </div>
 
@@ -936,7 +1043,6 @@ useEffect(() => {
           showCorrectAnswer={showCorrectAnswer}
           quizWord={quizWord}
           currentRound={currentRound}
-          timeLeft={timeLeft}
           hasCompleted={hasCompleted}
           setHasCompleted={setHasCompleted} // 이 함수를 통해 그림 지운 후 다시 그리기 가능
           handleColorChange={handleColorChange}
@@ -953,6 +1059,10 @@ useEffect(() => {
           setPredictions={setPredictions}
           roomId={roomId ?? ""}  // null이면 빈 문자열로 변환
           sessionId={sessionId ?? ""}  // null이면 빈 문자열로 변환
+          canDraw={playerPermissions.canDraw}
+          timeLeft={timeLeft}
+          gameTimeLeft={gameTimeLeft}
+
         />
         </div>
 
@@ -979,6 +1089,7 @@ useEffect(() => {
           setIsWrongGuess={setIsWrongGuess}
           guessSubmitCount={guessSubmitCount}
           maxGuessSubmitCount={MAX_GUESS_SUBMIT_COUNT}
+          canAnswer={playerPermissions.canAnswer}
         />
         </div>
       </div>

@@ -119,10 +119,15 @@ const ReadyButton: React.FC<ReadyButtonProps> = ({
 
   if (!currentUser) return null;
   
-  // 시작 버튼 클릭 핸들러 - 이제 sessionId를 우선적으로 사용
+  // 시작 버튼 클릭 핸들러 - sessionId 사용
   const handleStartGame = () => {
     // 비활성화 상태면 아무 동작하지 않음
     if (disabled) return;
+    
+    // 세션 ID 확인
+    if (!sessionId) {
+      console.warn('세션 ID가 없어 게임을 시작할 수 없습니다.');
+    }
     
     // 기존 onStartGame 호출하여 웹소켓 메시지 전송
     onStartGame();
