@@ -9,16 +9,22 @@ from fastapi.middleware.cors import CORSMiddleware
 import base64  # 추가
 import os
 
+from fastapi.middleware.cors import CORSMiddleware
+
+origins = [
+    "https://www.drawaing.site",
+    "http://localhost:5173",
+]
+
 app = FastAPI()
-
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 모든 도메인 허용 (필요에 따라 수정 가능)
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # GPU가 있다면 GPU 사용, 없다면 CPU 사용
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -46,9 +52,9 @@ def transform_image(image_bytes, save_transformed_image=True):
     print(f"Original Image Size: {image.size}")  # 이미지 크기 확인
 
     transform = transforms.Compose([
-        transforms.Resize((112, 112)),
+        transforms.Resize((224, 224)),
         transforms.ToTensor(),
-        transforms.Normalize(mean=[0.5004, 0.4997, 0.5000], std=[0.2895, 0.2899, 0.2895])  # 새로운 평균값과 표준편차
+        transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])  # 새로운 평균값과 표준편차
     ])
 
     image_tensor = transform(image).unsqueeze(0)
