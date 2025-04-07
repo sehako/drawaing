@@ -15,5 +15,10 @@ public class SocketSession {
     private String id;
     private String memberId;
     private String socketSessionId;
+    private String roomId;
+    private String sessionId;
 
+    public static SocketSession create(String memberId, String socketSessionId) {
+        return SocketSession.builder().memberId(memberId).socketSessionId(socketSessionId).build();
+    }
 }
