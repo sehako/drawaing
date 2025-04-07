@@ -94,9 +94,9 @@ const PlayerSection: React.FC<PlayerSectionProps> = ({
     paredUser,
     onPlayerRoleChange 
 }) => {
-    console.log('PlayerSection에서 받은 paredUser:', paredUser);
-    console.log('현재 사용자 ID:', paredUser?.id);
-    console.log('현재 사용자 이름:', paredUser?.name);
+    // console.log('PlayerSection에서 받은 paredUser:', paredUser);
+    // console.log('현재 사용자 ID:', paredUser?.id);
+    // console.log('현재 사용자 이름:', paredUser?.name);
     
     // 기본 플레이어 데이터 추가
     const defaultPlayers: Player[] = [
@@ -107,7 +107,7 @@ const PlayerSection: React.FC<PlayerSectionProps> = ({
     ];
 
     // storedPlayersList 체크 및 활성화 로그
-    console.log('storedPlayersList 원본:', storedPlayersList);
+    // console.log('storedPlayersList 원본:', storedPlayersList);
     
     // 플레이어 배열을 확실하게 가져오기
     const playerArray: Player[] = (Array.isArray(storedPlayersList) && storedPlayersList.length > 0) 
@@ -160,7 +160,7 @@ const PlayerSection: React.FC<PlayerSectionProps> = ({
     // 현재 라운드의 플레이어 배치
     const currentPositions = getCurrentPositions();
     
-    console.log('현재 포지션 배치:', currentPositions);
+    // console.log('현재 포지션 배치:', currentPositions);
     
     // 문자열로 된 avatar가 들어왔을 때 실제 이미지로 변환
     const getAvatarImage = (avatarStr: string | undefined): string => {
