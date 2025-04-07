@@ -51,8 +51,8 @@ export const createStompClient = (roomId?: string): Client => {
       console.log(str);
     },
     reconnectDelay: 5000,
-    heartbeatIncoming: 10000, // 유지하기 위해서
-    heartbeatOutgoing: 10000,
+    heartbeatIncoming: 30000, // 유지하기 위해서
+    heartbeatOutgoing: 30000,
   });
 };
 
