@@ -18,6 +18,13 @@ public enum ErrorCode {
     //Redis
     REDIS_CONNECTION_FAILURE(INTERNAL_SERVER_ERROR, "레디스 서버 연결에 실패하였습니다."),
     REDIS_TIMEOUT(INTERNAL_SERVER_ERROR, "레디스 서버 연결에서 시간 초과가 발생하였습니다."),
+    //S3
+    EMPTY_DATA(BAD_REQUEST, "데이터가 비어있습니다."),
+    MISSING_FILE_EXTENSION(BAD_REQUEST, "파일 확장자가 없습니다."),
+    UNSUPPORTED_FILE_EXTENSION(BAD_REQUEST, "허용되지 않는 파일 확장자입니다."),
+    S3_UPLOAD_ERROR(INTERNAL_SERVER_ERROR, "S3 업로드 중 오류가 발생했습니다."),
+    S3_DELETE_ERROR(INTERNAL_SERVER_ERROR, "S3 이미지 삭제 중 오류가 발생했습니다."),
+    INVALID_IMAGE_URL(BAD_REQUEST, "S3 이미지 주소를 가져오는 중 오류가 발생했습니다."),
     //Image
     INVALID_REQUEST(BAD_REQUEST, "올바르지 않은 요청입니다."),
     INVALID_IMAGE_FORMAT(BAD_REQUEST, "지원하지 않는 이미지 형식입니다."),
