@@ -602,6 +602,22 @@ useEffect(() => {
     );
   }
 
+
+  // 방 코드 복사 함수를 추가합니다
+  const copyRoomCode = () => {
+    if (displayRoomCode) {
+      navigator.clipboard.writeText(displayRoomCode)
+        .then(() => {
+          // 복사 성공 시 사용자에게 알림
+          alert('방 코드가 클립보드에 복사되었습니다!');
+        })
+        .catch(err => {
+          console.error('클립보드 복사 실패:', err);
+          alert('방 코드 복사에 실패했습니다. 수동으로 복사해주세요.');
+        });
+    }
+  };
+
   return (
     <div className="relative w-full min-h-screen bg-amber-50">
       {isEnteringGame && (
@@ -668,6 +684,7 @@ useEffect(() => {
           isConnected={isConnected}
           onShowInstructions={handleShowInstructions}
           onLeaveRoom={leaveRoom}
+          onCopyRoomCode={copyRoomCode}
         />
         
         {/* 플레이어 슬롯 컨테이너 */}
