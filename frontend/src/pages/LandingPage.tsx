@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import LoginModal from '../components/landing/LoginModal';
 import SignupModal from '../components/landing/SignupModal';
 import { useAuth } from '../contexts/AuthContext';
@@ -97,15 +98,45 @@ const LandingPage: React.FC = () => {
   // 소셜 로그인 핸들러
   const handleSocialLogin = async (provider: string) => {
     try {
-      // 여기에 소셜 로그인 API 호출 로직 추가
-      alert(`${provider} 로그인을 시도합니다.`);
-      
-      // 로그인 성공 시 페이지 이동
+      // 1. 소셜 로그인 요청 URL 생성
+      const loginUrl = `https://www.drawaing.site/service/auth/api/v1/oauth2/authorization/${provider}?redirect_uri=https://www.drawaing.site/oauth/redirect`;
+  
+      // 2. 소셜 로그인 페이지로 리다이렉트
+      window.location.href = loginUrl;
     } catch (error) {
       console.error(`${provider} 로그인 오류:`, error);
       alert(`${provider} 로그인에 실패했습니다. 다시 시도해주세요.`);
     }
   };
+  // 리다이렉트 후 AccessToken 처리 및 사용자 정보 요청
+const handleRedirect = async () => {
+  try {
+    // 3. 현재 URL에서 AccessToken 추출
+    const urlParams = new URLSearchParams(window.location.search);
+    const accessToken = urlParams.get('accessToken');
+
+    if (!accessToken) {
+      throw new Error('AccessToken이 없습니다.');
+    }
+
+    console.log('Access Token:', accessToken);
+
+    // 4. AccessToken으로 사용자 정보 요청
+    const response = await axios.get('https://www.drawaing.site/service/auth/api/v1/member/info', {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    // 사용자 정보 처리
+    const userInfo = response.data;
+    console.log('User Info:', userInfo);
+    alert(`환영합니다, ${userInfo.nickname}!`);
+  } catch (error) {
+    console.error('사용자 정보 요청 오류:', error);
+    alert('사용자 정보를 가져오는 데 실패했습니다.');
+  }
+};
 
   // 방 만들기 함수 수정
 const handleCreateRoom = async () => {

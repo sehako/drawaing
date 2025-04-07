@@ -57,14 +57,13 @@ export const authService = {
   },
 
   // 소셜 로그인
-  async socialLogin(provider: string, token: string): Promise<AuthResponse> {
+  async socialLogin(provider: string): Promise<AuthResponse> {
     try {
-      const response = await fetch(`${API_URL}/auth/${provider}`, {
-        method: 'POST',
+      const response = await fetch(`${API_URL}/service/auth/api/v1/oauth2/authorization/${provider}?redirect_uri=https://www.drawaing.site/oauth/redirect`, {
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ token }),
       });
 
       if (!response.ok) {
