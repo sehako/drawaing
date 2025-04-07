@@ -37,6 +37,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -54,6 +55,9 @@ public class MemberService {
     private final JwtTokenProvider jwtTokenProvider;
     private final RedisTemplate<String, String> redisTemplate;
     private final VerificationCodeCacheRepository verificationCodeCacheRepository;
+
+    @Value("${ImageUrl.defaultCharacter}")
+    private String defaultCharacter;
 
     public MemberResponse get(long memberId) {
         return MemberResponse.of(memberRepository.findMemberById(memberId).orElseThrow());
@@ -110,8 +114,7 @@ public class MemberService {
                 .password(passwordEncoder.encode(signUp.getPassword()))
                 .role(RoleType.ROLE_USER)
                 .providerType(ProviderType.LOCAL)
-                .characterImage(
-                        "https://i.pinimg.com/736x/8d/88/5f/8d885f3de74052403323f56445d83dab.jpg") // 임시로 넣어둠, 고칠 예정
+                .characterImage(defaultCharacter)
                 .build();
         memberRepository.save(member);
         drawingGameRecordRepository.save(DrawingGameRecord.from(member));
@@ -190,8 +193,7 @@ public class MemberService {
                 .nickname(randomNickname)
                 .role(RoleType.ROLE_GUEST)
                 .providerType(ProviderType.GUEST)
-                .characterImage(
-                        "https://i.pinimg.com/736x/8d/88/5f/8d885f3de74052403323f56445d83dab.jpg") // 임시로 넣어둠, 고칠 예정
+                .characterImage(defaultCharacter)
                 .build();
         log.info("게스트 회원가입 member: {}", member);
         memberRepository.save(member);
