@@ -39,27 +39,11 @@ const mockPlayers = [
 ];
 
 // 하드코딩된 결과 데이터
-const mockResults = {
-  "player1": {
-    winCnt: 5,
-    point: 28,
-    score: 250
-  },
-  "player2": {
-    winCnt: 3,
-    point: 22,
-    score: 190
-  },
-  "player3": {
-    winCnt: 2,
-    point: 15,
-    score: 135
-  },
-  "player4": {
-    winCnt: 1,
-    point: 10,
-    score: 80
-  }
+const mockResults: Record<string, PlayerResult> = {
+  player1: { winCnt: 5, point: 28, score: 250 },
+  player2: { winCnt: 3, point: 22, score: 190 },
+  player3: { winCnt: 2, point: 15, score: 135 },
+  player4: { winCnt: 1, point: 10, score: 80 }
 };
 
 // Score Explanation Modal Component
