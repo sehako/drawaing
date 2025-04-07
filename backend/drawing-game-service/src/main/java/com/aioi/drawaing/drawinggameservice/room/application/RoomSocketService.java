@@ -121,7 +121,7 @@ public class RoomSocketService {
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
         scheduler.schedule(() -> {
             drawingService.startSession(roomId, sessionId, addParticipantInfos);
-        }, 5, TimeUnit.SECONDS);
+        }, 7, TimeUnit.SECONDS);
     }
 
     private void validateJoinRoom(Room room, Long memberId) {
