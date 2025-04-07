@@ -60,7 +60,7 @@ public class MemberService {
     private String defaultCharacter;
 
     public MemberResponse get(long memberId) {
-        return MemberResponse.of(memberRepository.findMemberById(memberId).orElseThrow());
+        return MemberResponse.from(memberRepository.findMemberById(memberId).orElseThrow());
     }
 
     @Transactional
@@ -69,7 +69,7 @@ public class MemberService {
         member.infoUpdate(memberInfoUpdateRequest);
         memberRepository.saveAndFlush(member);
         log.info("member info updated: {}", member);
-        return MemberResponse.of(member);
+        return MemberResponse.from(member);
     }
 
     @Transactional
@@ -118,7 +118,7 @@ public class MemberService {
                 .build();
         memberRepository.save(member);
         drawingGameRecordRepository.save(DrawingGameRecord.from(member));
-        return ApiResponseEntity.from(SuccessCode.SUCCESS_MEMBER_REGISTER, MemberResponse.of(member));
+        return ApiResponseEntity.from(SuccessCode.SUCCESS_MEMBER_REGISTER, MemberResponse.from(member));
     }
 
     @Transactional
@@ -212,7 +212,7 @@ public class MemberService {
         CookieUtil.addCookie(response, REFRESH_TOKEN, tokenInfo.getRefreshToken(),
                 getRefreshTokenExpireTimeCookie());
 
-        return MemberLoginResponse.of(member, tokenInfo.getAccessToken());
+        return MemberLoginResponse.of(MemberResponse.from(member), tokenInfo.getAccessToken());
     }
 
     private Member processGuestSignUp(String refreshToken) {
