@@ -29,6 +29,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -63,6 +64,7 @@ public class AuthServiceImpl implements com.aioi.drawaing.authservice.auth.appli
 
     @Override
     @Transactional
+    @Async(value = "mailExecutor")
     public void sendEmailCode(EmailRequest emailRequest) {
         checkEmailDuplication(emailRequest.email());
 
