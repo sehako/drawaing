@@ -1,5 +1,5 @@
-// useGameTimer.ts 수정
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import gameTimerService, { TimerData, DEFAULT_TIMER_VALUES } from '../api/gameTimerService';
 import { Client } from '@stomp/stompjs';
 
@@ -26,12 +26,16 @@ const useGameTimer = ({
   sessionId,
   isGameOver = false
 }: UseGameTimerProps): UseGameTimerResult => {
+  // 라우터 네비게이션 추가
+  const navigate = useNavigate();
+  
   // 상태 관리
   const [timerData, setTimerData] = useState<TimerData>(DEFAULT_TIMER_VALUES);
   const [gameTimeLeft, setGameTimeLeft] = useState<number>(DEFAULT_TIMER_VALUES.totalTime);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
   const [stompClient, setStompClient] = useState<Client | null>(null);
+  const [redirectTriggered, setRedirectTriggered] = useState<boolean>(false);
   
   // 타이머 업데이트 콜백
   const handleTimerUpdate = useCallback((data: TimerData) => {
@@ -54,7 +58,7 @@ const useGameTimer = ({
     setError(null);
     
     try {
-      // console.log('타이머 구독 시작:', roomId, sessionId);
+      console.log('타이머 구독 시작:', roomId, sessionId);
       const client = gameTimerService.subscribeToTimerUpdates(
         roomId, 
         sessionId, 
@@ -76,22 +80,47 @@ const useGameTimer = ({
     }
   }, [roomId, sessionId, isGameOver, handleTimerUpdate]);
   
-  // 게임 타이머 카운트다운
+  // 게임 타이머 카운트다운 및 시간 종료 시 결과 페이지로 이동
   useEffect(() => {
     if (isGameOver) return;
     
+    console.log('타이머 업데이트: 현재 시간', gameTimeLeft);
+    
+    // 이미 시간이 0이면 즉시 결과 페이지로 이동
+    if (gameTimeLeft === 0 && !redirectTriggered && roomId) {
+      console.log('시간이 0입니다! 즉시 결과 페이지로 이동합니다.');
+      setRedirectTriggered(true);
+      navigate(`/result/${roomId}`);
+      return;
+    }
+    
     const gameTimer = setInterval(() => {
       setGameTimeLeft(prev => {
-        if (prev <= 0) {
+        const newTime = prev - 1;
+        console.log('타이머 감소:', newTime);
+        
+        if (newTime <= 0) {
           clearInterval(gameTimer);
+          
+          // 시간이 0이 되면 결과 페이지로 이동
+          if (!redirectTriggered && roomId) {
+            console.log('타이머가 0이 되었습니다! 결과 페이지로 이동합니다.');
+            setRedirectTriggered(true);
+            
+            // 즉시 이동
+            navigate(`/result/${roomId}`);
+          }
           return 0;
         }
-        return prev - 1;
+        return newTime;
       });
     }, 1000);
     
-    return () => clearInterval(gameTimer);
-  }, [isGameOver]);
+    return () => {
+      console.log('타이머 정리');
+      clearInterval(gameTimer);
+    };
+  }, [isGameOver, gameTimeLeft, redirectTriggered, roomId, navigate]);
   
   return {
     totalTime: timerData.totalTime,

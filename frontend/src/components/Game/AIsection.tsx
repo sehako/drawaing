@@ -25,7 +25,7 @@ interface AISectionProps {
   guessSubmitCount?: number; // 추가: 현재까지 사용한 제출 횟수
   maxGuessSubmitCount?: number; // 추가: 최대 제출 가능 횟수
   canAnswer?: boolean;
-  onSubmitMessage: (nickname: string, message: string) => void; // 추가
+  onSubmitMessage: (id: number, message: string) => void; // 추가
 
 }
 

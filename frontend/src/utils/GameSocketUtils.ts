@@ -23,6 +23,7 @@ export interface JoinRoomRequest {
 export interface GameStartMessage {
   startTime: string;  // ISO 시간 문자열 형식 (예: "2025-04-01T13:29:44.189Z")
   sessionId?: string; // sessionId 추가
+  isEntering?: boolean; // 게임 입장 중 상태 추가
 }
 
 // 웹소켓 클라이언트 생성 - roomId 파라미터 추가
@@ -133,6 +134,7 @@ export const sendGameStartMessage = (
   // 시작 시간 정보를 포함한 메시지 생성
   const message = {
     memberId: memberId,
+    isPreparingGame: true, // 게임 준비 중 상태 추가
     // startTime: startTime,  // 시작 시간 추가
     sessionId: useSessionId // sessionId 추가
   };
