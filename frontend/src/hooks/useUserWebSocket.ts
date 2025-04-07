@@ -230,12 +230,34 @@ const useUserWebSocket = ({
         } else if (data.type === 'GAME_START') {
           console.error('게임 시작 이벤트 감지 (전체 데이터):', data);
           
-          // payload에 startTime 필드 확인
+          // isPreparingGame 필드가 있는 경우 (게임 준비 중 상태)
+          if (data.payload && data.payload.isPreparingGame === true) {
+            console.log('게임 준비 중 상태 감지 - 입장 중 모달 표시');
+            
+            // 모든 플레이어에게 게임 입장 중 상태 설정
+            setGameStartInfo({
+              startTime: '',  // 아직 시작 시간은 설정되지 않음
+              isEntering: true // 게임 입장 중 상태 활성화
+            });
+            
+            // 채팅 메시지 업데이트
+            setChatMessages(prev => [
+              ...prev,
+              '시스템: 게임 준비 중입니다. 잠시만 기다려주세요.'
+            ]);
+            
+            return; // 여기서 처리 종료
+          }
+          
+          // startTime 필드가 있는 경우 (게임 시작 시간 정보)
           if (data.payload && data.payload.startTime) {
             console.error('게임 시작 시간 수신:', data.payload.startTime);
             
-            // 즉시 게임 시작 정보 설정
-            setGameStartInfo({ startTime: data.payload.startTime });
+            // 게임 시작 정보 설정 - 이미 isEntering이 true라면 유지
+            setGameStartInfo(prev => ({
+              startTime: data.payload.startTime,
+              isEntering: prev?.isEntering || true // 기존값 유지 또는 true로 설정
+            }));
             
             // 모든 클라이언트에 즉시 알림
             setChatMessages(prev => [
@@ -243,8 +265,15 @@ const useUserWebSocket = ({
               `시스템: 게임이 곧 시작됩니다. 준비하세요!`
             ]);
           } else {
-            console.error('게임 시작 페이로드에 startTime 없음:', data.payload);
+            console.error('게임 시작 페이로드에 필요한 정보가 없음:', data.payload);
+            
+            // 최소한의 정보로 진행 (안전장치)
+            setGameStartInfo({
+              startTime: '',
+              isEntering: true
+            });
           }
+        
         
         } else if (data.participants) {
           // participants 객체가 있는 경우 플레이어 목록 업데이트
@@ -265,43 +294,42 @@ const useUserWebSocket = ({
     });
     
     // 새로운 게임 시작 시간 정보 구독 (추가)
-    console.log(`게임 시작 시간 구독 시도: /topic/room.wait/${roomId}`);
-    client.subscribe(`/topic/room.wait/${roomId}`, (message) => {
-      try {
-        console.error('게임 시작 시간 메시지 수신 (FULL MESSAGE):', message);
-        console.error('메시지 본문:', message.body);
-        
-        const data = JSON.parse(message.body);
-        console.error('게임 시작 시간 데이터 수신 (전체):', data);
-        
-        // startTime 필드 확인
-        if (data && data.startTime) {
-          console.error('유효한 게임 시작 시간 수신:', data.startTime);
-          
-          // 게임 시작 정보 업데이트 (강제로 5초 이상 되도록)
-          const startTime = new Date(data.startTime);
-          const currentTime = new Date();
-          const timeUntilStart = startTime.getTime() - currentTime.getTime();
-          
-          // 최소 5초 이상 되도록 강제 설정
-          const adjustedStartTime = new Date(currentTime.getTime() + Math.max(timeUntilStart, 5000));
-          
-          setGameStartInfo({ startTime: adjustedStartTime.toISOString() });
-          
-          // 시스템 메시지 추가
-          const countdownSeconds = Math.ceil((adjustedStartTime.getTime() - currentTime.getTime()) / 1000);
-          
-          setChatMessages(prev => [
-            ...prev, 
-            `시스템: 게임이 ${countdownSeconds}초 후에 시작됩니다. 준비하세요!`
-          ]);
-        } else {
-          console.error('게임 시작 시간이 없거나 유효하지 않음:', data);
-        }
-      } catch (error) {
-        console.error('게임 시작 메시지 파싱 오류:', error);
-      }
-    });
+    // 새로운 게임 시작 시간 정보 구독 (추가)
+console.log(`게임 시작 시간 구독 시도: /topic/room.wait/${roomId}`);
+client.subscribe(`/topic/room.wait/${roomId}`, (message) => {
+  try {
+    console.error('게임 시작 시간 메시지 수신 (FULL MESSAGE):', message);
+    console.error('메시지 본문:', message.body);
+    
+    const data = JSON.parse(message.body);
+    console.error('게임 시작 시간 데이터 수신 (전체):', data);
+    
+    // startTime 필드 확인
+    if (data && data.startTime) {
+      console.error('유효한 게임 시작 시간 수신:', data.startTime);
+      
+      // 게임 시작 정보 업데이트 - isEntering false로 설정하여 카운트다운 모드로 전환
+      setGameStartInfo({
+        startTime: data.startTime,
+        isEntering: false // 입장 중 모달에서 카운트다운 모달로 전환
+      });
+
+      // 시스템 메시지 추가
+      const startTime = new Date(data.startTime);
+      const currentTime = new Date();
+      const countdownSeconds = Math.ceil((startTime.getTime() - currentTime.getTime()) / 1000);
+      
+      setChatMessages(prev => [
+        ...prev, 
+        `시스템: 게임이 ${countdownSeconds}초 후에 시작됩니다. 준비하세요!`
+      ]);
+    } else {
+      console.error('게임 시작 시간이 없거나 유효하지 않음:', data);
+    }
+  } catch (error) {
+    console.error('게임 시작 메시지 파싱 오류:', error);
+  }
+});
     
     // 채팅 메시지 구독 (기존)
     client.subscribe(`/topic/room/${roomId}/chat`, (message) => {
@@ -320,40 +348,40 @@ const useUserWebSocket = ({
     console.log('모든 구독 완료');
   }, [updatePlayersList, updatePlayerReadyStatus, addChatMessage]);
 
-  // 게임 시작 시간 정보에 따라 게임 화면으로 이동
-  useEffect(() => {
-    if (!gameStartInfo || !roomId) return;
+  // // 게임 시작 시간 정보에 따라 게임 화면으로 이동
+  // useEffect(() => {
+  //   if (!gameStartInfo || !roomId) return;
     
-    console.log('게임 시작 정보 감지:', gameStartInfo);
+  //   console.log('게임 시작 정보 감지:', gameStartInfo);
     
-    // ISO 시간 문자열을 Date 객체로 변환
-    const startTime = new Date(gameStartInfo.startTime);
-    const currentTime = new Date();
+  //   // ISO 시간 문자열을 Date 객체로 변환
+  //   const startTime = new Date(gameStartInfo.startTime);
+  //   const currentTime = new Date();
     
-    // 시작 시간과 현재 시간 차이 계산 (밀리초)
-    const timeUntilStart = startTime.getTime() - currentTime.getTime();
+  //   // 시작 시간과 현재 시간 차이 계산 (밀리초)
+  //   const timeUntilStart = startTime.getTime() - currentTime.getTime();
     
-    console.log(`게임 시작까지 ${timeUntilStart}ms 남음`);
+  //   console.log(`게임 시작까지 ${timeUntilStart}ms 남음`);
     
-    if (timeUntilStart <= 0) {
-      // 이미 시작 시간이 지났거나 현재 시간인 경우 즉시 이동
-      console.log('시작 시간이 이미 지났거나 현재임 - 즉시 게임 화면으로 이동');
-      navigate(`/game/${roomId}`);
-      return;
-    }
+  //   if (timeUntilStart <= 0) {
+  //     // 이미 시작 시간이 지났거나 현재 시간인 경우 즉시 이동
+  //     console.log('시작 시간이 이미 지났거나 현재임 - 즉시 게임 화면으로 이동');
+  //     navigate(`/game/${roomId}`);
+  //     return;
+  //   }
     
-    // 시작 시간에 맞춰 게임 화면으로 이동하는 타이머 설정
-    console.log(`${timeUntilStart}ms 후에 게임 화면으로 이동 예정`);
-    const startGameTimer = setTimeout(() => {
-      console.log('게임 시작 시간이 되었습니다 - 게임 화면으로 이동');
-      navigate(`/game/${roomId}`);
-    }, timeUntilStart);
+  //   // 시작 시간에 맞춰 게임 화면으로 이동하는 타이머 설정
+  //   console.log(`${timeUntilStart}ms 후에 게임 화면으로 이동 예정`);
+  //   const startGameTimer = setTimeout(() => {
+  //     console.log('게임 시작 시간이 되었습니다 - 게임 화면으로 이동');
+  //     navigate(`/game/${roomId}`);
+  //   }, timeUntilStart);
     
-    // 컴포넌트 언마운트 시 타이머 정리
-    return () => {
-      clearTimeout(startGameTimer);
-    };
-  }, [gameStartInfo, roomId, navigate]);
+  //   // 컴포넌트 언마운트 시 타이머 정리
+  //   return () => {
+  //     clearTimeout(startGameTimer);
+  //   };
+  // }, [gameStartInfo, roomId, navigate]);
 
   // joinRoom 함수
   const joinRoom = useCallback((client: Client, userInfo: JoinRoomRequest, roomId: string) => {

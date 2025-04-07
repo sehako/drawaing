@@ -1152,7 +1152,7 @@ useEffect(() => {
 </div>
 </div>
 
-        <div className="flex w-full max-w-7xl gap-4">
+        <div className="flex w-full max-w-7xl gap-4 ">
           {/* 플레이어 컴포넌트 - 좌측 */}
           <div className="w-1/5">
             <PlayerSection
