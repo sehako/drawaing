@@ -14,6 +14,11 @@ import java.util.Objects;
 import com.aioi.drawaing.drawinggameservice.room.presentation.RoomMessagePublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
@@ -110,12 +115,19 @@ public class RoomSocketService {
         Session session = drawingService.createSession(roomId);
 
         // 게임 시작 로직
-        drawingService.startSession(roomId, room.getSessionId(), room.getAddRoomParticipantInfos());
-
+        scheduleGameStart(roomId, room);
+//        drawingService.startSession(roomId, room.getSessionId(), room.getAddRoomParticipantInfos());
 
         room.updateSessionId(session.getId());
         room.deleteParticipants();
         repository.save(room);
+    }
+
+    private void scheduleGameStart(String roomId, Room room) {
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+        scheduler.schedule(() -> {
+            drawingService.startSession(roomId, room.getSessionId(), room.getAddRoomParticipantInfos());
+        }, 5, TimeUnit.SECONDS);
     }
 
     private void validateJoinRoom(Room room, Long memberId) {
