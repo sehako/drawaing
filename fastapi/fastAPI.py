@@ -31,7 +31,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # 모델 로드 (사전에 학습된 CNN 모델)
 model = ModifiedMnasNet(num_classes=90)  # 클래스 수를 맞춰서 초기화
-model.load_state_dict(torch.load("mnasnet10_112__79.pth", map_location=device))
+model.load_state_dict(torch.load("model/mnasnet10_112__79.pth", map_location=device))
 model.to(device)  # 모델을 GPU 또는 CPU로 이동
 model.eval()
 

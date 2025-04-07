@@ -12,9 +12,9 @@ class ModifiedMnasNet(nn.Module): # 쓰지 말 것. 속도도 느린데 성능�
         mnasnet = models.mnasnet1_0(weights=None)  # pretrained=False로 설정
         
         # 수동으로 받은 모델의 state_dict을 불러오기
-        model_path = 'mnasnet1.0_top1_73.512-f206786ef8.pth'  # 수동으로 다운로드한 모델의 경로
+        model_path = 'model/mnasnet1.0_top1_73.512-f206786ef8.pth'  # 수동으로 다운로드한 모델의 경로
         mnasnet.load_state_dict(torch.load(model_path))  # 모델 가중치 로드
-        mnasnet.load_state_dict(state_dict, strict=False)  # strict=False 옵션 추가
+        # mnasnet.load_state_dict(state_dict, strict=False)  # strict=False 옵션 추가
         
         # 마지막 classifier 레이어 수정
         mnasnet.classifier[1] = nn.Linear(mnasnet.classifier[1].in_features, num_classes)
