@@ -1,6 +1,7 @@
 package com.aioi.drawaing.drawinggameservice.room.application;
 
 import com.aioi.drawaing.drawinggameservice.drawing.application.DrawingService;
+import com.aioi.drawaing.drawinggameservice.drawing.domain.Session;
 import com.aioi.drawaing.drawinggameservice.room.application.dto.AddRoomParticipantInfo;
 import com.aioi.drawaing.drawinggameservice.room.application.dto.RoomStartInfo;
 import com.aioi.drawaing.drawinggameservice.room.domain.Room;
@@ -13,6 +14,11 @@ import java.util.Objects;
 import com.aioi.drawaing.drawinggameservice.room.presentation.RoomMessagePublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
@@ -65,6 +71,7 @@ public class RoomSocketService {
             throw new RuntimeException("모든 참여자가 준비되지 않았습니다.");
         }
 
+
         //게임 대기방에서 실제 게임으로 넘어가는 중간 대기 시간을 처리하는 함수
         transitionToGame(roomId, room);
     }
@@ -96,16 +103,24 @@ public class RoomSocketService {
 
     public void transitionToGame(String roomId, Room room) {
         roomMessagePublisher.publishRoomStart("/topic/room.wait/"+roomId, new RoomStartInfo(LocalDateTime.now().plusSeconds(5)));
-        try {
-            Thread.sleep(5000);
-        } catch (Exception e) {
-            log.error(e.getMessage());
-            throw new RuntimeException(e);
-        }
+
+        Session session = drawingService.createSession(roomId);
 
 //        log.info("test{}", room.getAddRoomParticipantInfos());
         // 게임 시작 로직
-        drawingService.startSession(roomId, room.getSessionId(), room.getAddRoomParticipantInfos());
+        scheduleGameStart(roomId, room.getSessionId(), room);
+//        drawingService.startSession(roomId, room.getSessionId(), room.getAddRoomParticipantInfos());
+
+        room.updateSessionId(session.getId());
+        room.deleteParticipants();
+        repository.save(room);
+    }
+
+    private void scheduleGameStart(String roomId, String sessionId, Room room) {
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+        scheduler.schedule(() -> {
+            drawingService.startSession(roomId, sessionId, room.getAddRoomParticipantInfos());
+        }, 5, TimeUnit.SECONDS);
     }
 
     private void validateJoinRoom(Room room, Long memberId) {
@@ -122,5 +137,9 @@ public class RoomSocketService {
     private Room getRoom(String roomId) {
         return repository.findById(roomId)
                 .orElseThrow(() -> new RuntimeException("방을 찾을 수 없습니다: " + roomId));
+    }
+
+    public void temp(String roomId, String request) {
+        roomMessagePublisher.publishTemp("/topic/temp/"+roomId, request);
     }
 }
