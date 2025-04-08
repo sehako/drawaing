@@ -420,18 +420,18 @@ const PlayerSection: React.FC<PlayerSectionProps> = ({
 
         {/* 오른쪽 말풍선 형태로 표시 (고정 크기) */}
         {process.env.NODE_ENV === 'development' && playerMessage && (
-        <div className="absolute top-[20px] right-[10px] w-[120px] h-[60px] z-10">
-            <div className="relative bg-white p-2 rounded-lg shadow-md border border-gray-300 w-full h-full flex items-center justify-center">
-            <p className="text-xs text-black break-words overflow-hidden">{playerMessage}</p>
-            {/* 말풍선 화살표 (왼쪽 방향) */}
-            <div className="absolute top-1/2 left-[-8px] transform -translate-y-1/2">
+          <div className="absolute bottom-[20px] right-[10px] w-[120px] z-10">
+            <div className="relative bg-yellow-100 p-2 rounded-lg shadow-md border border-gray-300 w-full min-h-[60px] flex items-center justify-center">
+              <p className="text-xm text-black break-words overflow-hidden text-center">{playerMessage}</p>
+              {/* 말풍선 화살표 (왼쪽 방향) */}
+              <div className="absolute top-1/2 left-[-8px] transform -translate-y-1/2">
                 <div className="w-0 h-0 
-                            border-t-[6px] border-t-transparent 
-                            border-r-[8px] border-r-gray-300 
-                            border-b-[6px] border-b-transparent"></div>
+                              border-t-[6px] border-t-transparent 
+                              border-r-[8px] border-r-gray-300 
+                              border-b-[6px] border-b-transparent"></div>
+              </div>
             </div>
-            </div>
-        </div>
+          </div>
         )}
       </div>
     );
