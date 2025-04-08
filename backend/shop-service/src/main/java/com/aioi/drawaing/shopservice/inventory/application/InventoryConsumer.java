@@ -16,7 +16,11 @@ public class InventoryConsumer {
     private final InventoryRepository inventoryRepository;
     private final ItemRepository itemRepository;
 
-    @KafkaListener(topics = "purchase-events", groupId = "inventory-group")
+    @KafkaListener(
+            topics = "purchase-events",
+            containerFactory = "purchaseEventListenerContainerFactory",
+            groupId = "inventory-group"
+    )
     public void updateInventory(PurchaseEvent event) {
         Item item = itemRepository.findById(event.itemId())
                 .orElseThrow(() -> new EntityNotFoundException("Item not found for ID: " + event.itemId()));

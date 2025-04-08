@@ -12,7 +12,10 @@ import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
+import org.springframework.kafka.listener.DefaultErrorHandler;
+import org.springframework.kafka.support.mapping.DefaultJackson2JavaTypeMapper;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
+import org.springframework.util.backoff.FixedBackOff;
 
 @Configuration
 @EnableKafka
@@ -22,14 +25,15 @@ public class KafkaConsumerConfig {
     private String bootstrapServers;
 
     @Bean
-    public ConsumerFactory<String, PurchaseEvent> consumerFactory() {
+    public ConsumerFactory<String, PurchaseEvent> purchaseEventConsumerFactory() {
         Map<String, Object> config = new HashMap<>();
         config.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         config.put(ConsumerConfig.GROUP_ID_CONFIG, "inventory-group");
         config.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
 
         JsonDeserializer<PurchaseEvent> deserializer = new JsonDeserializer<>(PurchaseEvent.class);
-        deserializer.addTrustedPackages("com.aioi.drawaing.shopservice.store.domain.*"); // PurchaseEvent 클래스가 있는 패키지 경로
+        deserializer.addTrustedPackages("com.aioi.drawaing");
+        deserializer.setTypeMapper(new DefaultJackson2JavaTypeMapper());
 
         return new DefaultKafkaConsumerFactory<>(
                 config,
@@ -39,10 +43,18 @@ public class KafkaConsumerConfig {
     }
 
     @Bean
-    public ConcurrentKafkaListenerContainerFactory<String, PurchaseEvent> kafkaListenerContainerFactory() {
+    public ConcurrentKafkaListenerContainerFactory<String, PurchaseEvent>
+    purchaseEventListenerContainerFactory() {
         ConcurrentKafkaListenerContainerFactory<String, PurchaseEvent> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
-        factory.setConsumerFactory(consumerFactory());
+        factory.setConsumerFactory(purchaseEventConsumerFactory());
+        // 에러 핸들러 설정
+        DefaultErrorHandler errorHandler = new DefaultErrorHandler(
+                (record, exception) -> { /* DLQ 전송 로직 */ },
+                new FixedBackOff(1000L, 3L) // 3회 재시도
+        );
+        factory.setCommonErrorHandler(errorHandler);
         return factory;
     }
 }
+
