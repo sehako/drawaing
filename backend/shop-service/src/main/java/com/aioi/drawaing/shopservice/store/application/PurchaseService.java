@@ -1,9 +1,9 @@
 package com.aioi.drawaing.shopservice.store.application;
 
-import com.aioi.drawaing.shopservice.inventory.infrastructure.repository.InventoryRepository;
 import com.aioi.drawaing.shopservice.store.domain.PurchaseEvent;
 import com.aioi.drawaing.shopservice.store.domain.Store;
 import com.aioi.drawaing.shopservice.store.infrastructure.repository.StoreRepository;
+import com.aioi.drawaing.shopservice.store.presentation.request.PurchaseRequest;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
@@ -16,26 +16,26 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class PurchaseService {
     private final StoreRepository storeRepository;
-    private final InventoryRepository inventoryRepository;
     private final KafkaTemplate<String, PurchaseEvent> kafkaTemplate;
 
-    public void processPurchase(Long memberId, Long itemId, int quantity) {
-        Store store = storeRepository.findByItem_ItemId(itemId)
+    public void processPurchase(PurchaseRequest request) {
+        Store store = storeRepository.findByItem_ItemId(request.itemId())
                 .orElseThrow(() -> new EntityNotFoundException("Item not found"));
 
-        validatePurchase(store, quantity);
+        validatePurchase(store, request.quantity(), request.price());
 
-        store.updateQuantity(quantity);
+        store.updateQuantity(request.quantity());
 
         // Kafka 이벤트 발행
         kafkaTemplate.send("purchase-events",
-                new PurchaseEvent(memberId, itemId, quantity, LocalDateTime.now()));
+                PurchaseEvent.of(request, LocalDateTime.now()));
     }
 
-    private void validatePurchase(Store store, int quantity) {
+    private void validatePurchase(Store store, int quantity, int price) {
         if (store.getIsQuantityLimited() && store.getRemainingQuantity() < quantity) {
             throw new RuntimeException("Not enough stock available");
         }
+
     }
 }
 

@@ -30,7 +30,7 @@ public class Inventory {
     @Column(name = "member_id", nullable = false)
     private Long memberId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "item_id", nullable = false)
     private Item item;
 

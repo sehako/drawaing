@@ -2,6 +2,7 @@ package com.aioi.drawaing.shopservice.store.domain;
 
 import com.aioi.drawaing.shopservice.item.domain.Item;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -25,7 +26,7 @@ public class Store {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long storeId;
 
-    @OneToOne
+    @OneToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "item_id", unique = true)
     private Item item;
 
@@ -36,8 +37,12 @@ public class Store {
 
     public void updateQuantity(Integer quantity) {
         if (this.isQuantityLimited) {
-            this.remainingQuantity = Math.max(this.remainingQuantity - quantity, 0);
+            if (this.remainingQuantity >= quantity) {
+                this.remainingQuantity = remainingQuantity - quantity;
+                this.soldQuantity += quantity;
+            }
+        } else {
+            this.soldQuantity += quantity;
         }
-        this.soldQuantity += quantity;
     }
 }
