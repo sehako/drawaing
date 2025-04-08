@@ -148,7 +148,7 @@ useEffect(() => {
   
   return (
     <div className="w-full h-full flex justify-center items-center">
-      <div className="w-[250px] h-[580px] flex flex-col bg-yellow-100 rounded-lg border-2 border-yellow-300 shadow-sm">
+      <div className="w-[250px] h-full flex flex-col bg-yellow-100 rounded-lg border-2 border-yellow-300 shadow-sm">
         {/* 첫 번째 이미지 컨테이너 */}
         <div className="flex-grow flex flex-col items-center justify-center bg-yellow-200 rounded-lg overflow-hidden m-2">
           <img 
