@@ -371,7 +371,7 @@ const PlayerSection: React.FC<PlayerSectionProps> = ({
 
     return (
         <div
-        className={`relative h-[135px] flex border-4 p-2 rounded-lg ${!isLast ? 'mb-3' : ''} ml-1
+        className={`relative h-[130px] flex border-4 p-2 rounded-lg ${!isLast ? 'mb-3' : ''} ml-1
             ${isCurrentUser ? 'bg-[#e8bcc7]' : 'bg-[#FDE047]'}
             ${isActive
             ? 'border-green-600 ring-2 ring-green-600'
@@ -438,7 +438,7 @@ const PlayerSection: React.FC<PlayerSectionProps> = ({
   };
 
   return (
-    <div className="h-[580px] w-[250px] flex flex-col overflow-hidden mt-2">
+    <div className="h-full w-[250px] flex flex-col overflow-hidden">
       {/* 디버그 정보 표시 */}
       <div className="hidden">
         <p>현재 플레이어 ID: {currentUserId}</p>

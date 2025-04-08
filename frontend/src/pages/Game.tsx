@@ -1094,7 +1094,7 @@ useEffect(() => {
 
       
 
-<div className=" items-center w-full max-w-7xl mb-4">
+      <div className=" items-center w-full max-w-7xl mb-4">
         {/* 금속 체인이 있는 나무 판자 */}
         <div className="relative flex justify-center items-center">
           {/* 왼쪽 금속 체인 */}
@@ -1221,7 +1221,7 @@ useEffect(() => {
         
         {/* 제시어 텍스트 */}
         <div className="flex flex-col items-center justify-center">
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#f5f5dc] drop-shadow-[2px_2px_0_rgba(0,0,0,0.5)] text-center">
+          <h1 className="text-6xl sm:text-6xl md:text-4xl font-bold text-[#f5f5dc] drop-shadow-[2px_2px_0_rgba(0,0,0,0.5)] text-center">
             {/* {playerPermissions.canSeeWord ? quizWord : '???'}
              */}
              {quizWord}
@@ -1254,8 +1254,8 @@ useEffect(() => {
 
         <div className="flex w-full max-w-7xl gap-4 ">
           {/* 플레이어 컴포넌트 - 좌측 */}
-          <div className="w-1/5">
-            <PlayerSection
+          <div className="bg-amber-100 rounded-xl h-[600px] border-4 border-amber-600 shadow-[4px_4px_0_0_rgba(0,0,0,0.3)] p-4">
+          <PlayerSection
               currentRound={currentRound}
               activeDrawerIndex={activeDrawerIndex}
               guesserIndex={guesserIndex}
@@ -1271,7 +1271,7 @@ useEffect(() => {
 
           {/* 캔버스 컴포넌트 - 중앙 */}
           <div className="w-3/5">
-            <div className="bg-amber-100 rounded-xl border-4 border-amber-600 shadow-[4px_4px_0_0_rgba(0,0,0,0.3)] p-4">
+            <div className="bg-amber-100 rounded-xl h-[600px] border-4 border-amber-600 shadow-[4px_4px_0_0_rgba(0,0,0,0.3)] p-4">
               <CanvasSection 
                 canvasRef={canvasRef}
                 context={context}
@@ -1309,7 +1309,7 @@ useEffect(() => {
 
           {/* AI 컴포넌트 - 우측 */}
           <div className="w-1/5">
-            <div className="bg-amber-100 rounded-xl border-4 border-amber-600 shadow-[4px_4px_0_0_rgba(0,0,0,0.3)] p-4">
+            <div className="bg-amber-100 h-[600px] rounded-xl border-4 border-amber-600 shadow-[4px_4px_0_0_rgba(0,0,0,0.3)] p-4">
               <AISection 
                 aiImages={aiImages}
                 aiAnswer={aiAnswer}
