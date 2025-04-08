@@ -15,6 +15,10 @@ import correctAnswerService from '../api/correctAnswerService';
 import background from '../assets/Game/background.jpg'
 import { DrawPoint } from '../api/drawingService';
 import { PlayerPermissions, PlayerRole, PositionMap } from '../components/Game/PlayerSection'; // 경로는 실제 PlayerSection 컴포넌트 위치에 맞게 조정
+import sessionInfoService from '../api/sessionInfoService';
+import turnService from '../api/turnService'; // 서비스 import 추가
+
+
 interface Player {
   id: number;
   name: string;
@@ -185,14 +189,15 @@ const Game: React.FC = () => {
   const [isEraser, setIsEraser] = useState<boolean>(false);
   const [lastPoint, setLastPoint] = useState<DrawPoint | null>(null);
 
-  const [playerMessages, setPlayerMessages] = useState<{[playerId: number]: string}>({});
+  const [playerMessages, setPlayerMessages] = useState<Record<number, string>>({});
 
 
   const [currentPlayerRole, setCurrentPlayerRole] = useState<PlayerRole | null>(null);
-
+  const [wordList, setWordList] = useState<string[]>([]);
+  const [drawOrder, setDrawOrder] = useState<number[]>([]);
+  const [sessionInfoData, setSessionInfoData] = useState<any>(null); // 전체 세션 데이터를 저장할 변수
   // const [lastPoint, setLastPoint] = useState<{ x: number; y: number } | null>(null);
   
-  // const [playerMessages, setPlayerMessages] = useState<{[playerId: string]: string}>({});
   const [storedSessionId, setStoredSessionId] = useState<string | null>(null);
   const [playerPermissions, setPlayerPermissions] = useState<PlayerPermissions>({
     canDraw: false,
@@ -272,7 +277,7 @@ const Game: React.FC = () => {
       console.log('로컬 스토리지에 currentUser가 없습니다.');
     }
   }, []);
-
+  
   // playerConnections 객체로부터 플레이어 정보를 동적으로 업데이트하는 useEffect 추가
   useEffect(() => {
     // 로컬 스토리지에서 ID 정보 가져오기
@@ -440,6 +445,67 @@ const Game: React.FC = () => {
   }
 }, [drawTime]);
 
+useEffect(() => {
+  if (!sessionId || !roomId) {
+    console.log('세션 ID 또는 방 ID가 없음:', { sessionId, roomId });
+    return;
+  }
+  
+  console.log('세션 정보 구독 시작:', { roomId, sessionId });
+  
+  const unsubscribe = sessionInfoService.subscribeToSessionInfo(
+    roomId,
+    sessionId,
+    (data) => {
+      console.log('세션 데이터 수신됨:', data);
+      
+      // 전체 세션 데이터 저장
+      setSessionInfoData(data);
+      
+      // 단어 목록 처리
+      if (data.word && Array.isArray(data.word)) {
+        console.log('단어 목록 수신:', data.word);
+        
+        // 단어 목록 상태 업데이트
+        setWordList(data.word);
+        
+        // 랜덤 단어 선택 (필요한 경우)
+        if (data.word.length > 0) {
+          const randomIndex = Math.floor(Math.random() * data.word.length);
+          const selectedWord = data.word[randomIndex];
+          console.log('선택된 단어:', selectedWord);
+          
+          // 퀴즈 단어 상태 업데이트
+          setQuizWord(selectedWord);
+        }
+      }
+      
+      // 그리기 순서 처리
+      if (data.drawOrder && Array.isArray(data.drawOrder)) {
+        console.log('그리기 순서 수신:', data.drawOrder);
+        
+        // 그리기 순서 상태 업데이트
+        setDrawOrder(data.drawOrder);
+        
+        // 현재 그리기 순서 처리 로직 (필요한 경우)
+        if (data.drawOrder.length > 0) {
+          console.log('첫 번째 그리기 순서:', data.drawOrder[0]);
+          
+          // 그리기 순서 관련 상태 업데이트 예시
+          // setActiveDrawerIndex(0); // 첫 번째 그리는 사람으로 설정
+        }
+      }
+    }
+  );
+  
+  // 컴포넌트 언마운트 시 구독 해제
+  return () => {
+    console.log('세션 정보 구독 해제');
+    unsubscribe();
+  };
+}, [roomId, sessionId]);
+
+
   useEffect(() => {
     // 이미 번호가 확정된 경우 넘어감
     if (localStorage.getItem('playerNumberConfirmed') === 'true') return;
@@ -547,6 +613,31 @@ const Game: React.FC = () => {
   
     const nextDrawerIndex = (activeDrawerIndex + 1) % 3;
     
+    // STOMP로 턴 종료 메시지 전송
+    if (roomId && sessionId) {
+      const initializeTurnService = async () => {
+        try {
+          // STOMP 클라이언트 초기화
+          await turnService.initializeClient(roomId, sessionId);
+          
+          // 턴 종료 메시지 전송
+          const success = turnService.sendTurnEnd(
+            roomId, 
+            sessionId, 
+            currentRound, 
+            activeDrawerIndex, 
+            nextDrawerIndex
+          );
+          
+          console.log('턴 종료 메시지 전송 결과:', success ? '성공' : '실패');
+        } catch (error) {
+          console.error('턴 종료 서비스 초기화 또는 메시지 전송 중 오류:', error);
+        }
+      };
+      
+      initializeTurnService();
+    }
+  
     if (nextDrawerIndex === 0) {
       // 세 번째 턴이 끝났을 때 라운드 전환 함수 호출
       transitionToNextRound();
@@ -631,15 +722,18 @@ const handleGuessSubmit = async (e: React.FormEvent) => {
   // 제출 횟수 증가
   setGuessSubmitCount(prev => prev + 1);
 
-  // 현재 플레이어 ID 가져오기
-  const playerNumber = localStorage.getItem('playerNumber') || "1";
-  const userId = getPlayerIdByNumber(playerNumber);
+  // 현재 사용자 정보 가져오기
+  const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+  
+  // memberId 또는 id 우선순위로 가져오기
+  const userId = parseInt(currentUser.memberId || currentUser.id || '0');
+  const nickname = currentUser.nickname || '플레이어';
   
   // 웹소켓으로 입력된 메시지 전송 (정답 여부와 상관없이)
   if (roomId && sessionId) {
     // 예시와 동일한 형식으로 메시지 객체 생성 및 로깅
     const messageObj = {
-      "userId": userId,
+      "userId": userId, // 동적으로 할당된 userId
       "message": guess,
       "createdAt": new Date().toISOString()
     };
@@ -651,14 +745,13 @@ const handleGuessSubmit = async (e: React.FormEvent) => {
     chatService.sendMessage(roomId, sessionId, userId, guess);
     
     // 사용자 콘솔 로그
-    console.log(`사용자 ${userId}가 메시지를 전송: ${guess}`);
+    console.log(`사용자 ${userId}(${nickname})가 메시지를 전송: ${guess}`);
     
     // 플레이어 메시지 상태 업데이트 (자신의 메시지도 말풍선으로 표시)
-    const playerId = mapUserIdToPlayerId(userId);
     setPlayerMessages(prev => {
       const updated = {
         ...prev,
-        [playerId]: guess
+        [nickname]: guess
       };
       console.log('업데이트된 playerMessages:', updated);
       return updated;
@@ -668,7 +761,7 @@ const handleGuessSubmit = async (e: React.FormEvent) => {
     setTimeout(() => {
       setPlayerMessages(prev => {
         const updated = { ...prev };
-        delete updated[playerId];
+        delete updated[nickname];
         return updated;
       });
     }, 5000);
@@ -755,6 +848,65 @@ const handleGuessSubmit = async (e: React.FormEvent) => {
   setGuess('');
 };
 
+
+// useEffect 내에서 채팅 서비스 초기화 및 구독
+useEffect(() => {
+  // 웹소켓이 연결되고 세션 ID가 있을 때만 실행
+  if (!sessionId || !roomId) return;
+  
+  const initChatService = async () => {
+    try {
+      await chatService.initializeClient(roomId, sessionId);
+      console.log('채팅 서비스 초기화 완료');
+      
+      // 메시지 수신 구독
+      const unsubscribe = chatService.subscribeToMessages(
+        roomId,
+        sessionId,
+        (message) => {
+          console.group('🎮 게임 메시지 처리');
+          console.log('수신된 메시지:', message);
+          
+          // 현재 사용자 정보 가져오기
+          const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+          const currentUserId = String(currentUser.memberId || currentUser.id || '0');
+          
+          // 메시지를 그대로 플레이어 메시지에 추가 (userId를 key로 사용)
+          setPlayerMessages(prev => {
+            const updated = {
+              ...prev,
+              [message.userId]: message.message
+            };
+            console.log('업데이트된 playerMessages:', updated);
+            return updated;
+          });
+          
+          // 5초 후 메시지 자동 제거
+          setTimeout(() => {
+            setPlayerMessages(prev => {
+              const updatedMessages = { ...prev };
+              delete updatedMessages[message.userId];
+              return updatedMessages;
+            });
+          }, 5000);
+          
+          console.groupEnd();
+        }
+      );
+      
+      // 컴포넌트 언마운트 시 구독 해제
+      return () => {
+        unsubscribe();
+      };
+    } catch (error) {
+      console.error('채팅 서비스 초기화 실패:', error);
+    }
+  };
+  
+  initChatService();
+  
+}, [isConnected, sessionId, roomId, quizWord]);
+
 const handlePass = () => {
   if (isGameOver) return;
 
@@ -763,6 +915,31 @@ const handlePass = () => {
     setAIRoundWinCount(prev => prev + 1);      
     setPassCount(prev => prev + 1);
     setEggCount(prev => Math.max(0, prev - 1));
+    
+    // STOMP로 턴 종료 메시지 전송
+    if (roomId && sessionId) {
+      const initializeTurnService = async () => {
+        try {
+          // STOMP 클라이언트 초기화
+          await turnService.initializeClient(roomId, sessionId);
+          
+          // 턴 종료 메시지 전송 (다음 턴은 0번 인덱스)
+          const success = turnService.sendTurnEnd(
+            roomId, 
+            sessionId, 
+            currentRound, 
+            activeDrawerIndex, 
+            0 // 세 번째 턴 후에는 다시 첫 번째 턴으로
+          );
+          
+          console.log('턴 종료 메시지 전송 결과:', success ? '성공' : '실패');
+        } catch (error) {
+          console.error('턴 종료 서비스 초기화 또는 메시지 전송 중 오류:', error);
+        }
+      };
+      
+      initializeTurnService();
+    }
     
     // 라운드 전환 함수 호출
     transitionToNextRound();
@@ -838,92 +1015,13 @@ useEffect(() => {
 }, [timeLeft, context, guesserIndex, activeDrawerIndex, isRoundTransitioning, isGameOver]);
 
 useEffect(() => {
-  // 웹소켓이 연결되고 세션 ID가 있을 때만 실행
-  if (!isConnected || !sessionId || !roomId) return;
-  
-  const initChatService = async () => {
-    try {
-      await chatService.initializeClient(roomId, sessionId);
-      console.log('채팅 서비스 초기화 완료');
-      
-      // 메시지 수신 구독
-      const unsubscribe = chatService.subscribeToMessages(
-        roomId,
-        sessionId,
-        (message) => {
-          console.group('🎮 게임 메시지 처리');
-          console.log('수신된 메시지:', message);
-          
-          // 현재 플레이어 ID 가져오기
-          const currentPlayerId = getPlayerIdByNumber(
-            localStorage.getItem('playerNumber') || "1"
-          );
-          
-          // 메시지를 플레이어 메시지로 변환
-          const playerId = mapUserIdToPlayerId(message.userId);
-          console.log('변환된 playerId:', playerId);
-          
-          // 플레이어 메시지 상태 업데이트
-          setPlayerMessages(prev => {
-            const updated = {
-              ...prev,
-              [playerId]: message.message
-            };
-            console.log('업데이트된 playerMessages:', updated);
-            return updated;
-          });
-          
-          // 5초 후 메시지 자동 제거
-          setTimeout(() => {
-            setPlayerMessages(prev => {
-              const updated = { ...prev };
-              delete updated[playerId];
-              console.log('메시지 제거 후 playerMessages:', updated);
-              return updated;
-            });
-          }, 5000);
-          
-          // 전체 채팅 메시지 저장
-          setChatMessages(prev => [
-            ...prev,
-            {
-              userId: message.userId,
-              message: message.message,
-              timestamp: message.createdAt || new Date().toISOString()
-            }
-          ]);
-          
-          // 정답 확인 로직
-          if (
-            message.userId !== currentPlayerId && 
-            message.message.trim().toLowerCase() === quizWord.toLowerCase()
-          ) {
-            console.log(`사용자 ${message.userId}가 정답을 맞췄습니다!`);
-            
-            if (message.userId === 999) {
-              handleAICorrectAnswer();
-            } else if (message.userId !== currentPlayerId) {
-              // 다른 플레이어 정답 처리 로직
-              console.log('다른 플레이어가 정답을 맞췄습니다.');
-            }
-          }
-          
-          console.groupEnd();
-        }
-      );
-      
-      // 컴포넌트 언마운트 시 구독 해제
-      return () => {
-        unsubscribe();
-      };
-    } catch (error) {
-      console.error('채팅 서비스 초기화 실패:', error);
-    }
-  };
-  
-  initChatService();
-  
-}, [isConnected, sessionId, roomId, quizWord]);
+  if (isConnected && sessionId) {
+    console.log('웹소켓 연결 상태:', isConnected);
+    console.log('현재 세션 ID:', sessionId);
+    console.log('현재 플레이어 연결 정보:', playerConnections);
+  }
+}, [isConnected, sessionId, playerConnections]);
+
   
   // 게임 시간 포맷 함수
   const formatGameTime = (seconds: number): string => {
@@ -937,15 +1035,17 @@ useEffect(() => {
 
 
 
+  // return 부분만 CSS 스타일을 변경한 코드입니다
   return (
-  <div className="flex justify-center items-center w-full min-h-screen bg-cover bg-[background] px-[150px] py-4 box-border flex-col">
+    <div className="relative w-full min-h-screen bg-amber-50">
+      {/* 게임 종료 모달 */}
       {isGameOver && (
         <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
-          <div className="bg-yellow-100 rounded-xl p-8 text-center border-4 border-yellow-500 shadow-lg max-w-2xl w-full">
-            <h2 className="text-4xl font-bold mb-6 text-yellow-800">게임 종료!</h2>
+          <div className="bg-amber-100 rounded-xl p-8 text-center border-4 border-amber-600 shadow-[5px_5px_0_0_rgba(0,0,0,0.3)] max-w-2xl w-full">
+            <h2 className="text-4xl font-bold mb-6 text-amber-800">게임 종료!</h2>
             <div className="text-2xl mb-6">
               <p className="mb-4">최종 점수</p>
-              <div className="flex justify-center items-center gap-8 bg-white p-4 rounded-lg shadow-inner">
+              <div className="flex justify-center items-center gap-8 bg-white p-4 rounded-lg border-4 border-amber-400 shadow-inner">
                 <div className="text-blue-700 font-bold text-3xl">사람: {humanRoundWinCount}</div>
                 <div className="text-2xl">VS</div>
                 <div className="text-red-700 font-bold text-3xl">AI: {aiRoundWinCount}</div>
@@ -961,7 +1061,7 @@ useEffect(() => {
 
             <button 
               onClick={() => navigate('/game-record')} 
-              className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-8 rounded-full text-xl shadow-md transition-colors duration-300"
+              className="mt-6 w-full py-3 bg-red-500 rounded-full border-4 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] hover:shadow-none hover:translate-y-1 hover:translate-x-1 text-white font-bold transition-all duration-200"
             >
               게임 종료
             </button>
@@ -976,121 +1076,265 @@ useEffect(() => {
         nextRound={currentRound + 1} 
       />
       
-      {/* 게임 정보 헤더 */}
-      <div className="w-full max-w-7xl h-[100px] mb-4">
-      <div className="flex justify-center items-center p-2.5 rounded-t-lg h-[150px] bg-yellow-200 mt-[-20px]">
-      <div className="flex items-center w-full justify-between">
-        <div className="text-5xl font-bold text-gray-800 whitespace-nowrap pl-10 ml-[-20px]">
-          ROUND {currentRound}
+      {/* 배경 이미지 */}
+      <div className="fixed inset-0 w-full h-full z-0">
+        <img 
+          className="w-full h-full object-cover"
+          src="/images/2727.jpg" 
+          alt="닭장 배경"
+        />
+        {/* 배경 그라데이션 오버레이 */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-amber-800/50"></div>
+      </div>
+      
+      {/* 컨텐츠 컨테이너 */}
+      <div className="relative z-10 flex flex-col min-h-screen max-w-7xl mx-auto p-4 sm:p-6">
+        {/* 게임 정보 헤더 */}
+      
+
+      
+
+      <div className=" items-center w-full max-w-7xl mb-4">
+        {/* 금속 체인이 있는 나무 판자 */}
+        <div className="relative flex justify-center items-center">
+          {/* 왼쪽 금속 체인 */}
+          <svg width="30" height="55" viewBox="0 0 30 55" className="absolute -top-12 left-8" xmlns="http://www.w3.org/2000/svg">
+            {/* 천장에 고정된 금속 후크 */}
+            <path d="M15,0 L15,2 Q18,2 18,5 L18,8 Q15,8 15,11 L15,14" 
+                  stroke="#888888" strokeWidth="3" fill="none" strokeLinecap="round" />
+            
+            {/* 금속 체인 링크들 */}
+            <defs>
+              {/* 금속 그라데이션 */}
+              <linearGradient id="metalGradientLeft" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#DEDEDE" />
+                <stop offset="50%" stopColor="#888888" />
+                <stop offset="100%" stopColor="#555555" />
+              </linearGradient>
+              
+              {/* 반짝이는 효과 */}
+              <linearGradient id="shineLeft" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.7" />
+                <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            
+            {/* 첫 번째 링크 */}
+            <ellipse cx="15" cy="18" rx="4" ry="6" fill="url(#metalGradientLeft)" stroke="#444444" strokeWidth="0.5" />
+            <ellipse cx="15" cy="18" rx="2" ry="3" fill="none" stroke="url(#shineLeft)" strokeWidth="0.8" opacity="0.5" />
+            
+            {/* 두 번째 링크 */}
+            <ellipse cx="15" cy="28" rx="4" ry="6" fill="url(#metalGradientLeft)" stroke="#444444" strokeWidth="0.5" />
+            <ellipse cx="15" cy="28" rx="2" ry="3" fill="none" stroke="url(#shineLeft)" strokeWidth="0.8" opacity="0.5" />
+            
+            {/* 세 번째 링크 */}
+            <ellipse cx="15" cy="38" rx="4" ry="6" fill="url(#metalGradientLeft)" stroke="#444444" strokeWidth="0.5" />
+            <ellipse cx="15" cy="38" rx="2" ry="3" fill="none" stroke="url(#shineLeft)" strokeWidth="0.8" opacity="0.5" />
+            
+            {/* 나무 판자에 부착된 고리 */}
+            <path d="M15,44 C18,44 20,46 20,48 C20,50 18,52 15,52 C12,52 10,50 10,48 C10,46 12,44 15,44 Z" 
+                  fill="#666666" stroke="#444444" strokeWidth="0.5" />
+            <path d="M13,46 C15,46 17,46 17,48 C17,50 15,50 15,50" 
+                  fill="none" stroke="#DDDDDD" strokeWidth="0.5" opacity="0.6" />
+          </svg>
+          
+          {/* 오른쪽 금속 체인 */}
+          <svg width="30" height="55" viewBox="0 0 30 55" className="absolute -top-12 right-8" xmlns="http://www.w3.org/2000/svg">
+            {/* 천장에 고정된 금속 후크 */}
+            <path d="M15,0 L15,2 Q18,2 18,5 L18,8 Q15,8 15,11 L15,14" 
+                  stroke="#888888" strokeWidth="3" fill="none" strokeLinecap="round" />
+            
+            {/* 금속 체인 링크들 */}
+            <defs>
+              {/* 금속 그라데이션 */}
+              <linearGradient id="metalGradientRight" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#DEDEDE" />
+                <stop offset="50%" stopColor="#888888" />
+                <stop offset="100%" stopColor="#555555" />
+              </linearGradient>
+              
+              {/* 반짝이는 효과 */}
+              <linearGradient id="shineRight" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.7" />
+                <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            
+            {/* 첫 번째 링크 */}
+            <ellipse cx="15" cy="18" rx="4" ry="6" fill="url(#metalGradientRight)" stroke="#444444" strokeWidth="0.5" />
+            <ellipse cx="15" cy="18" rx="2" ry="3" fill="none" stroke="url(#shineRight)" strokeWidth="0.8" opacity="0.5" />
+            
+            {/* 두 번째 링크 */}
+            <ellipse cx="15" cy="28" rx="4" ry="6" fill="url(#metalGradientRight)" stroke="#444444" strokeWidth="0.5" />
+            <ellipse cx="15" cy="28" rx="2" ry="3" fill="none" stroke="url(#shineRight)" strokeWidth="0.8" opacity="0.5" />
+            
+            {/* 세 번째 링크 */}
+            <ellipse cx="15" cy="38" rx="4" ry="6" fill="url(#metalGradientRight)" stroke="#444444" strokeWidth="0.5" />
+            <ellipse cx="15" cy="38" rx="2" ry="3" fill="none" stroke="url(#shineRight)" strokeWidth="0.8" opacity="0.5" />
+            
+            {/* 나무 판자에 부착된 고리 */}
+            <path d="M15,44 C18,44 20,46 20,48 C20,50 18,52 15,52 C12,52 10,50 10,48 C10,46 12,44 15,44 Z" 
+                  fill="#666666" stroke="#444444" strokeWidth="0.5" />
+            <path d="M13,46 C15,46 17,46 17,48 C17,50 15,50 15,50" 
+                  fill="none" stroke="#DDDDDD" strokeWidth="0.5" opacity="0.6" />
+          </svg>
+  {/* 실제 나무 색상에 가까운 나무판자 */}
+<div className="flex justify-center items-center p-2.5 bg-[#e3a95c] rounded-xl px-1 py-5 border-4 border-[#d68e46] shadow-[5px_5px_0_0_rgba(0,0,0,0.3)] w-full">
+  <div className="flex items-center w-full justify-between relative">
+    {/* 나뭇결 효과 - 실제 나무결과 유사한 패턴 */}
+    <div className="absolute inset-0 opacity-20">
+      <div className="w-full h-[2px] bg-[#8b4513] rounded-full mt-2" style={{ transform: 'rotate(0.2deg)' }}></div>
+      <div className="w-[97%] h-[1px] bg-[#8b4513] rounded-full mt-5 ml-3" style={{ transform: 'rotate(-0.1deg)' }}></div>
+      <div className="w-[95%] h-[1px] bg-[#8b4513] rounded-full mt-9 ml-5" style={{ transform: 'rotate(0.1deg)' }}></div>
+      <div className="w-[96%] h-[2px] bg-[#8b4513] rounded-full mt-13 ml-2" style={{ transform: 'rotate(-0.2deg)' }}></div>
+      {/* <div className="w-[98%] h-[1px] bg-[#8b4513] rounded-full mt-17 ml-1" style={{ transform: 'rotate(0.15deg)' }}></div>
+      <div className="w-[94%] h-[2px] bg-[#8b4513] rounded-full mt-20 ml-4" style={{ transform: 'rotate(-0.1deg)' }}></div>
+      <div className="w-[99%] h-[1px] bg-[#8b4513] rounded-full mt-24 ml-0" style={{ transform: 'rotate(0.05deg)' }}></div> */}
+      
+      {/* 나무 옹이 효과 */}
+      <div className="absolute w-6 h-6 rounded-full bg-[#8b5a2b] opacity-10 top-12 left-16"></div>
+      <div className="absolute w-4 h-4 rounded-full bg-[#8b5a2b] opacity-10 bottom-6 right-24"></div>
+    </div>
+    
+    {/* 실제 콘텐츠 */}
+    <div className="text-3xl sm:text-4xl md:text-5xl font-bold text-[#5d4037] whitespace-nowrap pl-4 sm:pl-10">
+      ROUND {currentRound}
+    </div>
+    
+    <div className="flex items-center space-x-4">
+      <div className="text-right text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-blue-600">
+        사람 {humanRoundWinCount}
+      </div>
+      
+      {/* 나무 판자 배경 */}
+      <div className="relative bg-amber-800 rounded-xl px-8 py-5 border-4 border-amber-900 shadow-[5px_5px_0_0_rgba(0,0,0,0.3)] min-w-[180px] sm:min-w-[220px]">
+        {/* 나뭇결 효과 - 불규칙한 나무 무늬 패턴 */}
+        <div className="absolute inset-0 opacity-15">
+          <div className="w-full h-[2px] bg-amber-950 rounded-full mt-2" style={{ transform: 'rotate(0.7deg)' }}></div>
+          <div className="w-[95%] h-[2px] bg-amber-950 rounded-full mt-6 ml-2" style={{ transform: 'rotate(-0.8deg)' }}></div>
+          <div className="w-[98%] h-[2px] bg-amber-950 rounded-full mt-10 ml-1" style={{ transform: 'rotate(0.4deg)' }}></div>
+          {/* <div className="w-[94%] h-[2px] bg-amber-950 rounded-full mt-14 ml-3" style={{ transform: 'rotate(-0.1deg)' }}></div> */}
+          
+          {/* 작은 옹이 효과 */}
+          <div className="absolute w-3 h-3 rounded-full bg-[#5d4037] opacity-20 top-3 right-5"></div>
         </div>
         
-        <div className="flex items-center space-x-4 mr-10">
-          <div className="text-right text-7xl">
-            사람 {humanRoundWinCount}
-          </div>
-          
-          <div className="relative flex items-center justify-center w-[200px] h-full mt-[-30px]">
-            <img 
-              src={word} 
-              alt="Word background" 
-              className="absolute w-full h-auto object-cover mb-5"
-            />
-            <div className="relative z-10 text-white text-3xl font-bold text-center mt-6">
-              {playerPermissions.canSeeWord ? quizWord : '???'}
-            </div>
-          </div>
-          
-          <div className="text-left text-7xl">
-            {aiRoundWinCount} AI
-          </div>
+        {/* 제시어 텍스트 */}
+        <div className="flex flex-col items-center justify-center">
+          <h1 className="text-6xl sm:text-6xl md:text-4xl font-bold text-[#f5f5dc] drop-shadow-[2px_2px_0_rgba(0,0,0,0.5)] text-center">
+            {/* {playerPermissions.canSeeWord ? quizWord : '???'}
+             */}
+             {quizWord}
+          </h1>
         </div>
         
-        <div className="bg-yellow-100 px-6 py-1 rounded-full border-2 border-yellow-400 text-xl font-bold shadow-md mr-5">
-          남은 시간: {formatGameTime(gameTimeLeft)}
-        </div>
+        {/* 못 효과 */}
+        <div className="absolute -top-2 left-10 w-4 h-4 rounded-full bg-[#696969] border border-[#4d4d4d]" 
+            style={{ boxShadow: 'inset 1px 1px 2px rgba(255,255,255,0.3), 1px 1px 1px rgba(0,0,0,0.5)' }}></div>
+        <div className="absolute -top-2 right-10 w-4 h-4 rounded-full bg-[#696969] border border-[#4d4d4d]"
+            style={{ boxShadow: 'inset 1px 1px 2px rgba(255,255,255,0.3), 1px 1px 1px rgba(0,0,0,0.5)' }}></div>
+        <div className="absolute -bottom-2 left-6 w-4 h-4 rounded-full bg-[#696969] border border-[#4d4d4d]"
+            style={{ boxShadow: 'inset 1px 1px 2px rgba(255,255,255,0.3), 1px 1px 1px rgba(0,0,0,0.5)' }}></div>
+        <div className="absolute -bottom-2 right-6 w-4 h-4 rounded-full bg-[#696969] border border-[#4d4d4d]"
+            style={{ boxShadow: 'inset 1px 1px 2px rgba(255,255,255,0.3), 1px 1px 1px rgba(0,0,0,0.5)' }}></div>
+      </div>
+      
+      <div className="text-left text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-red-600">
+        {aiRoundWinCount} AI
       </div>
     </div>
-      </div>
+    
+    <div className="bg-[#f5f5dc] px-3 sm:px-6 py-1 rounded-full border-2 sm:border-4 border-[#d2b48c] text-base sm:text-xl font-bold shadow-md mr-2 sm:mr-5">
+      남은 시간: {formatGameTime(gameTimeLeft)}
+    </div>
+  </div>
+</div>
+</div>
+</div>
 
-      <div className="flex w-full max-w-7xl">
-        {/* 플레이어 컴포넌트 - 좌측 */}
-        <div className="w-1/5 mr-4 mt-[-4px]">
-        <PlayerSection
-          currentRound={currentRound}
-          activeDrawerIndex={activeDrawerIndex}
-          guesserIndex={guesserIndex}
-          roomId={roomId || undefined}
-          playerConnections={playerConnections as any}
-          isConnected={isConnected}
-          playerMessages={playerMessages}
-          paredUser={paredUser} // paredUser 전달
-          storedPlayersList={storedPlayersList}
-          onPlayerRoleChange={handlePlayerRoleChange}
-        />
-        </div>
+        <div className="flex w-full max-w-7xl gap-4 ">
+          {/* 플레이어 컴포넌트 - 좌측 */}
+          <div className="bg-amber-100 rounded-xl h-[600px] border-4 border-amber-600 shadow-[4px_4px_0_0_rgba(0,0,0,0.3)] p-4">
+          <PlayerSection
+              currentRound={currentRound}
+              activeDrawerIndex={activeDrawerIndex}
+              guesserIndex={guesserIndex}
+              roomId={roomId || undefined}
+              playerConnections={playerConnections as any}
+              isConnected={isConnected}
+              playerMessages={playerMessages}
+              paredUser={paredUser}
+              storedPlayersList={storedPlayersList}
+              onPlayerRoleChange={handlePlayerRoleChange}
+            />
+          </div>
 
-        {/* 캔버스 컴포넌트 - 중앙 */}
-        <div className="w-3/5 mr-4">
-        <CanvasSection 
-          canvasRef={canvasRef}
-          context={context}
-          isDrawing={isDrawing}
-          setIsDrawing={setIsDrawing}
-          lastPoint={lastPoint}
-          setLastPoint={setLastPoint}
-          currentColor={currentColor}
-          isEraser={isEraser}
-          showCorrectAnswer={showCorrectAnswer}
-          quizWord={quizWord}
-          currentRound={currentRound}
-          hasCompleted={hasCompleted}
-          setHasCompleted={setHasCompleted} // 이 함수를 통해 그림 지운 후 다시 그리기 가능
-          handleColorChange={handleColorChange}
-          handleEraserToggle={handleEraserToggle}
-          handleNextPlayer={handleNextPlayer}
-          currentDrawer={currentDrawer}
-          calculateCurrentDrawerPlayerIndex={calculateCurrentDrawerPlayerIndex}
-          guess={guess}
-          setGuess={setGuess}
-          handleGuessSubmit={handleGuessSubmit}
-          handlePass={handlePass}
-          activeDrawerIndex={activeDrawerIndex}
-          handleCanvasSubmit={handleCanvasSubmit}
-          setPredictions={setPredictions}
-          roomId={roomId ?? ""}  // null이면 빈 문자열로 변환
-          sessionId={sessionId ?? ""}  // null이면 빈 문자열로 변환
-          canDraw={playerPermissions.canDraw}
-          timeLeft={timeLeft}
-          gameTimeLeft={gameTimeLeft}
+          {/* 캔버스 컴포넌트 - 중앙 */}
+          <div className="w-3/5">
+            <div className="bg-amber-100 rounded-xl h-[600px] border-4 border-amber-600 shadow-[4px_4px_0_0_rgba(0,0,0,0.3)] p-4">
+              <CanvasSection 
+                canvasRef={canvasRef}
+                context={context}
+                isDrawing={isDrawing}
+                setIsDrawing={setIsDrawing}
+                lastPoint={lastPoint}
+                setLastPoint={setLastPoint}
+                currentColor={currentColor}
+                isEraser={isEraser}
+                showCorrectAnswer={showCorrectAnswer}
+                quizWord={quizWord}
+                currentRound={currentRound}
+                hasCompleted={hasCompleted}
+                setHasCompleted={setHasCompleted}
+                handleColorChange={handleColorChange}
+                handleEraserToggle={handleEraserToggle}
+                handleNextPlayer={handleNextPlayer}
+                currentDrawer={currentDrawer}
+                calculateCurrentDrawerPlayerIndex={calculateCurrentDrawerPlayerIndex}
+                guess={guess}
+                setGuess={setGuess}
+                handleGuessSubmit={handleGuessSubmit}
+                handlePass={handlePass}
+                activeDrawerIndex={activeDrawerIndex}
+                handleCanvasSubmit={handleCanvasSubmit}
+                setPredictions={setPredictions}
+                roomId={roomId ?? ""}
+                sessionId={sessionId ?? ""}
+                canDraw={playerPermissions.canDraw}
+                timeLeft={timeLeft}
+                gameTimeLeft={gameTimeLeft}
+              />
+            </div>
+          </div>
 
-        />
-        </div>
-
-        {/* AI 컴포넌트 - 우측 */}
-        <div className="w-1/5">
-        <AISection 
-          aiImages={aiImages}
-          aiAnswer={aiAnswer}
-          guess={guess}
-          setGuess={setGuess}
-          handleGuessSubmit={handleGuessSubmit}
-          handlePass={handlePass}
-          eggCount={eggCount}
-          onAICorrectAnswer={handleAICorrectAnswer}
-          quizWord={quizWord}
-          predictions={predictions}
-          canPass={activeDrawerIndex === 2 && passCount < MAX_PASS_COUNT}
-          passCount={passCount}
-          isHumanCorrect={isHumanCorrect}
-          setIsHumanCorrect={setIsHumanCorrect}
-          isEmptyGuess={isEmptyGuess}
-          setIsEmptyGuess={setIsEmptyGuess}
-          isWrongGuess={isWrongGuess}
-          setIsWrongGuess={setIsWrongGuess}
-          guessSubmitCount={guessSubmitCount}
-          maxGuessSubmitCount={MAX_GUESS_SUBMIT_COUNT}
-          canAnswer={playerPermissions.canAnswer}
-        />
+          {/* AI 컴포넌트 - 우측 */}
+          <div className="w-1/5">
+            <div className="bg-amber-100 h-[600px] rounded-xl border-4 border-amber-600 shadow-[4px_4px_0_0_rgba(0,0,0,0.3)] p-4">
+              <AISection 
+                aiImages={aiImages}
+                aiAnswer={aiAnswer}
+                guess={guess}
+                setGuess={setGuess}
+                handleGuessSubmit={handleGuessSubmit}
+                handlePass={handlePass}
+                eggCount={eggCount}
+                onAICorrectAnswer={handleAICorrectAnswer}
+                quizWord={quizWord}
+                predictions={predictions}
+                canPass={activeDrawerIndex === 2 && passCount < MAX_PASS_COUNT}
+                passCount={passCount}
+                isHumanCorrect={isHumanCorrect}
+                setIsHumanCorrect={setIsHumanCorrect}
+                isEmptyGuess={isEmptyGuess}
+                setIsEmptyGuess={setIsEmptyGuess}
+                isWrongGuess={isWrongGuess}
+                setIsWrongGuess={setIsWrongGuess}
+                guessSubmitCount={guessSubmitCount}
+                maxGuessSubmitCount={MAX_GUESS_SUBMIT_COUNT}
+                canAnswer={playerPermissions.canAnswer}
+              />
+            </div>
+          </div>
         </div>
       </div>
     </div>

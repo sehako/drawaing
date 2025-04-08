@@ -25,6 +25,8 @@ interface AISectionProps {
   guessSubmitCount?: number; // 추가: 현재까지 사용한 제출 횟수
   maxGuessSubmitCount?: number; // 추가: 최대 제출 가능 횟수
   canAnswer?: boolean;
+  onSubmitMessage: (id: number, message: string) => void; // 추가
+
 }
 
 const AISection: React.FC<AISectionProps> = ({
@@ -49,6 +51,8 @@ const AISection: React.FC<AISectionProps> = ({
   guessSubmitCount = 0,
   maxGuessSubmitCount = 3, // 기본값 3으로 설정
   canAnswer = false, // 기본값을 false로 설정
+  onSubmitMessage,
+
 }) => {
   const [isPassModalOpen, setIsPassModalOpen] = useState(false);
   const [isCorrectModalOpen, setIsCorrectModalOpen] = useState(false);
@@ -144,7 +148,7 @@ useEffect(() => {
   
   return (
     <div className="w-full h-full flex justify-center items-center">
-      <div className="w-[250px] h-[580px] flex flex-col bg-yellow-100 rounded-lg border-2 border-yellow-300 shadow-sm">
+      <div className="w-[250px] h-full flex flex-col bg-yellow-100 rounded-lg border-2 border-yellow-300 shadow-sm">
         {/* 첫 번째 이미지 컨테이너 */}
         <div className="flex-grow flex flex-col items-center justify-center bg-yellow-200 rounded-lg overflow-hidden m-2">
           <img 

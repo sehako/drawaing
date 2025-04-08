@@ -1,4 +1,3 @@
-import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -249,65 +248,39 @@ const SignupModal: React.FC<SignupModalProps> = ({
   };
 
   // 회원가입 제출 핸들러
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  
-  // 유효성 검사
-  if (!validateForm()) {
-    return;
-  }
-  
-  try {
-    setIsLoading(true);
-    setError('');
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     
-    // 회원가입 API 호출
-    const response = await axios.post<SignupResponse>('/service/auth/api/v1/member/signup', {
-      nickname: username,
-      email,
-      password
-    });
+    // 유효성 검사
+    if (!validateForm()) {
+      return;
+    }
     
-    // 회원가입 성공 메시지 표시
-    alert(response.data.message);
-    
-    // 회원가입 후 로그인 API 호출
     try {
-      const loginResponse = await axios.post('/service/auth/api/v1/member/login', {
+      setIsLoading(true);
+      setError('');
+      
+      // 회원가입 API 호출
+      const response = await axios.post<SignupResponse>('/service/auth/api/v1/member/signup', {
+        nickname: username,
         email,
         password
       });
       
-      // 로그인 API의 응답에서 사용자 데이터를 User 타입에 맞게 변환
-      if (loginResponse.data && loginResponse.data.data) {
-        const userData: User = {
-          memberId: parseInt(loginResponse.data.data.memberId), // string을 number로 변환
-          nickname: loginResponse.data.data.nickname,
-          email: loginResponse.data.data.email,
-          characterImage: loginResponse.data.data.profileImg || null,
-          providerType: loginResponse.data.data.provider_type,
-          accessToken: loginResponse.data.data.accessToken
-        };
-        
-        // User 타입에 맞는 객체로 login 함수 호출
-        await login(userData);
-      }
-    } catch (loginErr) {
-      console.error('자동 로그인 실패:', loginErr);
-      // 로그인 실패해도 회원가입은 성공했으므로 진행
+      // 회원가입 성공 메시지 표시
+      alert('회원가입이 성공적으로 완료되었습니다. 로그인 페이지로 이동해주세요.');
+      
+      // 모달 닫기
+      closeModal();
+    } catch (err: any) {
+      console.error('회원가입 오류:', err);
+      setError(err.response?.data?.message || '회원가입에 실패했습니다. 다시 시도해주세요.');
+    } finally {
+      setIsLoading(false);
     }
-    
-    // 모달 닫기
-    closeModal();
-  } catch (err: any) {
-    console.error('회원가입 오류:', err);
-    setError(err.response?.data?.message || '회원가입에 실패했습니다. 다시 시도해주세요.');
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
-  // 이하 기존 렌더링 코드는 그대로 유지
+  // 이하 기존 컴포넌트 렌더링 로직은 그대로 유지
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50">
       <div className="absolute inset-0 bg-black opacity-50" onClick={closeModal}></div>
@@ -527,4 +500,4 @@ const handleSubmit = async (e: React.FormEvent) => {
   );
 };
 
-export default SignupModal;
+export default SignupModal;import React, { useState, useEffect } from 'react';

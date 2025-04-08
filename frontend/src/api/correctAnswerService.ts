@@ -69,7 +69,7 @@ const correctAnswerService = {
       return false;
     }
 
-    try {
+    try { 
       const destination = `/app/session.correct/${roomId}/${sessionId}`;
       const payload = {
         drawingMemberId,
