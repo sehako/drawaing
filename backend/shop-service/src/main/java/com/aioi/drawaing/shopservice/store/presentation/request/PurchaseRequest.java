@@ -7,6 +7,7 @@ import lombok.Builder;
 public record PurchaseRequest(
         Long memberId,
         Long itemId,
+        Integer price,
         Integer quantity
 ) {
 }
