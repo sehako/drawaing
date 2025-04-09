@@ -15,6 +15,6 @@ public interface InventoryRepository extends JpaRepository<Inventory, Long> {
     Optional<Inventory> findByMemberIdAndItemId(@Param("memberId") Long memberId, @Param("itemId") Long itemId);
 
     // JPQL: 회원 ID로 해당 회원의 모든 Inventory 조회 (페이징 지원)
-    @Query("SELECT i FROM Inventory i WHERE i.memberId = :memberId")
+    @Query("SELECT i FROM Inventory i JOIN FETCH i.item WHERE i.memberId = :memberId")
     Page<Inventory> findByMemberId(@Param("memberId") Long memberId, Pageable pageable);
 }

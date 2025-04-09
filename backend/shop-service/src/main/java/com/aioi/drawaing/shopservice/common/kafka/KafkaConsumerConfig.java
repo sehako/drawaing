@@ -28,12 +28,12 @@ public class KafkaConsumerConfig {
     public ConsumerFactory<String, PurchaseEvent> purchaseEventConsumerFactory() {
         Map<String, Object> config = new HashMap<>();
         config.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-        config.put(ConsumerConfig.GROUP_ID_CONFIG, "inventory-group");
+        config.put(ConsumerConfig.GROUP_ID_CONFIG, "inventory-group"); // 그룹 지정
         config.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
 
         JsonDeserializer<PurchaseEvent> deserializer = new JsonDeserializer<>(PurchaseEvent.class);
-        deserializer.addTrustedPackages("com.aioi.drawaing");
-        deserializer.setTypeMapper(new DefaultJackson2JavaTypeMapper());
+        deserializer.addTrustedPackages("com.aioi.drawaing"); // 신뢰하는 패키지 경로, * 금지, 발행자 기준임
+        deserializer.setTypeMapper(new DefaultJackson2JavaTypeMapper()); // 역직렬화 매퍼 명시적 지정
 
         return new DefaultKafkaConsumerFactory<>(
                 config,
