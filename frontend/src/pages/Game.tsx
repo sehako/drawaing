@@ -239,8 +239,8 @@ const Game: React.FC = () => {
     setPlayerPermissions(roleInfo.playerPermissions);
     
     // 디버깅용 로그
-    console.log('Game.tsx - 받은 플레이어 역할:', roleInfo.role);
-    console.log('Game.tsx - 받은 플레이어 권한:', roleInfo.playerPermissions);
+    // console.log('Game.tsx - 받은 플레이어 역할:', roleInfo.role);
+    // console.log('Game.tsx - 받은 플레이어 권한:', roleInfo.playerPermissions);
   };
 
   const [predictions, setPredictions] = useState<{ result: string; correct: boolean }>({

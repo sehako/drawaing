@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 
 // 기존 이미지 import
 import baby from '../../assets/Game/baby.png';
@@ -95,11 +95,6 @@ const PlayerSection: React.FC<PlayerSectionProps> = ({
     "순서3": null
   });
 
-  // console.log('PlayerSection에서 받은 paredUser:', paredUser);
-  // console.log('현재 사용자 ID:', paredUser?.id);
-  // console.log('현재 사용자 이름:', paredUser?.name);
-  // console.log('playerMessages:', playerMessages);
-
   // 기본 플레이어 데이터 추가
   const defaultPlayers: Player[] = [
     { id: 0, name: '플레이어1', level: 12, avatar: baby },
@@ -107,9 +102,6 @@ const PlayerSection: React.FC<PlayerSectionProps> = ({
     { id: 2, name: '플레이어3', level: 25, avatar: angry },
     { id: 3, name: '플레이어4', level: 16, avatar: chicken }
   ];
-
-  // storedPlayersList 체크 및 활성화 로그
-  //console.log('storedPlayersList 원본:', storedPlayersList);
 
   // 플레이어 배열을 확실하게 가져오기
   const playerArray: Player[] = (Array.isArray(storedPlayersList) && storedPlayersList.length > 0)
@@ -124,8 +116,8 @@ const PlayerSection: React.FC<PlayerSectionProps> = ({
   // 현재 사용자 ID (paredUser의 id 값)
   const currentUserId = paredUser?.id?.toString();
 
-  // 라운드별 플레이어 배치 정의 생성 함수 (수정)
-  const generateRoundPositions = (): RoundPositions => {
+  // 라운드별 플레이어 배치 정의 생성 함수를 useCallback으로 메모이제이션
+  const generateRoundPositions = useCallback((): RoundPositions => {
     const rounds: RoundPositions = {};
 
     // 플레이어 배열이 비어있으면 빈 객체 반환
@@ -147,23 +139,18 @@ const PlayerSection: React.FC<PlayerSectionProps> = ({
     }
 
     return rounds;
-  };
+  }, [playerArray]); // playerArray만 의존성으로 추가
 
-  // 라운드별 플레이어 배치
-  const roundPositions = generateRoundPositions();
+  // 라운드별 플레이어 배치를 useEffect 외부에서 한 번만 계산
+  const roundPositions = React.useMemo(() => generateRoundPositions(), [generateRoundPositions]);
 
-  // 현재 라운드에 맞는 플레이어 배치 가져오기
-  const getCurrentPositions = (): PositionMap => {
-    // 라운드가 4보다 크면 반복되도록 계산
-    const normalizedRound = ((currentRound - 1) % 4) + 1;
-    return roundPositions[normalizedRound] || roundPositions[1];
-  };
-
-  // 현재 라운드의 플레이어 배치
-  const currentPositions = getCurrentPositions();
+  // 현재 라운드의 플레이어 배치를 직접 계산 - 불필요한 함수 호출 제거
+  const normalizedRound = ((currentRound - 1) % 4) + 1;
+  const currentPositions = roundPositions[normalizedRound] || roundPositions[1];
 
   // 각 포지션에 해당하는 플레이어 ID 업데이트
   useEffect(() => {
+    // 의존성 배열에 문제가 있으므로 ref로 최적화합니다
     const updatedPositionIds: {[position: string]: number | null} = {
       "정답자": null,
       "순서1": null,
@@ -171,21 +158,27 @@ const PlayerSection: React.FC<PlayerSectionProps> = ({
       "순서3": null
     };
 
+    // 현재 라운드에 맞는 포지션 직접 계산 (의존성 줄이기)
+    const normalizedRound = ((currentRound - 1) % 4) + 1;
+    const positions = roundPositions[normalizedRound] || roundPositions[1];
+
     // 각 포지션에 해당하는 플레이어 ID 찾기
-    for (const position in currentPositions) {
-      const playerName = currentPositions[position as keyof PositionMap];
+    for (const position in positions) {
+      const playerName = positions[position as keyof PositionMap];
       const player = playerArray.find(p => p.name === playerName);
       if (player) {
         updatedPositionIds[position] = player.id;
       }
     }
 
-    setPositionIds(updatedPositionIds);
-    // console.log('포지션별 ID 업데이트:', updatedPositionIds);
-  }, [currentPositions, playerArray]);
-
-  // console.log('현재 포지션 배치:', currentPositions);
-  // console.log('포지션별 ID:', positionIds);
+    // JSON 문자열 비교로 깊은 비교 구현
+    const currentStr = JSON.stringify(positionIds);
+    const updatedStr = JSON.stringify(updatedPositionIds);
+    
+    if (currentStr !== updatedStr) {
+      setPositionIds(updatedPositionIds);
+    }
+  }, [currentRound, roundPositions, playerArray]); // currentPositions 의존성 제거
 
   // 문자열로 된 avatar가 들어왔을 때 실제 이미지로 변환
   const getAvatarImage = (avatarStr: string | undefined): string => {
@@ -209,7 +202,7 @@ const PlayerSection: React.FC<PlayerSectionProps> = ({
     }
   };
 
-  // 포지션에 해당하는 플레이어 정보 가져오기 (수정)
+  // 포지션에 해당하는 플레이어 정보 가져오기 (메모이제이션 대신 일반 함수로 변경)
   const getPlayerByPosition = (position: keyof PositionMap): Player => {
     const playerName = currentPositions[position];
 
@@ -236,106 +229,94 @@ const PlayerSection: React.FC<PlayerSectionProps> = ({
     return player.name;
   };
 
-  // 현재 플레이어가 맡고 있는 역할 찾기
-  const getCurrentPlayerRole = (): PlayerRole | null => {
-    if (!paredUser) return null;
+  // 해당 함수들은 useEffect 내부로 이동하여 무한 루프 방지
+  // useEffect 내부에서 직접 계산하도록 변경했습니다.
 
-    // 현재 포지션 배치에서 현재 플레이어 찾기
-    for (const [role, playerName] of Object.entries(currentPositions)) {
-      const player = playerArray.find(p => p.name === playerName);
-
-      // paredUser와 일치하는 플레이어 찾기
-      if (player && ((currentUserId && player.id.toString() === currentUserId) ||
-        (paredUser.id && player.id === paredUser.id))) {
-        return role as PlayerRole;
+  // 역할 및 권한 변경시 부모 컴포넌트에 전달 - useRef로 최적화
+  const lastRoleInfoRef = React.useRef<any>(null);
+  
+  useEffect(() => {
+    // 포지션에서 현재 사용자의 역할 직접 찾기
+    let currentRole: PlayerRole | null = null;
+    
+    if (paredUser) {
+      for (const [role, playerName] of Object.entries(currentPositions)) {
+        const player = playerArray.find(p => p.name === playerName);
+        if (player && ((currentUserId && player.id.toString() === currentUserId) ||
+          (paredUser.id && player.id === paredUser.id))) {
+          currentRole = role as PlayerRole;
+          break;
+        }
       }
     }
-    return null;
-  };
-
-  // 추가: 역할에 따른 권한 계산
-  const calculatePlayerPermissions = (role: PlayerRole | null): PlayerPermissions => {
-    if (!role) return { canDraw: false, canGuess: false, canSeeWord: false, canAnswer: false };
-
-    // 기본 권한 설정
+    
+    // 권한 직접 계산
     const permissions = {
       canDraw: false,
       canGuess: false,
       canSeeWord: false,
       canAnswer: false
     };
-
-    // 현재 턴에 그림을 그릴 수 있는 사람 설정
-    if ((activeDrawerIndex === 0 && role === "순서1") ||
-      (activeDrawerIndex === 1 && role === "순서2") ||
-      (activeDrawerIndex === 2 && role === "순서3")) {
-      permissions.canDraw = true;
+    
+    if (currentRole) {
+      // 그림 그리기 권한
+      if ((activeDrawerIndex === 0 && currentRole === "순서1") ||
+          (activeDrawerIndex === 1 && currentRole === "순서2") ||
+          (activeDrawerIndex === 2 && currentRole === "순서3")) {
+        permissions.canDraw = true;
+      }
+      
+      // 제시어 보기 권한
+      if (currentRole === "순서1" ||
+          (activeDrawerIndex >= 1 && currentRole === "순서2") ||
+          (activeDrawerIndex >= 2 && currentRole === "순서3")) {
+        permissions.canSeeWord = true;
+      }
+      
+      // 정답 맞추기 권한
+      if (currentRole === "정답자") {
+        permissions.canGuess = true;
+        permissions.canAnswer = true;
+      } else if (currentRole === "순서2" && activeDrawerIndex === 0) {
+        permissions.canGuess = true;
+        permissions.canAnswer = true;
+      } else if (currentRole === "순서3" && (activeDrawerIndex === 0 || activeDrawerIndex === 1)) {
+        permissions.canGuess = true;
+        permissions.canAnswer = true;
+      }
     }
-
-    // 제시어를 볼 수 있는 사람 설정
-    if (role === "순서1" ||
-      (activeDrawerIndex >= 1 && role === "순서2") ||
-      (activeDrawerIndex >= 2 && role === "순서3")) {
-      permissions.canSeeWord = true;
+    
+    const roleInfo = {
+      role: currentRole,
+      isCurrentPlayer: !!currentRole,
+      currentPositions,
+      playerPermissions: permissions
+    };
+    
+    // 이전 정보와 비교하여 변경된 경우에만 콜백 호출
+    const roleInfoStr = JSON.stringify(roleInfo);
+    const lastRoleInfoStr = lastRoleInfoRef.current ? JSON.stringify(lastRoleInfoRef.current) : '';
+    
+    if (roleInfoStr !== lastRoleInfoStr && onPlayerRoleChange) {
+      lastRoleInfoRef.current = roleInfo;
+      onPlayerRoleChange(roleInfo);
     }
-
-    // 정답을 맞출 수 있는 사람 설정 (canGuess와 canAnswer 모두 설정)
-    if (role === "정답자") {
-      // 정답자는 항상 정답 맞추기 가능
-      permissions.canGuess = true;
-      permissions.canAnswer = true;
-    } else if (role === "순서2" && activeDrawerIndex === 0) {
-      // 첫번째 턴에서 두번째 순서 사람은 정답 맞추기 가능
-      permissions.canGuess = true;
-      permissions.canAnswer = true;
-    } else if (role === "순서3" && (activeDrawerIndex === 0 || activeDrawerIndex === 1)) {
-      // 첫번째, 두번째 턴에서 세번째 순서 사람은 정답 맞추기 가능
-      permissions.canGuess = true;
-      permissions.canAnswer = true;
-    }
-
-    return permissions;
-  };
-
-  // 역할 및 권한 변경시 부모 컴포넌트에 전달
-  useEffect(() => {
-    const currentRole = getCurrentPlayerRole();
-    const permissions = calculatePlayerPermissions(currentRole);
-
-    if (onPlayerRoleChange) {
-      onPlayerRoleChange({
-        role: currentRole,
-        isCurrentPlayer: !!currentRole,
-        currentPositions,
-        playerPermissions: permissions
-      });
-    }
-
-    // 디버깅용 로그
-    // console.log('현재 플레이어 역할:', currentRole);
-    // console.log('현재 포지션 배치:', currentPositions);
-    // console.log('현재 플레이어 권한:', permissions);
-  }, [currentRound, activeDrawerIndex, paredUser]);
+  }, [currentRound, activeDrawerIndex, paredUser, playerArray, currentPositions, currentUserId, onPlayerRoleChange]);
 
   // ID로 플레이어 메시지 찾기
   const getPlayerMessageById = (playerId: number | null): string | undefined => {
     if (playerId === null) return undefined;
     
-    // console.log(`ID ${playerId}의 메시지 찾는 중...`, playerMessages);
-    
     // ID 값으로 메시지 찾기 (숫자형)
     if (playerMessages[playerId] !== undefined) {
-      // console.log(`ID ${playerId}(숫자형)로 메시지 찾음:`, playerMessages[playerId]);
       return playerMessages[playerId];
     }
     
     // ID 값으로 메시지 찾기 (문자열형)
     if (playerMessages[playerId.toString()] !== undefined) {
-      // console.log(`ID ${playerId}(문자열형)로 메시지 찾음:`, playerMessages[playerId.toString()]);
       return playerMessages[playerId.toString()];
     }
     
-    // console.log(`ID ${playerId}의 메시지를 찾지 못함`);
     return undefined;
   };
 
@@ -357,17 +338,6 @@ const PlayerSection: React.FC<PlayerSectionProps> = ({
     // 포지션별 ID로 메시지 찾기
     const positionId = positionIds[position];
     const playerMessage = getPlayerMessageById(positionId);
-
-    // console.log(`포지션 ${position}, 플레이어 ID: ${positionId}, 메시지: ${playerMessage}`);
-    // console.log('----------------------------------------');
-    // console.log(`포지션: ${position}`);
-    // console.log(`플레이어: ${player.name} (ID: ${player.id})`);
-    // console.log(`포지션 ID: ${positionId}`);
-    // console.log(`모든 메시지 키:`, Object.keys(playerMessages));
-    // console.log(`찾은 메시지: "${playerMessage}"`);
-    // console.log(`메시지 데이터 타입: ${typeof playerMessage}`);
-    // console.log(`메시지가 있나요? ${!!playerMessage}`);
-    // console.log('----------------------------------------');
 
     return (
         <div
