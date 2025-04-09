@@ -8,13 +8,20 @@ from model.modeling import ModifiedMnasNet  # 모델 클래스 임포트. 필요
 from fastapi.middleware.cors import CORSMiddleware
 import base64  # 추가
 import os
+from fastapi import Form
 
 from fastapi.middleware.cors import CORSMiddleware
+import logging
+from fastapi import HTTPException
 
 origins = [
     "https://www.drawaing.site",
     "http://localhost:5173",
 ]
+
+# 로그 설정
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
 app.add_middleware(
@@ -46,25 +53,27 @@ class_labels = ['airplane', 'ant', 'apple', 'axe', 'banana', 'barn', 'basket', '
                 'snowflake', 'snowman', 'soccer ball', 'spider', 'star', 'strawberry', 'sun', 'swan', 'table', 'tent', 'tractor', 'tree', 
                 'truck', 'umbrella', 'watermelon', 'whale', 'windmill']
 
+kor_labels = []
+
 # 이미지 변환 함수
 def transform_image(image_bytes, save_transformed_image=True):
     image = Image.open(BytesIO(image_bytes)).convert('RGB')  # RGBA나 RGB 이미지를 먼저 불러온 후
     #print(f"Original Image Size: {image.size}")  # 이미지 크기 확인
 
     transform = transforms.Compose([
-        transforms.Resize((224, 224)),
+        transforms.Resize((112, 112)),
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])  # 새로운 평균값과 표준편차
     ])
 
     image_tensor = transform(image).unsqueeze(0)
-    #print(f"Transformed Image Tensor Shape: {image_tensor.shape}")  # 변환된 텐서 크기 확인
+    print(f"Transformed Image Tensor Shape: {image_tensor.shape}")  # 변환된 텐서 크기 확인
 
-    #if save_transformed_image:
-    #    # 텐서를 PIL 이미지로 변환하여 저장
-    #    transformed_image = transforms.ToPILImage()(image_tensor.squeeze(0))
-    #    transformed_image.save("transformed_image.png")
-    #    print("Transformed image saved as 'transformed_image.png'")
+    if save_transformed_image:
+        # 텐서를 PIL 이미지로 변환하여 저장
+        transformed_image = transforms.ToPILImage()(image_tensor.squeeze(0))
+        transformed_image.save("transformed_image.png")
+        print("Transformed image saved as 'transformed_image.png'")
 
     return image_tensor
 
@@ -78,48 +87,59 @@ def save_image(image_bytes, filename="image.png"):
     print(f"Image saved at {save_path}")
 
 @app.post("/predict")
-async def predict(file: UploadFile = File(...)):
-    image_bytes = await file.read()
-    
-    # 이미지를 서버에 저장
-    # save_image(image_bytes, filename="image.png")
-    
-    # 이미지 변환
-    image_tensor = transform_image(image_bytes, save_transformed_image=True).to(device)
+async def predict(file: UploadFile = File(...), quizWord: str = Form(...)):
+    try:
+        # 파일 읽기
+        image_bytes = await file.read()
+        logger.debug(f"Received file: {file.filename}, size: {len(image_bytes)}")
+        
+        file.seek(0)  # Reset file position after reading
+        logger.debug(f"Received quizWord: {quizWord}")
 
-    with torch.no_grad():
-        outputs = model(image_tensor)
-        print("Raw outputs:", outputs)
-        probabilities = torch.nn.functional.softmax(outputs, dim=1)  # 확률 변환
-        top_probs, top_indices = torch.topk(probabilities, 5, dim=1)  # 상위 5개 예측
+        # 이미지 변환
+        image_tensor = transform_image(image_bytes, save_transformed_image=True).to(device)
 
-    # 예측 결과
-    top_predictions = [
-        {"class": class_labels[idx.item()], "probability": round(prob.item(), 4)}
-        for idx, prob in zip(top_indices[0], top_probs[0])
-    ]
+        with torch.no_grad():
+            outputs = model(image_tensor)
+            logger.debug(f"Raw outputs: {outputs}")
+            
+            probabilities = torch.nn.functional.softmax(outputs, dim=1)  # 확률 변환
+            top_probs, top_indices = torch.topk(probabilities, 5, dim=1)  # 상위 5개 예측
 
-    # quizWord와 비교하여 결과 결정
-    result = None
-    correct = False
+        # 예측 결과 처리
+        top_predictions = [
+            {"class": class_labels[idx.item()], "probability": round(prob.item(), 4)}
+            for idx, prob in zip(top_indices[0], top_probs[0])
+        ]
+        logger.debug(f"Top predictions: {top_predictions}")
 
-    # quizWord가 예측 목록에 있는지 확인
-    for prediction in top_predictions:
-        if prediction["class"] == quizWord:
-            result = quizWord
-            correct = True
-            break
-
-    if not correct:
-        # quizWord와 일치하지 않으면 가장 확률이 높은 예측을 result로 설정
-        result = top_predictions[0]["class"]
+        # quizWord와 비교하여 결과 결정
+        result = ""
         correct = False
+        logger.debug(f"초기 : {result} / {correct}")
+        
+        for prediction in top_predictions:
+            if prediction["class"] == quizWord:
+                result = quizWord
+                correct = True
+                break
 
-    # 결과 반환
-    return {
-        "result": result,
-        "correct": correct
-    }
+        if not correct:
+            # quizWord와 일치하지 않으면 가장 확률이 높은 예측을 result로 설정
+            result = top_predictions[0]["class"]
+            correct = False
+        
+        logger.debug(f"확인 : {result} / {correct}")
+
+        # 결과 반환
+        return {
+            "result": result,
+            "correct": correct
+        }
+    except Exception as e:
+        # 예외 처리
+        logger.error(f"Error occurred: {e}")
+        raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn
