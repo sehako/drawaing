@@ -57,26 +57,26 @@ export const authService = {
   },
 
   // 소셜 로그인
-  async socialLogin(provider: string): Promise<AuthResponse> {
-    try {
-      const response = await fetch(`${API_URL}/service/auth/api/v1/oauth2/authorization/${provider}?redirect_uri=https://www.drawaing.site/oauth/redirect`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+  // async socialLogin(provider: string): Promise<AuthResponse> {
+  //   try {
+  //     const response = await fetch(`${API_URL}/service/auth/api/v1/oauth2/authorization/${provider}?redirect_uri=https://www.drawaing.site/oauth/redirect`, {
+  //       method: 'GET',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       },
+  //     });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || '소셜 로그인에 실패했습니다.');
-      }
+  //     if (!response.ok) {
+  //       const errorData = await response.json();
+  //       throw new Error(errorData.message || '소셜 로그인에 실패했습니다.');
+  //     }
 
-      return await response.json();
-    } catch (error) {
-      console.error(`${provider} 로그인 오류:`, error);
-      throw error;
-    }
-  },
+  //     return await response.json();
+  //   } catch (error) {
+  //     console.error(`${provider} 로그인 오류:`, error);
+  //     throw error;
+  //   }
+  // },
 
   // 회원가입
   async register(userData: RegisterData): Promise<AuthResponse> {

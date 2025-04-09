@@ -142,16 +142,16 @@ const LoginModal: React.FC<LoginModalProps> = ({
             <span className="relative bg-yellow-300 px-4 text-sm text-gray-700 font-medium">소셜 계정으로 로그인</span>
           </div>
           
-          <div className="flex justify-center space-x-4">
+          <div className="flex justify-center space-x-10">
             {/* 카카오 로그인 버튼 */}
             <button 
               type="button"
               onClick={() => handleSocialLogin('kakao')}
-              className="w-full p-0 rounded-lg overflow-hidden border-2 border-black shadow-[2px_2px_0_0_rgba(0,0,0,1)] hover:shadow-[3px_3px_0_0_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:-translate-x-0.5 active:shadow-[1px_1px_0_0_rgba(0,0,0,1)] active:translate-x-0 active:translate-y-0 transition-all duration-200"
+              className="w-16 p-0 rounded-lg overflow-hidden hover:shadow-[3px_3px_0_0_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:-translate-x-0.5 active:shadow-[1px_1px_0_0_rgba(0,0,0,1)] active:translate-x-0 active:translate-y-0 transition-all duration-200"
               disabled={isLoading}
             >
               <img 
-                src="/images/kakao_login_large_narrow.png" 
+                src="/images/kakao_login.png" 
                 alt="카카오 로그인" 
                 className="w-full h-full object-contain"
               />
@@ -161,12 +161,25 @@ const LoginModal: React.FC<LoginModalProps> = ({
             <button 
               type="button"
               onClick={() => handleSocialLogin('naver')}
-              className="w-full p-0 rounded-lg overflow-hidden border-2 border-black shadow-[2px_2px_0_0_rgba(0,0,0,1)] hover:shadow-[3px_3px_0_0_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:-translate-x-0.5 active:shadow-[1px_1px_0_0_rgba(0,0,0,1)] active:translate-x-0 active:translate-y-0 transition-all duration-200"
+              className="w-16 p-0 rounded-lg overflow-hidden hover:shadow-[3px_3px_0_0_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:-translate-x-0.5 active:shadow-[1px_1px_0_0_rgba(0,0,0,1)] active:translate-x-0 active:translate-y-0 transition-all duration-200"
               disabled={isLoading}
             >
               <img 
                 src="/images/naver_login.png" 
                 alt="네이버 로그인" 
+                className="w-full h-full object-contain"
+              />
+            </button>
+
+            <button 
+              type="button"
+              onClick={() => handleSocialLogin('google')}
+              className="w-16 p-0 rounded-lg overflow-hidden hover:shadow-[3px_3px_0_0_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:-translate-x-0.5 active:shadow-[1px_1px_0_0_rgba(0,0,0,1)] active:translate-x-0 active:translate-y-0 transition-all duration-200"
+              disabled={isLoading}
+            >
+              <img 
+                src="/images/google_login.png" 
+                alt="구글 로그인" 
                 className="w-full h-full object-contain"
               />
             </button>

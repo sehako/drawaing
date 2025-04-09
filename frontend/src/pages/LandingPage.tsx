@@ -35,46 +35,6 @@ const LandingPage: React.FC = () => {
   // 애니메이션을 위한 상태 추가
   const [isPageLoaded, setIsPageLoaded] = useState(false);
 
-  const { login } = useAuth();
-  // Oauth 리다이렉트 및 사용자 정보 요청 처리
-  useEffect(() => {
-    const fetchUserInfo = async (accessToken: string) => {
-      try {
-        const response = await axios.get(
-          'https://www.drawaing.site/service/auth/api/v1/member/info',
-          { headers: { Authorization: `Bearer ${accessToken}` } }
-        );
-        
-        const LoginResponse = response.data;
-        console.log('Oauth 유저 정보:', LoginResponse);
-
-        // 로그인 함수 호출 (await 추가)
-        await login({
-          memberId: LoginResponse.data.memberId,
-          nickname: LoginResponse.data.nickname,
-          email: LoginResponse.data.email,
-          characterImage: LoginResponse.characterImage,
-          providerType: LoginResponse.data.providerType,
-          accessToken: LoginResponse.data.AccessToken, 
-          level: LoginResponse.data.level,
-          exp: LoginResponse.data.exp,
-          point: LoginResponse.data.point
-        });
-        
-      } catch (error) {
-        console.error('사용자 정보 요청 오류:', error);
-        alert('사용자 정보를 가져오는 데 실패했습니다.');
-      }
-    };
-
-    const urlParams = new URLSearchParams(window.location.search);
-    const accessToken = urlParams.get('accessToken');
-
-    if (accessToken) {
-      fetchUserInfo(accessToken); // 비동기 함수 호출
-    }
-  }, [login]); // login을 의존성 배열에 추가
-
   // 로그인 상태 확인 및 뷰 전환
   useEffect(() => {
     console.log('로그인 상태:', isAuthenticated);
@@ -140,10 +100,10 @@ const LandingPage: React.FC = () => {
     try {
       // 1. 소셜 로그인 요청 URL 생성
       console.log(`소셜 로그인 요청: ${provider}`);
-      const loginUrl = `https://www.drawaing.site/service/auth/api/v1/oauth2/authorization/${provider}?redirect_uri=https://www.drawaing.site/oauth/redirect`;
-  
+      const redirectUri = "https://www.drawaing.site/oauth/redirect";
+      const authUrl = `https://www.drawaing.site/service/auth/api/v1/oauth2/authorization/${provider}?redirect_uri=${redirectUri}`;
       // 2. 소셜 로그인 페이지로 리다이렉트
-      window.location.href = loginUrl;
+      window.location.href = authUrl;
     } catch (error) {
       console.error(`${provider} 로그인 오류:`, error);
       alert(`${provider} 로그인에 실패했습니다. 다시 시도해주세요.`);
@@ -509,8 +469,8 @@ const handleJoinRoom = async (inputRoomCode?: string) => {
                     <span className="text-3xl font-bold text-black font-['Press_Start_2P'] tracking-tight">방 찾기</span>
                   </button>
                 </div>
-                {/* 랭킹 보기 버튼 */}
-              <div
+                {/* 랭킹 버튼 */}
+                <div
                   className={`transition-all duration-1000 ${
                     isPageLoaded ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-10'
                   }`}
@@ -520,7 +480,21 @@ const handleJoinRoom = async (inputRoomCode?: string) => {
                     onClick={() => navigate('/ranking')} // 랭킹 페이지로 이동
                     className="w-64 h-20 bg-[#4CAF50] rounded-full flex items-center justify-center border-4 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] hover:shadow-[6px_6px_0_0_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 active:shadow-[2px_2px_0_0_rgba(0,0,0,1)] active:translate-x-0 active:translate-y-0 transition-all duration-200"
                   >
-                    <span className="text-3xl font-bold text-black font-['Press_Start_2P'] tracking-tight">랭킹 보기</span>
+                    <span className="text-3xl font-bold text-black font-['Press_Start_2P'] tracking-tight">랭킹</span>
+                  </button>
+                </div>
+                {/* 상점 버튼 */}
+                <div
+                  className={`transition-all duration-1000 ${
+                    isPageLoaded ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-10'
+                  }`}
+                  style={{ transitionDelay: '1.6s' }}
+                >
+                  <button
+                    onClick={() => navigate('/shop')} // 상점 페이지로 이동
+                    className="w-64 h-20 bg-[#FF5722] rounded-full flex items-center justify-center border-4 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] hover:shadow-[6px_6px_0_0_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 active:shadow-[2px_2px_0_0_rgba(0,0,0,1)] active:translate-x-0 active:translate-y-0 transition-all duration-200"
+                  >
+                    <span className="text-3xl font-bold text-black font-['Press_Start_2P'] tracking-tight">상점</span>
                   </button>
                 </div>
               </div>

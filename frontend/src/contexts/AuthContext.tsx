@@ -47,6 +47,8 @@ const setAuthToken = (token: string) => {
     
     // 로컬 스토리지에서 삭제
     localStorage.removeItem('token');
+    // 로컬 스토리지에서 사용자 정보 삭제
+    localStorage.removeItem('user');
     
     // axios 헤더 삭제
     delete axios.defaults.headers.common['Authorization'];
@@ -148,10 +150,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // 로그아웃 함수 - 모든 인증 상태 정리
   const logout = () => {
     try {
-      // 게스트 사용자가 아닐 경우만 서버에 로그아웃 요청
-      if (user && user.providerType !== 'GUEST') {
+      // 로그인 되어 있을 경우만 서버에 로그아웃 요청
+      if (user) {
         // 비동기 요청이지만 결과를 기다리지 않고 진행
-        axios.post('https://www.drawaing.site/service/auth/api/v1/member/signout', {}, {
+        axios.post('https://www.drawaing.site/service/auth/api/v1/member/logout', {}, {
           withCredentials: true
         }).catch(error => {
           console.warn('서버 로그아웃 요청 실패:', error);
