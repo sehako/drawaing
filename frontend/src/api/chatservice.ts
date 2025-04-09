@@ -1,4 +1,5 @@
 import { Client } from '@stomp/stompjs';
+import WebSocketService from '../hooks/WebSocketService';
 
 // 채팅 메시지 인터페이스
 export interface ChatMessage {
