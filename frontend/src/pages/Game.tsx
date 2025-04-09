@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import PlayerSection from '../components/Game/PlayerSection';
 import CanvasSection from '../components/Game/CanvasSection';
@@ -267,6 +267,15 @@ const Game: React.FC = () => {
     }
   };
 
+  const handleGameOver = useCallback(() => {
+    console.log('게임 타이머 종료, 게임 종료 처리');
+    setIsGameOver(true);
+    
+    // 게임 종료 시 필요한 추가 상태 리셋 로직이 있다면 여기에 추가
+    setIsDrawing(false);
+    setHasCompleted(true);
+  }, []);
+
   useEffect(() => {
     const savedUser = localStorage.getItem('currentUser');
     if (savedUser) {
@@ -397,9 +406,10 @@ const Game: React.FC = () => {
     isLoading: isTimerLoading,
     error: timerError
   } = useGameTimer({
-    roomId: roomId ?? "", // null이면 빈 문자열로 변환
+    roomId: roomId ?? "",
     sessionId: sessionId || '0',
-    isGameOver
+    isGameOver,
+    onTimerEnd: handleGameOver
   });
 
   
@@ -1060,7 +1070,7 @@ useEffect(() => {
             </p>
 
             <button 
-              onClick={() => navigate('/game-record')} 
+              onClick={() => navigate(`/result/${roomId}`)} 
               className="mt-6 w-full py-3 bg-red-500 rounded-full border-4 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] hover:shadow-none hover:translate-y-1 hover:translate-x-1 text-white font-bold transition-all duration-200"
             >
               게임 종료
