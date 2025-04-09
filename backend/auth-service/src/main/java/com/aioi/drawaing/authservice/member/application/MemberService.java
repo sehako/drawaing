@@ -59,6 +59,15 @@ public class MemberService {
     @Value("${ImageUrl.defaultCharacter}")
     private String defaultCharacter;
 
+    @Transactional
+    public void deductPoints(Long memberId, int point) {
+        Member member = memberRepository.findById(memberId).orElseThrow();
+
+        member.deductPoint(point);
+        memberRepository.save(member);
+        log.info("member deductPoints success : {}", member.getPoint());
+    }
+
     public MemberResponse get(long memberId) {
         return MemberResponse.from(memberRepository.findMemberById(memberId).orElseThrow());
     }

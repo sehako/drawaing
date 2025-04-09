@@ -8,6 +8,7 @@ import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
@@ -48,6 +49,17 @@ public class JwtTokenProvider {
 
     public Long extractIdFromToken(String Token) {
         return Long.parseLong(parseClaims(Token).getSubject());
+    }
+
+    public Long extractIdAccessToken(HttpServletRequest request) {
+        // Authorization 헤더에서 토큰 추출
+        String authorizationHeader = request.getHeader("Authorization");
+
+        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+            // "Bearer " 이후의 토큰 값 반환
+            return extractIdFromToken(authorizationHeader.substring(7));
+        }
+        return null;
     }
 
     public TokenInfo generateToken(Long id, String role) {
