@@ -8,6 +8,7 @@ from model.modeling import ModifiedMnasNet  # 모델 클래스 임포트. 필요
 from fastapi.middleware.cors import CORSMiddleware
 import base64  # 추가
 import os
+from fastapi import Form
 
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -45,14 +46,15 @@ class_labels = ['airplane', 'ant', 'apple', 'axe', 'banana', 'barn', 'basket', '
                 'rain', 'rainbow', 'rake', 'river', 'sandwich', 'saw', 'sheep', 'shovel', 'snail', 'snake', 
                 'snowflake', 'snowman', 'soccer ball', 'spider', 'star', 'strawberry', 'sun', 'swan', 'table', 'tent', 'tractor', 'tree', 
                 'truck', 'umbrella', 'watermelon', 'whale', 'windmill']
+                
 
 # 이미지 변환 함수
 def transform_image(image_bytes, save_transformed_image=True):
     image = Image.open(BytesIO(image_bytes)).convert('RGB')  # RGBA나 RGB 이미지를 먼저 불러온 후
-    print(f"Original Image Size: {image.size}")  # 이미지 크기 확인
+    #print(f"Original Image Size: {image.size}")  # 이미지 크기 확인
 
     transform = transforms.Compose([
-        transforms.Resize((224, 224)),
+        transforms.Resize((112, 112)),
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])  # 새로운 평균값과 표준편차
     ])
@@ -78,9 +80,9 @@ def save_image(image_bytes, filename="image.png"):
     print(f"Image saved at {save_path}")
 
 @app.post("/predict")
-async def predict(file: UploadFile = File(...)):
+async def predict(file: UploadFile = File(...), quizWord: str = Form(...)):
     image_bytes = await file.read()
-    
+
     # 이미지를 서버에 저장
     # save_image(image_bytes, filename="image.png")
     
@@ -91,15 +93,34 @@ async def predict(file: UploadFile = File(...)):
         outputs = model(image_tensor)
         print("Raw outputs:", outputs)
         probabilities = torch.nn.functional.softmax(outputs, dim=1)  # 확률 변환
-        top_probs, top_indices = torch.topk(probabilities, 10, dim=1)  # 상위 10개 예측
+        top_probs, top_indices = torch.topk(probabilities, 5, dim=1)  # 상위 5개 예측
 
+    # 예측 결과
     top_predictions = [
-        {"class": class_labels[idx.item()], "probability": round(prob.item(), 4)}  # 확률값을 포함
+        {"class": class_labels[idx.item()], "probability": round(prob.item(), 4)}
         for idx, prob in zip(top_indices[0], top_probs[0])
     ]
-    print(top_predictions)
+
+    # quizWord와 비교하여 결과 결정
+    result = ""
+    correct = False
+
+    # quizWord가 예측 목록에 있는지 확인
+    for prediction in top_predictions:
+        if prediction["class"] == quizWord:
+            result = quizWord
+            correct = True
+            break
+
+    if not correct:
+        # quizWord와 일치하지 않으면 가장 확률이 높은 예측을 result로 설정
+        result = top_predictions[0]["class"]
+        correct = False
+
+    # 결과 반환
     return {
-        "predictions": top_predictions,
+        "result": result,
+        "correct": correct
     }
 
 if __name__ == "__main__":
