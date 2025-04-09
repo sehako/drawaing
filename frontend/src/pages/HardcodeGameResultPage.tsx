@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { GameRoomHeader } from '../components/Game';
 
 // Type definitions
 interface PlayerResult {
@@ -163,6 +164,7 @@ const HardcodedGameResultPage: React.FC = () => {
   const navigate = useNavigate();
   const { roomId } = useParams();
   const [showExplanationModal, setShowExplanationModal] = useState<boolean>(false);
+  const [roomName, setRoomName] = useState<string>("");
   
   // 하드코딩된 결과를 랭킹 순서로 정렬
   const rankSortedPlayers = mockPlayers.map((player, index) => ({
@@ -171,9 +173,26 @@ const HardcodedGameResultPage: React.FC = () => {
     rank: index + 1 // 이미 점수 순으로 정렬되어 있다고 가정
   }));
 
+  // 컴포넌트가 마운트될 때 localStorage에서 원래 방 이름 가져오기
+  useEffect(() => {
+    const storedRoomName = localStorage.getItem('roomTitle');
+    if (storedRoomName) {
+      setRoomName(storedRoomName);
+    } else {
+      // 방 이름이 없는 경우 기본값 설정
+      setRoomName("닭장");
+    }
+  }, []);
+
   // Handle returning to waiting room
   const handleReturnToWaitingRoom = () => {
-    navigate(`/waiting-room/${roomId}`);
+    const storedRoomCode = localStorage.getItem('roomCode');
+    if (storedRoomCode) {
+      navigate(`/waiting-room/${storedRoomCode}`);
+    } else {
+      // 룸 코드가 없는 경우 홈으로 리다이렉트
+      navigate('/');
+    }
   };
 
   return (
@@ -211,10 +230,10 @@ const HardcodedGameResultPage: React.FC = () => {
                 <div className="w-full h-1 bg-amber-950 rounded-full my-2"></div>
               </div>
               
-              {/* 게임 결과 텍스트 */}
+              {/* 게임 결과 텍스트 - 원래 방 이름 포함 */}
               <div className="flex flex-col items-start">
                 <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-amber-100 drop-shadow-[2px_2px_0_rgba(0,0,0,0.5)]">
-                  게임 결과
+                  {roomName} - 게임 결과
                 </h1>
               </div>
               

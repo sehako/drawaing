@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
 interface GameRoomHeaderProps {
   roomName: string;
@@ -6,6 +6,7 @@ interface GameRoomHeaderProps {
   isConnected: boolean;
   onShowInstructions: () => void;
   onLeaveRoom: () => void;
+  onCopyRoomCode: () => void;
 }
 
 const GameRoomHeader: React.FC<GameRoomHeaderProps> = ({
@@ -13,34 +14,77 @@ const GameRoomHeader: React.FC<GameRoomHeaderProps> = ({
   displayRoomCode,
   isConnected,
   onShowInstructions,
-  onLeaveRoom
+  onLeaveRoom,
+  onCopyRoomCode
 }) => {
+  const [roomTitle, setRoomTitle] = useState<string>("");
+  const [isLocalHost, setIsLocalHost] = useState<boolean>(false);
+
+  useEffect(() => {
+    // 로컬 스토리지에서 방장 여부 확인
+    const storedIsHost = localStorage.getItem('isHost') === 'true';
+    setIsLocalHost(storedIsHost);
+
+    // 방장인 경우와 일반 플레이어인 경우에 따라 방 제목 설정
+    if (storedIsHost) {
+      // 방장인 경우 생성 시 입력한 제목 사용 (로컬 스토리지에서 가져옴)
+      const createdRoomTitle = localStorage.getItem('roomTitle');
+      if (createdRoomTitle) {
+        setRoomTitle(createdRoomTitle);
+      } else {
+        // 없는 경우 props로 전달된 값 사용
+        setRoomTitle(roomName || "닭장");
+      }
+    } else {
+      // 일반 플레이어인 경우 props로 전달된 값 사용 (서버에서 온 데이터)
+      setRoomTitle(roomName || "닭장");
+    }
+  }, [roomName]);
+
   return (
     <div className="flex justify-between items-center mb-6 z-20">
-      {/* 방 이름 나무 판자 */}
-      <div className="relative">
-        {/* 나무 판자 배경 */}
-        <div className="relative bg-amber-800 rounded-lg px-4 py-3 transform rotate-1 border-4 border-amber-900 shadow-[5px_5px_0_0_rgba(0,0,0,0.3)]">
-          {/* 나뭇결 효과 */}
-          <div className="absolute inset-0 opacity-10">
-            <div className="w-full h-1 bg-amber-950 rounded-full my-1"></div>
-            <div className="w-full h-1 bg-amber-950 rounded-full my-2"></div>
-            <div className="w-full h-1 bg-amber-950 rounded-full my-3"></div>
-            <div className="w-full h-1 bg-amber-950 rounded-full my-1"></div>
-            <div className="w-full h-1 bg-amber-950 rounded-full my-2"></div>
+      {/* 방 이름 나무 판자와 복사하기 버튼 컨테이너 */}
+      <div className="flex items-center space-x-2">
+        {/* 나무 판자 */}
+        <div className="relative">
+          {/* 나무 판자 배경 */}
+          <div className="relative bg-amber-800 rounded-lg px-4 py-3 transform rotate-1 border-4 border-amber-900 shadow-[5px_5px_0_0_rgba(0,0,0,0.3)]">
+            {/* 나뭇결 효과 */}
+            <div className="absolute inset-0 opacity-10">
+              <div className="w-full h-1 bg-amber-950 rounded-full my-1"></div>
+              <div className="w-full h-1 bg-amber-950 rounded-full my-2"></div>
+              <div className="w-full h-1 bg-amber-950 rounded-full my-3"></div>
+              <div className="w-full h-1 bg-amber-950 rounded-full my-1"></div>
+              <div className="w-full h-1 bg-amber-950 rounded-full my-2"></div>
+            </div>
+            
+            {/* 방 이름 텍스트 */}
+            <div className="flex flex-col items-start">
+              <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold font-['Press_Start_2P'] text-amber-100 drop-shadow-[2px_2px_0_rgba(0,0,0,0.5)]">
+                {roomTitle} <span className="mt-1 text-xs sm:text-sm text-amber-200">방 코드: {displayRoomCode || '로딩 중...'} {/* 복사하기 버튼 */}
+        {displayRoomCode && (
+          <button
+            onClick={onCopyRoomCode}
+            
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+            
+          </button>
+        )}</span>
+              </h1>
+
+              
+            </div>
+            
+            {/* 나무 판자 못 효과 */}
+            <div className="absolute -top-2 -left-1 w-4 h-4 bg-gray-600 rounded-full border-2 border-gray-800"></div>
+            <div className="absolute -bottom-2 -right-1 w-4 h-4 bg-gray-600 rounded-full border-2 border-gray-800"></div>
           </div>
-          
-          {/* 방 이름 텍스트 */}
-          <div className="flex flex-col items-start">
-            <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold font-['Press_Start_2P'] text-amber-100 drop-shadow-[2px_2px_0_rgba(0,0,0,0.5)]">
-              {roomName} <span className="mt-1 text-xs sm:text-sm text-amber-200">방 코드: {displayRoomCode || '로딩 중...'}</span>
-            </h1>
-          </div>
-          
-          {/* 나무 판자 못 효과 */}
-          <div className="absolute -top-2 -left-1 w-4 h-4 bg-gray-600 rounded-full border-2 border-gray-800"></div>
-          <div className="absolute -bottom-2 -right-1 w-4 h-4 bg-gray-600 rounded-full border-2 border-gray-800"></div>
         </div>
+
+        
       </div>
       
       {/* 연결 상태 표시 */}

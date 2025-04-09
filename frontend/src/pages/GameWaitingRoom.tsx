@@ -214,6 +214,8 @@ const GameWaitingRoom: React.FC = () => {
     // 화면에 표시할 roomCode 결정 (우선순위: URL 파라미터 > state > localStorage)
     const roomCodeToDisplay = paramRoomCode || stateRoomCode || storedRoomCode;
     
+    
+
     setActualRoomId(roomIdToUse);
     setDisplayRoomCode(roomCodeToDisplay);
     
@@ -282,6 +284,48 @@ const GameWaitingRoom: React.FC = () => {
     checkAuthStatus();
   }, [isAuthenticated, user, navigate]);
   
+  // 컴포넌트 마운트 시 방 이름 설정 로직 추가
+useEffect(() => {
+  // 방장 여부 확인
+  const isHost = localStorage.getItem('isHost') === 'true';
+  
+  if (isHost) {
+    // 방장인 경우 생성 시 입력한 제목 사용
+    const createdRoomTitle = localStorage.getItem('roomTitle');
+    if (createdRoomTitle) {
+      setRoomName(createdRoomTitle);
+    } else {
+      // 로컬 스토리지에 없는 경우 location.state에서 확인
+      if (location.state?.roomTitle) {
+        setRoomName(location.state.roomTitle);
+        // 로컬 스토리지에도 저장
+        localStorage.setItem('roomTitle', location.state.roomTitle);
+      } else {
+        // 둘 다 없는 경우 기본값 설정
+        setRoomName('즐거운 게임방');
+      }
+    }
+  } else {
+    // 일반 플레이어인 경우
+    // 서버에서 받은 데이터(location.state)를 우선 사용
+    if (location.state?.roomTitle) {
+      setRoomName(location.state.roomTitle);
+      // 로컬 스토리지에도 저장 (게임 결과 페이지에서 사용)
+      localStorage.setItem('roomTitle', location.state.roomTitle);
+    } else {
+      // location.state에 없는 경우 로컬 스토리지 확인
+      const storedRoomTitle = localStorage.getItem('roomTitle');
+      if (storedRoomTitle) {
+        setRoomName(storedRoomTitle);
+      } else {
+        // 둘 다 없는 경우 기본값 설정
+        setRoomName('즐거운 게임방');
+      }
+    }
+  }
+}, [location.state]);
+
+
   // currentUser가 업데이트되면 방장 여부 확인
   useEffect(() => {
     if (currentUser) {
@@ -602,6 +646,25 @@ useEffect(() => {
     );
   }
 
+
+  // 방 코드 복사 함수를 추가합니다
+  const copyRoomCode = () => {
+    if (displayRoomCode) {
+      navigator.clipboard.writeText(displayRoomCode)
+        .then(() => {
+          // 복사 성공 시 사용자에게 알림
+          alert('방 코드가 클립보드에 복사되었습니다!');
+        })
+        .catch(err => {
+          console.error('클립보드 복사 실패:', err);
+          alert('방 코드 복사에 실패했습니다. 수동으로 복사해주세요.');
+        });
+    }
+  };
+
+  // 화면에 표시할 roomTitle
+  const roomTitle = localStorage.getItem('roomTitle')
+
   return (
     <div className="relative w-full min-h-screen bg-amber-50">
       {isEnteringGame && (
@@ -668,6 +731,7 @@ useEffect(() => {
           isConnected={isConnected}
           onShowInstructions={handleShowInstructions}
           onLeaveRoom={leaveRoom}
+          onCopyRoomCode={copyRoomCode}
         />
         
         {/* 플레이어 슬롯 컨테이너 */}
