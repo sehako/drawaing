@@ -93,7 +93,7 @@ public class AuthorizationFilter extends AbstractGatewayFilterFactory<Config> {
             failureCode = FailureCode.NO_REFRESH_TOKEN;
             throw new NoRefreshTokenException("no refresh token");
         }
-        return BearerParser.parse(refreshToken);
+        return refreshToken;
     }
 
     public static class Config {
