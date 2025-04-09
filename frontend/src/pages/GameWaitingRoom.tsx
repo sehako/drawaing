@@ -546,61 +546,61 @@ useEffect(() => {
       return;
     }
     
-    if (window.confirm('정말로 방을 나가시겠습니까?')) {
-      // 나가기 플래그 설정 - 재연결 방지
-      setIsLeaving(true);
-      
-      // 10ms 지연 후 navigate를 실행하여 상태 변경이 적용되도록 함
-      const navigateTimer = setTimeout(() => {
-        if (stompClient && isConnected && actualRoomId && currentUser) {
+    // window.confirm 호출 제거
+    
+    // 나가기 플래그 설정 - 재연결 방지
+    setIsLeaving(true);
+    
+    // 10ms 지연 후 navigate를 실행하여 상태 변경이 적용되도록 함
+    const navigateTimer = setTimeout(() => {
+      if (stompClient && isConnected && actualRoomId && currentUser) {
+        try {
+          // 방 퇴장 메시지 전송
+          sendLeaveRoomMessage(
+            stompClient, 
+            currentUser.memberId!, 
+            currentUser.nickname, 
+            currentUser.characterUrl || "", 
+            actualRoomId
+          );
+          
+          console.log('방 퇴장 메시지 전송 완료');
+          
+          // 구독 취소 추가
           try {
-            // 방 퇴장 메시지 전송
-            sendLeaveRoomMessage(
-              stompClient, 
-              currentUser.memberId!, 
-              currentUser.nickname, 
-              currentUser.characterUrl || "", 
-              actualRoomId
-            );
-            
-            console.log('방 퇴장 메시지 전송 완료');
-            
-            // 구독 취소 추가
-            try {
-              stompClient.unsubscribe(`/topic/room/${actualRoomId}`);
-              stompClient.unsubscribe(`/topic/room/${actualRoomId}/chat`);
-              stompClient.unsubscribe(`/topic/room.wait/${actualRoomId}`); // 새로 추가된 구독 취소
-              console.log('구독 취소 완료');
-            } catch (error) {
-              console.error('구독 취소 중 오류:', error);
-            }
-            
-            // 로컬 스토리지에서 방 정보 제거
-            localStorage.removeItem('roomId');
-            localStorage.removeItem('roomCode');
-            localStorage.removeItem('isHost');
-            
-            // 웹소켓 연결 해제
-            stompClient.deactivate();
-            
-            // 페이지 이동
-            navigate('/');
+            stompClient.unsubscribe(`/topic/room/${actualRoomId}`);
+            stompClient.unsubscribe(`/topic/room/${actualRoomId}/chat`);
+            stompClient.unsubscribe(`/topic/room.wait/${actualRoomId}`); // 새로 추가된 구독 취소
+            console.log('구독 취소 완료');
           } catch (error) {
-            console.error('방 나가기 중 오류:', error);
-            navigate('/');
+            console.error('구독 취소 중 오류:', error);
           }
-        } else {
-          // 연결이 없는 경우 바로 페이지 이동
+          
+          // 로컬 스토리지에서 방 정보 제거
           localStorage.removeItem('roomId');
           localStorage.removeItem('roomCode');
           localStorage.removeItem('isHost');
+          
+          // 웹소켓 연결 해제
+          stompClient.deactivate();
+          
+          // 페이지 이동
+          navigate('/');
+        } catch (error) {
+          console.error('방 나가기 중 오류:', error);
           navigate('/');
         }
-      }, 10);
-      
-      // 컴포넌트 언마운트 시 타이머 정리를 위해 반환
-      return () => clearTimeout(navigateTimer);
-    }
+      } else {
+        // 연결이 없는 경우 바로 페이지 이동
+        localStorage.removeItem('roomId');
+        localStorage.removeItem('roomCode');
+        localStorage.removeItem('isHost');
+        navigate('/');
+      }
+    }, 10);
+    
+    // 컴포넌트 언마운트 시 타이머 정리를 위해 반환
+    return () => clearTimeout(navigateTimer);
   };
   
   // 쿠키에서 토큰 가져오기 함수
@@ -743,17 +743,6 @@ useEffect(() => {
         
         {/* 하단 영역 (채팅 및 버튼) */}
         <div className="flex flex-col sm:flex-row gap-4 mb-4">
-          {/* 채팅 영역 */}
-          <div className="w-full sm:w-2/3">
-            <ChatArea 
-              chatMessages={chatMessages}
-              chatInput={chatInput}
-              isConnected={isConnected}
-              onInputChange={handleChatInputChange}
-              onSubmit={handleSendChat}
-              chatEnabled={true} // 채팅 기능 비활성화 상태
-            />
-          </div>
           
           {/* 버튼 영역 */}
           <div className="w-full sm:w-1/3">
