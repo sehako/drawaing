@@ -49,7 +49,7 @@ class_labels = ['airplane', 'ant', 'apple', 'axe', 'banana', 'barn', 'basket', '
 # 이미지 변환 함수
 def transform_image(image_bytes, save_transformed_image=True):
     image = Image.open(BytesIO(image_bytes)).convert('RGB')  # RGBA나 RGB 이미지를 먼저 불러온 후
-    print(f"Original Image Size: {image.size}")  # 이미지 크기 확인
+    #print(f"Original Image Size: {image.size}")  # 이미지 크기 확인
 
     transform = transforms.Compose([
         transforms.Resize((224, 224)),
@@ -58,13 +58,13 @@ def transform_image(image_bytes, save_transformed_image=True):
     ])
 
     image_tensor = transform(image).unsqueeze(0)
-    print(f"Transformed Image Tensor Shape: {image_tensor.shape}")  # 변환된 텐서 크기 확인
+    #print(f"Transformed Image Tensor Shape: {image_tensor.shape}")  # 변환된 텐서 크기 확인
 
-    if save_transformed_image:
-        # 텐서를 PIL 이미지로 변환하여 저장
-        transformed_image = transforms.ToPILImage()(image_tensor.squeeze(0))
-        transformed_image.save("transformed_image.png")
-        print("Transformed image saved as 'transformed_image.png'")
+    #if save_transformed_image:
+    #    # 텐서를 PIL 이미지로 변환하여 저장
+    #    transformed_image = transforms.ToPILImage()(image_tensor.squeeze(0))
+    #    transformed_image.save("transformed_image.png")
+    #    print("Transformed image saved as 'transformed_image.png'")
 
     return image_tensor
 
@@ -91,15 +91,34 @@ async def predict(file: UploadFile = File(...)):
         outputs = model(image_tensor)
         print("Raw outputs:", outputs)
         probabilities = torch.nn.functional.softmax(outputs, dim=1)  # 확률 변환
-        top_probs, top_indices = torch.topk(probabilities, 10, dim=1)  # 상위 10개 예측
+        top_probs, top_indices = torch.topk(probabilities, 5, dim=1)  # 상위 5개 예측
 
+    # 예측 결과
     top_predictions = [
-        {"class": class_labels[idx.item()], "probability": round(prob.item(), 4)}  # 확률값을 포함
+        {"class": class_labels[idx.item()], "probability": round(prob.item(), 4)}
         for idx, prob in zip(top_indices[0], top_probs[0])
     ]
-    print(top_predictions)
+
+    # quizWord와 비교하여 결과 결정
+    result = None
+    correct = False
+
+    # quizWord가 예측 목록에 있는지 확인
+    for prediction in top_predictions:
+        if prediction["class"] == quizWord:
+            result = quizWord
+            correct = True
+            break
+
+    if not correct:
+        # quizWord와 일치하지 않으면 가장 확률이 높은 예측을 result로 설정
+        result = top_predictions[0]["class"]
+        correct = False
+
+    # 결과 반환
     return {
-        "predictions": top_predictions,
+        "result": result,
+        "correct": correct
     }
 
 if __name__ == "__main__":
