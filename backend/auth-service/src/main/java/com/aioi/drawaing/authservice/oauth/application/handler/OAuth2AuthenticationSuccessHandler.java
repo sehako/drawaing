@@ -87,7 +87,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
         log.info("RefreshTokenExpirationTime = {}", tokenInfo.getRefreshTokenExpirationTime());
         redisTemplate.opsForValue()
-                .set("RT:" + authentication.getName(), tokenInfo.getRefreshToken(),
+                .set("RT:" + user.getMemberId(), tokenInfo.getRefreshToken(),
                         tokenInfo.getRefreshTokenExpirationTime(), TimeUnit.MILLISECONDS);
 
         CookieUtil.deleteCookie(request, response, REFRESH_TOKEN);
