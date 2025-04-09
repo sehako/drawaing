@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import gameTimerService, { TimerData, DEFAULT_TIMER_VALUES } from '../api/gameTimerService';
 import WebSocketService from '../hooks/WebSocketService';
 
@@ -7,6 +6,7 @@ interface UseGameTimerProps {
   roomId?: string;
   sessionId?: string;
   isGameOver?: boolean;
+  onTimerEnd?: () => void; // 타이머 종료 콜백 추가
 }
 
 interface UseGameTimerResult {
@@ -21,16 +21,15 @@ interface UseGameTimerResult {
 const useGameTimer = ({
   roomId,
   sessionId,
-  isGameOver = false
+  isGameOver = false,
+  onTimerEnd // 타이머 종료 콜백
 }: UseGameTimerProps): UseGameTimerResult => {
-  const navigate = useNavigate();
   
   const [timerData, setTimerData] = useState<TimerData>(DEFAULT_TIMER_VALUES);
   const [gameTimeLeft, setGameTimeLeft] = useState<number>(DEFAULT_TIMER_VALUES.totalTime);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
-  const [redirectTriggered, setRedirectTriggered] = useState<boolean>(false);
-
+  
   // 구독 취소 함수를 저장할 ref
   const unsubscribeRef = useRef<(() => void) | null>(null);
   
@@ -61,7 +60,7 @@ const useGameTimer = ({
         const unsubscribe = WebSocketService.subscribe<TimerData>(
           `/topic/session.timer/${roomId}/${sessionId}`, 
           (data) => {
-            console.log('타이머 데이터 수신:', data);  // 로그 추가
+            console.log('타이머 데이터 수신:', data);
             const timerData: TimerData = {
               totalTime: data.totalTime ?? DEFAULT_TIMER_VALUES.totalTime,
               drawTime: data.drawTime ?? DEFAULT_TIMER_VALUES.drawTime
@@ -74,7 +73,7 @@ const useGameTimer = ({
         unsubscribeRef.current = unsubscribe;
         
         // 초기 타이머 정보 요청
-        console.log('초기 타이머 정보 요청');  // 로그 추가
+        console.log('초기 타이머 정보 요청');
         WebSocketService.publish(
           `/app/game/drawing/timer/request/${roomId}/${sessionId}`,
           { requestInitialState: true }
@@ -97,52 +96,43 @@ const useGameTimer = ({
     };
   }, [roomId, sessionId, isGameOver, handleTimerUpdate]);
   
-  // 게임 타이머 카운트다운 및 시간 종료 시 결과 페이지로 이동
-useEffect(() => {
-  if (isGameOver) return;
-  
-  console.log('로컬 타이머 시작:', gameTimeLeft);  // 로그 추가
-  
-  const gameTimer = setInterval(() => {
-    setGameTimeLeft(prev => {
-      // 백엔드에서 업데이트가 없을 때만 로컬에서 카운트다운
-      const newTime = prev - 1;
-      
-      if (newTime <= 0) {
-        clearInterval(gameTimer);
+  // 게임 타이머 카운트다운 수정: 결과 페이지 리다이렉트 대신 콜백 호출
+  useEffect(() => {
+    if (isGameOver) return;
+    
+    console.log('로컬 타이머 시작:', gameTimeLeft);
+    
+    const gameTimer = setInterval(() => {
+      setGameTimeLeft(prev => {
+        const newTime = prev - 1;
         
-        // 시간이 0이 되면 결과 페이지로 이동
-        if (!redirectTriggered && roomId) {
-          console.log('타이머 종료, 결과 페이지로 이동');  // 로그 추가
-          setRedirectTriggered(true);
-          navigate(`/result/${roomId}`);
+        if (newTime <= 0) {
+          clearInterval(gameTimer);
+          
+          // 시간이 0이 되면 모달을 표시하기 위해 콜백 함수 호출
+          if (onTimerEnd) {
+            console.log('타이머 종료, 게임 종료 모달 표시');
+            onTimerEnd();
+          }
+          return 0;
         }
-        return 0;
-      }
-      return newTime;
-    });
-  }, 1000);
-  
-  return () => {
-    clearInterval(gameTimer);
-  };
-}, [isGameOver, redirectTriggered, roomId, navigate]);
-  
-// 반환 직전에 로그 추가
-// console.log('타이머 훅 반환 값:', {
-// //   totalTime: timerData.totalTime,
-// //   drawTime: timerData.drawTime,
-// //   gameTimeLeft
-// });
+        return newTime;
+      });
+    }, 1000);
+    
+    return () => {
+      clearInterval(gameTimer);
+    };
+  }, [isGameOver, onTimerEnd]);
 
-return {
-  totalTime: timerData.totalTime,
-  drawTime: timerData.drawTime,
-  gameTimeLeft,
-  setGameTimeLeft,
-  isLoading,
-  error
-};
+  return {
+    totalTime: timerData.totalTime,
+    drawTime: timerData.drawTime,
+    gameTimeLeft,
+    setGameTimeLeft,
+    isLoading,
+    error
+  };
 };
 
 export default useGameTimer;
