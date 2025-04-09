@@ -31,7 +31,7 @@ public class JwtProvider {
 
         String memberId = parseToken(accessToken).getSubject();
 
-        if (!redisTokenService.getToken(memberId).equals(refreshToken)) {
+        if (!redisTokenService.getToken("RT:" + memberId).equals(refreshToken)) {
             throw new RuntimeException();
         }
         String role = parseToken(accessToken).get(AUTHORITIES_KEY, String.class);
