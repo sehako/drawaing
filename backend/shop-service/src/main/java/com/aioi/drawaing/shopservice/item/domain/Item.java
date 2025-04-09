@@ -16,8 +16,8 @@ import org.hibernate.annotations.ColumnDefault;
 
 @Entity
 @Getter
-@Builder
 @AllArgsConstructor
+@Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "item")
 public class Item {
@@ -33,5 +33,6 @@ public class Item {
 
     private String imageUrl;
     @ColumnDefault("1")
+    @Builder.Default
     private Integer levelLimit = 1;
 }
