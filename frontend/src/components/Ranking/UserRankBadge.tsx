@@ -38,7 +38,7 @@ const UserRankBadge: React.FC<{ userRank: UserRanking | null }> = ({ userRank })
         </div>
       ) : (
         <div className="text-center text-amber-200 font-medium">
-          로그인이 필요합니다
+          회원가입이 필요합니다
         </div>
       )}
     </div>
