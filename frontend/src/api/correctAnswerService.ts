@@ -26,8 +26,8 @@ const correctAnswerService = {
             console.log(`STOMP: ${str}`);
           },
           reconnectDelay: 5000,
-          heartbeatIncoming: 10000,
-          heartbeatOutgoing: 10000,
+          heartbeatIncoming: 30000,
+          heartbeatOutgoing: 30000,
         });
 
         stompClient.onConnect = () => {

@@ -42,8 +42,8 @@ class SessionInfoService {
           
           // 추가 설정
           reconnectDelay: 5000,
-          heartbeatIncoming: 10000,
-          heartbeatOutgoing: 10000,
+          heartbeatIncoming: 30000,
+          heartbeatOutgoing: 30000,
           
           // 필요한 헤더가 있으면 추가
           connectHeaders: {
