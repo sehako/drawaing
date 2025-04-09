@@ -832,9 +832,9 @@ const handleGuessSubmit = async (e: React.FormEvent) => {
           drawingOrder
         );
         
-        console.log('정답 정보 전송 결과:', success ? '성공' : '실패');
+        // console.log('정답 정보 전송 결과:', success ? '성공' : '실패');
       } catch (error) {
-        console.error('정답 정보 전송 중 오류:', error);
+        // console.error('정답 정보 전송 중 오류:', error);
       }
     }
     
@@ -849,35 +849,33 @@ const handleGuessSubmit = async (e: React.FormEvent) => {
 };
 
 
-// useEffect 내에서 채팅 서비스 초기화 및 구독
 useEffect(() => {
   // 웹소켓이 연결되고 세션 ID가 있을 때만 실행
   if (!sessionId || !roomId) return;
   
+  // 비동기 함수를 즉시 실행하는 패턴
+  let unsubscribe: (() => void) | null = null;
+
   const initChatService = async () => {
     try {
       await chatService.initializeClient(roomId, sessionId);
-      console.log('채팅 서비스 초기화 완료');
+      // console.log('채팅 서비스 초기화 완료');
       
-      // 메시지 수신 구독
-      const unsubscribe = chatService.subscribeToMessages(
+      // 단일 메시지 구독
+      unsubscribe = chatService.subscribeToMessages(
         roomId,
         sessionId,
         (message) => {
-          console.group('🎮 게임 메시지 처리');
-          console.log('수신된 메시지:', message);
+          // console.group('🎮 게임 메시지 처리');
+          // console.log('수신된 메시지:', message);
           
-          // 현재 사용자 정보 가져오기
-          const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-          const currentUserId = String(currentUser.memberId || currentUser.id || '0');
-          
-          // 메시지를 그대로 플레이어 메시지에 추가 (userId를 key로 사용)
+          // 메시지를 그대로 플레이어 메시지에 추가
           setPlayerMessages(prev => {
             const updated = {
               ...prev,
               [message.userId]: message.message
             };
-            console.log('업데이트된 playerMessages:', updated);
+            // console.log('업데이트된 playerMessages:', updated);
             return updated;
           });
           
@@ -893,19 +891,21 @@ useEffect(() => {
           console.groupEnd();
         }
       );
-      
-      // 컴포넌트 언마운트 시 구독 해제
-      return () => {
-        unsubscribe();
-      };
     } catch (error) {
-      console.error('채팅 서비스 초기화 실패:', error);
+      // console.error('채팅 서비스 초기화 실패:', error);
     }
   };
   
+  // 즉시 실행 함수
   initChatService();
-  
-}, [isConnected, sessionId, roomId, quizWord]);
+
+  // 컴포넌트 언마운트 시 정리
+  return () => {
+    if (unsubscribe) {
+      unsubscribe();
+    }
+  };
+}, [isConnected, sessionId, roomId]);
 
 const handlePass = () => {
   if (isGameOver) return;
@@ -932,9 +932,9 @@ const handlePass = () => {
             0 // 세 번째 턴 후에는 다시 첫 번째 턴으로
           );
           
-          console.log('턴 종료 메시지 전송 결과:', success ? '성공' : '실패');
+          // console.log('턴 종료 메시지 전송 결과:', success ? '성공' : '실패');
         } catch (error) {
-          console.error('턴 종료 서비스 초기화 또는 메시지 전송 중 오류:', error);
+          // console.error('턴 종료 서비스 초기화 또는 메시지 전송 중 오류:', error);
         }
       };
       
