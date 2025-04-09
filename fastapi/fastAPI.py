@@ -37,15 +37,15 @@ model.to(device)  # 모델을 GPU 또는 CPU로 이동
 model.eval()
 
 # 클래스 라벨 리스트 (실제 학습 데이터에 맞게 수정)
-class_labels = ['airplane', 'ant', 'apple', 'axe', 'banana', 'barn', 'basket', 'bat', 'bear', 'bed', 
-                'bee', 'bird', 'bread', 'broccoli', 'broom', 'bucket', 'bush', 'butterfly', 'cactus', 'candle', 'carrot', 'cat', 
-                'chair', 'clock', 'cloud', 'cow', 'cup', 'dog', 'door', 'duck', 'eyeglasses', 'fan', 'feather', 
-                'fence', 'fish', 'flower', 'frog', 'guitar', 'grapes', 'grass', 'hammer', 'hedgehog', 'horse', 
-                'house', 'key', 'ladder', 'leaf', 'light bulb', 'moon', 'mosquito', 'mountain', 'mouse', 'mushroom', 
-                'onion', 'peanut', 'pear', 'peas', 'pencil', 'pig', 'pineapple', 'potato', 'rabbit', 'raccoon', 
-                'rain', 'rainbow', 'rake', 'river', 'sandwich', 'saw', 'sheep', 'shovel', 'snail', 'snake', 
-                'snowflake', 'snowman', 'soccer ball', 'spider', 'star', 'strawberry', 'sun', 'swan', 'table', 'tent', 'tractor', 'tree', 
-                'truck', 'umbrella', 'watermelon', 'whale', 'windmill']
+class_labels = ['비행기', '개미', '사과', '도끼', '바나나', '헛간', '바구니', '박쥐', '곰', '침대', 
+                '벌', '새', '빵', '브로콜리', '빗자루', '양동이', '덤불', '나비', '선인장', '양초', '당근', '고양이', 
+                '의자', '시계', '구름', '소', '컵', '강아지', '문', '오리', '안경', '선풍기', '깃털', 
+                '울타리', '물고기', '꽃', '개구리', '기타', '포도', '수풀', '망치', '고슴도치', '말', 
+                '집', '열쇠', '사다리', '잎사귀', '전구', '달', '모기', '산', '쥐', '버섯', 
+                '양파', '땅콩', '배(과일)', '완두콩', '연필', '돼지', '파인애플', '감자', '토끼', '너구리', 
+                '비', '무지개', '갈퀴', '강', '샌드위치', '톱', '양', '삽', '달팽이', '뱀', 
+                '눈송이', '눈사람', '축구공', '거미', '별', '딸기', '태양', '백조', '탁자', '텐트', '트랙터', '나무', 
+                '트럭', '우산', '수박', '고래', '풍차']
                 
 
 # 이미지 변환 함수
