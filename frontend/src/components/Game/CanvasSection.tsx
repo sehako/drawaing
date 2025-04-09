@@ -35,7 +35,7 @@ interface CanvasSectionProps {
   handlePass: () => void;
   activeDrawerIndex: number;
   handleCanvasSubmit: (blob: Blob) => Promise<any>;
-  setPredictions: React.Dispatch<React.SetStateAction<{ class: string; probability: number; }[]>>;
+  setPredictions: React.Dispatch<React.SetStateAction<{ result: string; correct: boolean }>>;
   roomId: string;
   sessionId: string;
   canDraw?: boolean;
