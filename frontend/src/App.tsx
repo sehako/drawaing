@@ -12,7 +12,9 @@ import BlockNavigation from './utils/block.tsx'; // 변경된 import
 import axios from 'axios';
 import HardcodedGameResultPage from './pages/HardcodeGameResultPage.tsx';
 import RankingPage from './pages/RankingPage.tsx';
-
+import OAuthRedirectHandler from './pages/OAuthRedirectHandler.tsx';
+import ShopPage from './pages/ShopPage.tsx';
+import InventoryPage from './pages/InventoryPage.tsx';
 
 // .env 파일의 환경변수 사용
 axios.defaults.baseURL = import.meta.env.VITE_API_URL;
@@ -47,6 +49,9 @@ const App: React.FC = () => {
               </>
             } />
             <Route path="/ranking" element={<RankingPage />} />
+            <Route path="/shop" element={<ShopPage />} />
+            <Route path="/inventory" element={<InventoryPage />} />
+            <Route path="/oauth/redirect" element={<OAuthRedirectHandler />} />
           </Routes>
           
         </MusicProvider>
