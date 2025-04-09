@@ -1,8 +1,10 @@
 package com.aioi.drawaing.authservice.member.presentation;
 
 import com.aioi.drawaing.authservice.common.code.ErrorCode;
+import com.aioi.drawaing.authservice.common.jwt.JwtTokenProvider;
 import com.aioi.drawaing.authservice.common.response.ApiResponseEntity;
 import com.aioi.drawaing.authservice.member.application.MemberService;
+import com.aioi.drawaing.authservice.member.domain.Member;
 import com.aioi.drawaing.authservice.member.presentation.request.MemberExpUpdateRequest;
 import com.aioi.drawaing.authservice.member.presentation.request.MemberInfoUpdateRequest;
 import com.aioi.drawaing.authservice.member.presentation.request.MemberReqDto;
@@ -32,12 +34,19 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "회원", description = "회원 API")
 public class MemberController {
     private final MemberService memberService;
+    private final JwtTokenProvider jwtTokenProvider;
 
+    @GetMapping("/{memberId}/point")
+    public int getPoint(@PathVariable Long memberId) {
+        Member member = memberService.getMember(memberId);
+        return member.getPoint();
+    }
 
     @Operation(summary = "AccessToken 으로 회원 정보 조회")
-    @GetMapping("/info")
-    public ResponseEntity<?> getInfo(HttpServletRequest request) {
-        long memberId = Long.parseLong(request.getParameter("member-id"));
+    @GetMapping("/oauth")
+    public ResponseEntity<?> oauthLogin(HttpServletRequest request, HttpServletResponse response) {
+        //long memberId = Long.parseLong(request.getParameter("member-id"));
+        long memberId = jwtTokenProvider.extractIdAccessToken(request);
         log.info("AccessToken으로 회원 정보 조회 memberId: {},  ", memberId);
         return ApiResponseEntity.onSuccess(memberService.get(memberId));
     }

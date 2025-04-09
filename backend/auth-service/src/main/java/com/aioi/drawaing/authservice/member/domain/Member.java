@@ -114,4 +114,11 @@ public class Member extends BaseEntity implements UserDetails {
         this.exp = exp;
         this.point += addPoint;
     }
+
+    public void deductPoint(int point) {
+        if (this.point < point) {
+            throw new RuntimeException("포인트가 부족합니다");
+        }
+        this.point -= point;
+    }
 }
