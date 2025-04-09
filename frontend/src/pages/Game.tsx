@@ -975,7 +975,7 @@ const handlePass = () => {
       const response = await axios.post("http://localhost:8000/predict", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-  
+      console.log("전체 응답 데이터:", response.data);
       // 서버 응답에서 `result` (예: 예측된 단어)와 `correct` (boolean: 예측이 맞았는지 여부) 값을 받아옴
       setPredictions({
         result: response.data.result,  // 예: "바나나"
