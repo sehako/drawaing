@@ -95,10 +95,10 @@ const PlayerSection: React.FC<PlayerSectionProps> = ({
     "순서3": null
   });
 
-  console.log('PlayerSection에서 받은 paredUser:', paredUser);
-  console.log('현재 사용자 ID:', paredUser?.id);
-  console.log('현재 사용자 이름:', paredUser?.name);
-  console.log('playerMessages:', playerMessages);
+  // console.log('PlayerSection에서 받은 paredUser:', paredUser);
+  // console.log('현재 사용자 ID:', paredUser?.id);
+  // console.log('현재 사용자 이름:', paredUser?.name);
+  // console.log('playerMessages:', playerMessages);
 
   // 기본 플레이어 데이터 추가
   const defaultPlayers: Player[] = [
@@ -181,11 +181,11 @@ const PlayerSection: React.FC<PlayerSectionProps> = ({
     }
 
     setPositionIds(updatedPositionIds);
-    console.log('포지션별 ID 업데이트:', updatedPositionIds);
+    // console.log('포지션별 ID 업데이트:', updatedPositionIds);
   }, [currentPositions, playerArray]);
 
-  console.log('현재 포지션 배치:', currentPositions);
-  console.log('포지션별 ID:', positionIds);
+  // console.log('현재 포지션 배치:', currentPositions);
+  // console.log('포지션별 ID:', positionIds);
 
   // 문자열로 된 avatar가 들어왔을 때 실제 이미지로 변환
   const getAvatarImage = (avatarStr: string | undefined): string => {
@@ -312,30 +312,30 @@ const PlayerSection: React.FC<PlayerSectionProps> = ({
     }
 
     // 디버깅용 로그
-    console.log('현재 플레이어 역할:', currentRole);
-    console.log('현재 포지션 배치:', currentPositions);
-    console.log('현재 플레이어 권한:', permissions);
+    // console.log('현재 플레이어 역할:', currentRole);
+    // console.log('현재 포지션 배치:', currentPositions);
+    // console.log('현재 플레이어 권한:', permissions);
   }, [currentRound, activeDrawerIndex, paredUser]);
 
   // ID로 플레이어 메시지 찾기
   const getPlayerMessageById = (playerId: number | null): string | undefined => {
     if (playerId === null) return undefined;
     
-    console.log(`ID ${playerId}의 메시지 찾는 중...`, playerMessages);
+    // console.log(`ID ${playerId}의 메시지 찾는 중...`, playerMessages);
     
     // ID 값으로 메시지 찾기 (숫자형)
     if (playerMessages[playerId] !== undefined) {
-      console.log(`ID ${playerId}(숫자형)로 메시지 찾음:`, playerMessages[playerId]);
+      // console.log(`ID ${playerId}(숫자형)로 메시지 찾음:`, playerMessages[playerId]);
       return playerMessages[playerId];
     }
     
     // ID 값으로 메시지 찾기 (문자열형)
     if (playerMessages[playerId.toString()] !== undefined) {
-      console.log(`ID ${playerId}(문자열형)로 메시지 찾음:`, playerMessages[playerId.toString()]);
+      // console.log(`ID ${playerId}(문자열형)로 메시지 찾음:`, playerMessages[playerId.toString()]);
       return playerMessages[playerId.toString()];
     }
     
-    console.log(`ID ${playerId}의 메시지를 찾지 못함`);
+    // console.log(`ID ${playerId}의 메시지를 찾지 못함`);
     return undefined;
   };
 
@@ -358,16 +358,16 @@ const PlayerSection: React.FC<PlayerSectionProps> = ({
     const positionId = positionIds[position];
     const playerMessage = getPlayerMessageById(positionId);
 
-    console.log(`포지션 ${position}, 플레이어 ID: ${positionId}, 메시지: ${playerMessage}`);
-    console.log('----------------------------------------');
-    console.log(`포지션: ${position}`);
-    console.log(`플레이어: ${player.name} (ID: ${player.id})`);
-    console.log(`포지션 ID: ${positionId}`);
-    console.log(`모든 메시지 키:`, Object.keys(playerMessages));
-    console.log(`찾은 메시지: "${playerMessage}"`);
-    console.log(`메시지 데이터 타입: ${typeof playerMessage}`);
-    console.log(`메시지가 있나요? ${!!playerMessage}`);
-    console.log('----------------------------------------');
+    // console.log(`포지션 ${position}, 플레이어 ID: ${positionId}, 메시지: ${playerMessage}`);
+    // console.log('----------------------------------------');
+    // console.log(`포지션: ${position}`);
+    // console.log(`플레이어: ${player.name} (ID: ${player.id})`);
+    // console.log(`포지션 ID: ${positionId}`);
+    // console.log(`모든 메시지 키:`, Object.keys(playerMessages));
+    // console.log(`찾은 메시지: "${playerMessage}"`);
+    // console.log(`메시지 데이터 타입: ${typeof playerMessage}`);
+    // console.log(`메시지가 있나요? ${!!playerMessage}`);
+    // console.log('----------------------------------------');
 
     return (
         <div
