@@ -83,8 +83,9 @@ public class AuthorizationFilter extends AbstractGatewayFilterFactory<Config> {
     private String resolveRefreshToken(ServerWebExchange exchange) {
         String refreshToken = exchange
                 .getRequest()
-                .getHeaders()
-                .getFirst(REFRESH_TOKEN);
+                .getCookies()
+                .getFirst(REFRESH_TOKEN)
+                .getValue();
 
         log.info("refresh_token = {}", refreshToken);
 
