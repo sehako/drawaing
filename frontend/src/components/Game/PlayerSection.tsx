@@ -109,7 +109,7 @@ const PlayerSection: React.FC<PlayerSectionProps> = ({
   ];
 
   // storedPlayersList 체크 및 활성화 로그
-  console.log('storedPlayersList 원본:', storedPlayersList);
+  //console.log('storedPlayersList 원본:', storedPlayersList);
 
   // 플레이어 배열을 확실하게 가져오기
   const playerArray: Player[] = (Array.isArray(storedPlayersList) && storedPlayersList.length > 0)
