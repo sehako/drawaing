@@ -9,6 +9,7 @@ import PlayerSlot from '../components/Game/PlayerSlot';
 import GameRoomHeader from '../components/Game/GameRoomHeader';
 import ChatArea from '../components/Game/ChatArea';
 import ReadyButton from '../components/Game/ReadyButton';
+import sessionInfoService from '../api/sessionInfoService';
 
 const GameWaitingRoom: React.FC = () => {
   const navigate = useNavigate();
@@ -30,6 +31,7 @@ const GameWaitingRoom: React.FC = () => {
   
   // 방장 상태 관리 개선
   const [isLocalHost, setIsLocalHost] = useState<boolean>(location.state?.isHost || false);
+  const [sessionData, setSessionData] = useState<any>(null);
 
   // MusicContext 가져오기
   const { setPlaying } = useMusic();
@@ -53,6 +55,50 @@ const GameWaitingRoom: React.FC = () => {
     isAuthenticated,
     isLoading
   });
+
+  useEffect(() => {
+    // actualRoomId와 sessionId가 모두 존재할 때만 구독
+    if (!actualRoomId || !sessionId) {
+      console.log('세션 정보 구독에 필요한 정보 부족:', { 
+        actualRoomId, 
+        sessionId 
+      });
+      return;
+    }
+
+    console.log('세션 정보 구독 시작:', { 
+      roomId: actualRoomId, 
+      sessionId 
+    });
+
+    // 세션 정보 구독
+    const unsubscribe = sessionInfoService.subscribeToSessionInfo(
+      actualRoomId, 
+      sessionId, 
+      (data) => {
+        console.log('세션 정보 수신:', data);
+        
+        // 세션 데이터 상태 업데이트
+        setSessionData(data);
+
+        // 필요한 경우 추가 처리
+        if (data.word) {
+          console.log('수신된 단어 목록:', data.word);
+        }
+
+        if (data.drawOrder) {
+          console.log('수신된 그리기 순서:', data.drawOrder);
+        }
+      }
+    );
+
+    // 컴포넌트 언마운트 시 구독 해제
+    return () => {
+      console.log('세션 정보 구독 해제');
+      unsubscribe();
+    };
+  }, [actualRoomId, sessionId]);
+  
   useEffect(() => {
     if (currentUser) {
       // currentUser를 JSON 문자열로 변환하여 로컬 스토리지에 저장

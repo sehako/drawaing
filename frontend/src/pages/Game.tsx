@@ -445,17 +445,41 @@ const Game: React.FC = () => {
   }
 }, [drawTime]);
 
+
 useEffect(() => {
-  if (!sessionId || !roomId) {
-    console.log('세션 ID 또는 방 ID가 없음:', { sessionId, roomId });
+  // 현재 roomId와 sessionId를 가져옴
+  const currentRoomId = roomId || localStorage.getItem('roomId');
+  const currentSessionId = sessionId || localStorage.getItem('sessionId');
+  
+  // roomId나 sessionId가 없으면 구독하지 않음
+  if (!currentRoomId || !currentSessionId) {
+    console.log('세션 정보 구독에 필요한 정보가 없음:', { 
+      currentRoomId, 
+      currentSessionId,
+      'roomId 상태값': roomId,
+      'sessionId 상태값': sessionId
+    });
     return;
   }
   
-  console.log('세션 정보 구독 시작:', { roomId, sessionId });
+  console.log('세션 정보 구독 시작:', { currentRoomId, currentSessionId });
   
+  // 이전에 동일한 파라미터로 구독한 적이 있는지 확인하기 위한 플래그
+  const subscriptionKey = `${currentRoomId}:${currentSessionId}`;
+  const hasSubscribedBefore = localStorage.getItem('subscription') === subscriptionKey;
+  
+  if (hasSubscribedBefore) {
+    console.log('이미 동일한 파라미터로 구독 시도한 적이 있음:', subscriptionKey);
+    // 하지만 다시 구독해야 할 수도 있으므로 계속 진행
+  }
+  
+  // 현재 구독 정보 저장
+  localStorage.setItem('subscription', subscriptionKey);
+  
+  // 구독 시작
   const unsubscribe = sessionInfoService.subscribeToSessionInfo(
-    roomId,
-    sessionId,
+    currentRoomId,
+    currentSessionId,
     (data) => {
       console.log('세션 데이터 수신됨:', data);
       
@@ -490,9 +514,6 @@ useEffect(() => {
         // 현재 그리기 순서 처리 로직 (필요한 경우)
         if (data.drawOrder.length > 0) {
           console.log('첫 번째 그리기 순서:', data.drawOrder[0]);
-          
-          // 그리기 순서 관련 상태 업데이트 예시
-          // setActiveDrawerIndex(0); // 첫 번째 그리는 사람으로 설정
         }
       }
     }
@@ -502,8 +523,11 @@ useEffect(() => {
   return () => {
     console.log('세션 정보 구독 해제');
     unsubscribe();
+    
+    // 구독 정보 초기화 (선택사항)
+    // localStorage.removeItem('subscription');
   };
-}, [roomId, sessionId]);
+}, [roomId, sessionId]); // roomId와 sessionId가 변경될 때만 다시 구독
 
 
   useEffect(() => {

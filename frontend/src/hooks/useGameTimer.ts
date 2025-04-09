@@ -55,13 +55,13 @@ const useGameTimer = ({
       try {
         // WebSocketService를 통해 연결
         await WebSocketService.connect(roomId, sessionId);
-        console.log('타이머 웹소켓 연결됨:', roomId, sessionId);
+        // console.log('타이머 웹소켓 연결됨:', roomId, sessionId);
         
         // 타이머 토픽 구독
         const unsubscribe = WebSocketService.subscribe<TimerData>(
           `/topic/session.timer/${roomId}/${sessionId}`, 
           (data) => {
-            console.log('타이머 데이터 수신:', data);  // 로그 추가
+            // console.log('타이머 데이터 수신:', data);  // 로그 추가
             const timerData: TimerData = {
               totalTime: data.totalTime ?? DEFAULT_TIMER_VALUES.totalTime,
               drawTime: data.drawTime ?? DEFAULT_TIMER_VALUES.drawTime
@@ -74,13 +74,13 @@ const useGameTimer = ({
         unsubscribeRef.current = unsubscribe;
         
         // 초기 타이머 정보 요청
-        console.log('초기 타이머 정보 요청');  // 로그 추가
+        // console.log('초기 타이머 정보 요청');  // 로그 추가
         WebSocketService.publish(
           `/app/game/drawing/timer/request/${roomId}/${sessionId}`,
           { requestInitialState: true }
         );
       } catch (err) {
-        console.error('타이머 구독 오류:', err);
+        // console.error('타이머 구독 오류:', err);
         setError(err instanceof Error ? err : new Error('타이머 구독 중 오류 발생'));
         setIsLoading(false);
       }
