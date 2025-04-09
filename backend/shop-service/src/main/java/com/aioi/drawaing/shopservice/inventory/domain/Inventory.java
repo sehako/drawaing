@@ -18,9 +18,9 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "inventory")
-@Getter
 @Builder
 @AllArgsConstructor
+@Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Inventory {
     @Id
@@ -35,6 +35,7 @@ public class Inventory {
     private Item item;
 
     @Column(nullable = false)
+    @Builder.Default
     private int quantity = 0;
 
     public void addQuantity(int quantity) {
