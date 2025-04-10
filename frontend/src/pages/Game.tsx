@@ -206,7 +206,11 @@ const Game: React.FC = () => {
     canSeeWord: false,
     canAnswer: false
   });
-  
+  const [roundResult, setRoundResult] = useState<{ 
+    isWin: boolean, 
+    round: number 
+  } | null>(null);
+
   const [eggCount, setEggCount] = useState(10);
   const [aiAnswer, setAiAnswer] = useState<string>('');
   const [aiImages] = useState<string[]>([
@@ -219,7 +223,9 @@ const Game: React.FC = () => {
     { id: 2, name: 'Player 3', level: 25, avatar: '/avatars/angry-bird.png' },
     { id: 3, name: 'Player 4', level: 16, avatar: '/avatars/yellow-bird.png' },
   ]);
-  
+
+  const [activePlayerId, setActivePlayerId] = useState<number>(1); // 초기값 1로 설정
+
   const mapUserIdToPlayerId = (userId: number): number => {
     switch(userId) {
       case 1: return 0; // userId 1은 첫 번째 플레이어 (플레이어1)
@@ -228,6 +234,11 @@ const Game: React.FC = () => {
       case 4: return 3; // userId 4는 네 번째 플레이어 (플레이어4)
       default: return 0;
     }
+  };
+
+  const handleActivePlayerChange = (playerId: number) => {
+    console.log(`Game.tsx - 활성 플레이어 ID 업데이트: ${playerId}`);
+    setActivePlayerId(playerId);
   };
 
   const handlePlayerRoleChange = (roleInfo: {
@@ -239,9 +250,16 @@ const Game: React.FC = () => {
     setCurrentPlayerRole(roleInfo.role);
     setPlayerPermissions(roleInfo.playerPermissions);
     
-    // 디버깅용 로그
-    // console.log('Game.tsx - 받은 플레이어 역할:', roleInfo.role);
-    // console.log('Game.tsx - 받은 플레이어 권한:', roleInfo.playerPermissions);
+    // 현재 그림을 그리는 플레이어 ID 추적
+    if (roleInfo.playerPermissions.canDraw) {
+      // 그림을 그릴 수 있는 권한이 있는 플레이어의 ID 찾기
+      const drawerIndex = calculateCurrentDrawerPlayerIndex();
+      const drawerPlayer = players[drawerIndex];
+      if (drawerPlayer) {
+        setActivePlayerId(drawerPlayer.id);
+        console.log("활성 플레이어 ID 업데이트:", drawerPlayer.id);
+      }
+    }
   };
 
   const [predictions, setPredictions] = useState<{ result: string; correct: boolean }>({
@@ -263,6 +281,7 @@ const Game: React.FC = () => {
       alert('현재 그림을 그릴 수 없습니다.');
     }
   };
+
   const renderQuizWord = () => {
     if (playerPermissions.canSeeWord) {
       return <div>{quizWord}</div>;
@@ -419,7 +438,84 @@ const Game: React.FC = () => {
   
   // 기존의 timeLeft 상태 변수 유지 (그림 그리기 시간)
   const [timeLeft, setTimeLeft] = useState<number>(20);
+  const [timerPaused, setTimerPaused] = useState<boolean>(false); // 타이머 일시정지 상태 추가
+  const [lastDrawTimeUpdate, setLastDrawTimeUpdate] = useState<number>(0); // drawTime 업데이트 시간 추적
 
+  const pauseTimer = () => {
+    setTimerPaused(true);
+    console.log('타이머 일시정지');
+  };
+  
+  const resumeTimer = () => {
+    setTimerPaused(false);
+    console.log('타이머 재시작');
+  };
+  const resetTimer = (newTime: number = 20) => {
+    console.log(`타이머 리셋: ${newTime}초`);
+    setTimeLeft(newTime);
+    setTimerPaused(false);
+    
+    // 서버에도 타이머 리셋 요청 전송
+    if (roomId && sessionId) {
+      gameTimerService.resetTurnTimer(
+        roomId,
+        sessionId,
+        {
+          currentRound,
+          currentDrawerIndex: activeDrawerIndex,
+          newDrawTime: newTime
+        }
+      );
+      console.log(`서버에 타이머 리셋 요청 전송: ${newTime}초`);
+    }
+  };
+
+  useEffect(() => {
+    if (drawTime !== undefined && drawTime >= 0) {
+      console.log(`백엔드에서 받은 drawTime: ${drawTime}초`);
+      
+      // 현재 시간 기록
+      const currentTime = Date.now();
+      
+      // drawTime 업데이트가 1초 이상 간격으로 들어왔거나 큰 차이가 있을 때만 적용
+      if (currentTime - lastDrawTimeUpdate > 1000 || Math.abs(timeLeft - drawTime) > 2) {
+        console.log(`타이머 업데이트: ${timeLeft}초 -> ${drawTime}초`);
+        setTimeLeft(drawTime);
+        setLastDrawTimeUpdate(currentTime);
+        
+        // 타이머가 0이면 일시정지 상태로 변경
+        if (drawTime <= 0) {
+          pauseTimer();
+        } else if (timerPaused) {
+          // 타이머가 0보다 크고 현재 일시정지 상태라면 재시작
+          resumeTimer();
+        }
+      }
+    }
+  }, [drawTime]);
+
+  useEffect(() => {
+    // 게임이 종료됐거나 라운드 전환 중이거나 타이머가 일시정지 상태면 타이머 작동 안 함
+    if (isGameOver || isRoundTransitioning || timerPaused || timeLeft <= 0) return;
+    
+    // 타이머 카운트다운
+    const timer = setInterval(() => {
+      setTimeLeft(prev => {
+        const newValue = prev - 1;
+        // 타이머가 0이 되면 일시정지 상태로 변경
+        if (newValue <= 0) {
+          clearInterval(timer);
+          pauseTimer();
+          return 0;
+        }
+        return newValue;
+      });
+    }, 1000);
+    
+    return () => clearInterval(timer);
+  }, [timeLeft, isGameOver, isRoundTransitioning, timerPaused]);
+
+  
   useEffect(() => {
     // console.log('현재 타이머 상태:', {
     //   totalTime,
@@ -451,11 +547,28 @@ const Game: React.FC = () => {
     }
   }, [timerError]);
 
-  useEffect(() => {
-  // drawTime이 유효한 값(0 포함)일 때만 업데이트
-  if (drawTime !== undefined) {
-    // console.log('🕒 drawTime으로 timeLeft 업데이트:', drawTime);
-    setTimeLeft(drawTime);
+// 수정할 코드
+useEffect(() => {
+  if (drawTime !== undefined && drawTime >= 0) {
+    console.log(`백엔드에서 받은 drawTime: ${drawTime}초`);
+    
+    // 현재 시간 기록
+    const currentTime = Date.now();
+    
+    // drawTime 업데이트가 1초 이상 간격으로 들어왔거나 큰 차이가 있을 때만 적용
+    if (currentTime - lastDrawTimeUpdate > 1000 || Math.abs(timeLeft - drawTime) > 2) {
+      console.log(`타이머 업데이트: ${timeLeft}초 -> ${drawTime}초`);
+      setTimeLeft(drawTime);
+      setLastDrawTimeUpdate(currentTime);
+      
+      // 타이머가 0이면 일시정지 상태로 변경
+      if (drawTime <= 0) {
+        pauseTimer();
+      } else if (timerPaused) {
+        // 타이머가 0보다 크고 현재 일시정지 상태라면 재시작
+        resumeTimer();
+      }
+    }
   }
 }, [drawTime]);
 
@@ -595,6 +708,9 @@ useEffect(() => {
     // 게임이 종료됐으면 동작하지 않음
     if (isGameOver) return;
     
+    // 타이머 일시 정지
+    pauseTimer();
+    
     setIsDrawing(false);
     setHasCompleted(false);
   
@@ -631,9 +747,77 @@ useEffect(() => {
     } else {
       // 첫 번째나 두 번째 턴이 끝났을 때는 그냥 다음 턴으로 넘어감
       setActiveDrawerIndex(nextDrawerIndex);
-      setTimeLeft(20);
+      // 타이머는 activeDrawerIndex 변경 감지 useEffect에서 리셋됨
     }
   };
+
+  useEffect(() => {
+    // 라운드 전환 중에는 타이머를 조작하지 않음
+    if (isRoundTransitioning) return;
+    
+    console.log(`드로어 인덱스 변경 감지: ${activeDrawerIndex}`);
+    
+    // 새로운 턴이 시작될 때 타이머 리셋
+    resetTimer(20);
+    
+    // hasCompleted 상태도 초기화
+    setHasCompleted(false);
+    
+    // 이전 턴의 lastDrawTimeUpdate 초기화
+    setLastDrawTimeUpdate(Date.now());
+  }, [activeDrawerIndex, isRoundTransitioning]);
+
+
+  useEffect(() => {
+    // 타이머가 0보다 크거나 이미 정지 상태가 아니면 실행하지 않음
+    if (timeLeft > 0 || !timerPaused || isGameOver || isRoundTransitioning) return;
+    
+    console.log("타이머 종료, 다음 플레이어로 전환 준비");
+    
+    // 다음 드로어 인덱스 계산
+    const nextDrawerIndex = (activeDrawerIndex + 1) % 3;
+    
+    // 일정 시간 후에 다음 턴으로 전환 (상태 업데이트 안정화를 위한 지연)
+    const transitionTimer = setTimeout(() => {
+      if (nextDrawerIndex === 0) {
+        // 세 번째 턴이 끝났을 때는 라운드 전환 함수 호출
+        console.log("세 번째 턴 종료, 라운드 전환 시작");
+        transitionToNextRound();
+      } else {
+        // 첫 번째나 두 번째 턴이 끝났을 때는 다음 턴으로 넘어감
+        console.log(`턴 전환: ${activeDrawerIndex} -> ${nextDrawerIndex}`);
+        
+        // STOMP로 턴 종료 메시지 전송
+        if (roomId && sessionId) {
+          const initializeTurnService = async () => {
+            try {
+              // STOMP 클라이언트 초기화
+              await turnService.initializeClient(roomId, sessionId);
+              
+              // 턴 종료 메시지 전송
+              turnService.sendTurnEnd(
+                roomId, 
+                sessionId, 
+                currentRound, 
+                activeDrawerIndex, 
+                nextDrawerIndex
+              );
+              
+              console.log('턴 종료 메시지 전송 완료');
+            } catch (error) {
+              console.error('턴 종료 서비스 초기화 또는 메시지 전송 중 오류:', error);
+            }
+          };
+          
+          initializeTurnService();
+        }
+        
+        setActiveDrawerIndex(nextDrawerIndex);
+      }
+    }, 800); // 0.8초 지연
+    
+    return () => clearTimeout(transitionTimer);
+  }, [timeLeft, timerPaused, isGameOver, isRoundTransitioning, activeDrawerIndex]);
 
 const transitionToNextRound = () => {
   // 라운드 전환 시작을 표시
@@ -765,89 +949,71 @@ const handleGuessSubmit = async (e: React.FormEvent) => {
         return updated;
       });
     }, 5000);
-  }
 
-  // 로컬에서 정답 여부 확인
-  if (guess.trim().toLowerCase() === quizWord.toLowerCase()) {
-    // 플레이어 정답 처리
-    handlePlayerCorrectAnswer();
-    setIsHumanCorrect(true);
-    setHumanRoundWinCount(prev => prev + 1);
-    
-    // 데이터 계산 및 로깅 (STOMP 연결 여부와 상관없이 항상 실행)
-    if (roomId && sessionId) {
-      // 직접 현재 그림을 그리는 사람의 인덱스 계산
-      let drawingPlayerIndex = 0;
-      let realIndex = 0;
+    // 로컬에서 정답 여부 확인
+    if (guess.trim().toLowerCase() === quizWord.toLowerCase()) {
+      // 플레이어 정답 처리
+      handlePlayerCorrectAnswer();
+      setIsHumanCorrect(true);
       
-      for (let i = 0; i < 4; i++) {
-        if (i !== guesserIndex) {
-          if (drawingPlayerIndex === activeDrawerIndex) {
-            realIndex = i;
-            break;
-          }
-          drawingPlayerIndex++;
+      // 데이터 계산 및 로깅 (STOMP 연결 여부와 상관없이 항상 실행)
+      if (roomId && sessionId) {
+        // 현재 활성화된(초록색 테두리) 플레이어의 ID 사용
+        const drawingMemberId = activePlayerId;
+        
+        // 정답을 맞춘 사람의 ID
+        const answerMemberId = userId;
+        
+        // 현재 그림 그리는 순서 (1, 2, 3 중 하나)
+        const drawingOrder = activeDrawerIndex + 1;
+        
+        // 이제 STOMP로 전송 시도
+        try {
+          // STOMP 클라이언트 초기화 시도 (연결되어 있지 않을 경우)
+          await correctAnswerService.initializeClient(roomId, sessionId);
+          
+          // 정답 정보 전송
+          const success = correctAnswerService.sendCorrectAnswer(
+            roomId,
+            sessionId,
+            drawingMemberId,
+            answerMemberId,
+            drawingOrder
+          );
+        } catch (error) {
+          console.error('정답 정보 전송 중 오류:', error);
         }
       }
-    
-      // 현재 그림을 그리는 사람의 ID 구하기
-      const drawingMemberId = realIndex + 1; // 인덱스는 0부터 시작하므로 +1
-      
-      // 정답을 맞춘 사람의 ID
-      const answerMemberId = userId;
-      
-      // 현재 그림 그리는 순서 (1, 2, 3 중 하나)
-      const drawingOrder = activeDrawerIndex + 1; // activeDrawerIndex는 0부터 시작하므로 +1
-      
-      // 전송할 데이터 객체 생성
-      const correctAnswerData = {
-        drawingMemberId,
-        answerMemberId,
-        drawingOrder
-      };
-      
-      // 데이터를 항상 로깅 (STOMP 연결 여부와 상관없이)
-      console.log('=====================================================');
-      console.log('📌 정답 맞춤 정보 (STOMP 전송 성공 여부와 무관)');
-      console.log('-----------------------------------------------------');
-      console.log(`방 ID: ${roomId}`);
-      console.log(`세션 ID: ${sessionId}`);
-      console.log(`전송 경로: /app/session.correct-answer/${roomId}/${sessionId}`);
-      console.log('-----------------------------------------------------');
-      console.log('📦 데이터 내용:');
-      console.log(JSON.stringify(correctAnswerData, null, 2));
-      console.log('=====================================================');
-      
-      // 이제 STOMP로 전송 시도
-      try {
-        // STOMP 클라이언트 초기화 시도 (연결되어 있지 않을 경우)
-        await correctAnswerService.initializeClient(roomId, sessionId);
-        
-        // 정답 정보 전송
-        const success = correctAnswerService.sendCorrectAnswer(
-          roomId,
-          sessionId,
-          drawingMemberId,
-          answerMemberId,
-          drawingOrder
-        );
-        
-        // console.log('정답 정보 전송 결과:', success ? '성공' : '실패');
-      } catch (error) {
-        // console.error('정답 정보 전송 중 오류:', error);
-      }
+    } else {
+      setIsWrongGuess(true);
+      setAiAnswer('틀렸습니다! 다시 시도해보세요.');
     }
-    
-    // 라운드 전환 함수 호출
-    transitionToNextRound();
-  } else {
-    setIsWrongGuess(true);
-    setAiAnswer('틀렸습니다! 다시 시도해보세요.');
   }
   
   setGuess('');
 };
 
+useEffect(() => {
+  // roundResult가 존재하고, 게임이 진행 중일 때만 처리
+  if (roundResult && !isGameOver && !isRoundTransitioning) {
+    console.log('라운드 결과에 따른 라운드 전환 시도:', roundResult);
+
+    // 팀 점수 업데이트
+    if (roundResult.isWin) {
+      setHumanRoundWinCount(prev => prev + 1);
+      console.log(`라운드 ${roundResult.round}에서 사람 팀 승리!`);
+    } else {
+      setAIRoundWinCount(prev => prev + 1);
+      console.log(`라운드 ${roundResult.round}에서 AI 팀 승리!`);
+    }
+
+    // 라운드 전환 함수 호출
+    transitionToNextRound();
+
+    // 라운드 결과 상태 초기화 (무한 루프 방지)
+    setRoundResult(null);
+  }
+}, [roundResult, isGameOver, isRoundTransitioning]);
 
 useEffect(() => {
   // 웹소켓이 연결되고 세션 ID가 있을 때만 실행
@@ -1038,37 +1204,65 @@ const handlePass = () => {
 
 // 그림 그리기 타이머 효과 - 개선된 버전
 useEffect(() => {
-  // 게임이 종료됐거나 라운드 전환 중이면 타이머를 멈춤
-  if (isGameOver || isRoundTransitioning) return;
-
-  // 타이머가 0이 되었을 때
-  if (timeLeft <= 0) {
-    console.log("타이머 종료, 다음 플레이어로 전환");
-
-    const nextDrawerIndex = (activeDrawerIndex + 1) % 3;
-    console.log(`현재 인덱스: ${activeDrawerIndex}, 다음 인덱스: ${nextDrawerIndex}`);
-
-    if (nextDrawerIndex === 0) {
-      // 세 번째 턴이 끝났을 때는 라운드 전환 함수 호출
-      console.log("세 번째 턴 종료, 라운드 전환 시작");
-      transitionToNextRound();
-    } else {
-      // 첫 번째나 두 번째 턴이 끝났을 때는 그냥 다음 턴으로 넘어감
-      console.log(`턴 전환: ${activeDrawerIndex} -> ${nextDrawerIndex}`);
-      setActiveDrawerIndex(nextDrawerIndex);
-      setTimeLeft(20);
-      setHasCompleted(false);
-    }
-    return;
-  }
-
-  // 라운드 전환 중이 아닐 때만 타이머 작동
+  // 게임이 종료됐거나 라운드 전환 중이거나 타이머가 일시정지 상태면 타이머 작동 안 함
+  if (isGameOver || isRoundTransitioning || timerPaused || timeLeft <= 0) return;
+  
+  // 타이머 카운트다운
   const timer = setInterval(() => {
-    setTimeLeft(prev => prev - 1);
+    setTimeLeft(prev => {
+      const newValue = prev - 1;
+      // 타이머가 0이 되면 일시정지 상태로 변경
+      if (newValue <= 0) {
+        clearInterval(timer);
+        pauseTimer();
+        return 0;
+      }
+      return newValue;
+    });
   }, 1000);
-
+  
   return () => clearInterval(timer);
-}, [timeLeft, context, guesserIndex, activeDrawerIndex, isRoundTransitioning, isGameOver]);
+}, [timeLeft, isGameOver, isRoundTransitioning, timerPaused]);
+
+useEffect(() => {
+  // roomId와 sessionId가 있고, 웹소켓 연결이 완료되었을 때만 실행
+  if (!roomId || !sessionId || !isConnected) return;
+
+  // 구독 취소 함수를 저장할 변수
+  let unsubscribeFunc: (() => void) | null = null;
+
+  // 클라이언트 초기화 먼저 시도
+  const initializeAndSubscribe = async () => {
+    try {
+      // 클라이언트 초기화 
+      await correctAnswerService.initializeClient(roomId, sessionId);
+
+      // 라운드 결과 구독 설정
+      unsubscribeFunc = correctAnswerService.subscribeToRoundResult(
+        roomId, 
+        sessionId, 
+        (result) => {
+          console.log('라운드 결과 수신:', result);
+          
+          // 라운드 결과 상태 업데이트
+          setRoundResult(result);
+        }
+      );
+    } catch (error) {
+      console.error('라운드 결과 구독 초기화 중 오류:', error);
+    }
+  };
+
+  // 비동기 함수 호출
+  initializeAndSubscribe();
+
+  // 클린업 함수 반환
+  return () => {
+    if (unsubscribeFunc) {
+      unsubscribeFunc();
+    }
+  };
+}, [roomId, sessionId, isConnected]);
 
 useEffect(() => {
   if (isConnected && sessionId) {
@@ -1088,6 +1282,7 @@ useEffect(() => {
 
   const currentDrawerIndex = calculateCurrentDrawerPlayerIndex();
   const currentDrawer = players[currentDrawerIndex];
+  
 
 
 
@@ -1322,6 +1517,8 @@ useEffect(() => {
               paredUser={paredUser}
               storedPlayersList={storedPlayersList}
               onPlayerRoleChange={handlePlayerRoleChange}
+              onActivePlayerChange={handleActivePlayerChange} // 새로운 prop 전달
+
             />
           </div>
 
