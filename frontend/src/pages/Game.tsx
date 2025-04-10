@@ -163,7 +163,7 @@ const Game: React.FC = () => {
   
   
   const [currentRound, setCurrentRound] = useState<number>(1);
-  const [quizWord, setQuizWord] = useState<string>('바나나');
+  const [quizWord, setQuizWord] = useState<string>('');
   const [activeDrawerIndex, setActiveDrawerIndex] = useState<number>(0);
   const [guesserIndex, setGuesserIndex] = useState<number>(3);
   const [isDrawing, setIsDrawing] = useState<boolean>(false);
