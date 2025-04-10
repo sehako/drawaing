@@ -216,6 +216,8 @@ const Game: React.FC = () => {
     round: number 
   } | null>(null);
 
+  const [aiCorrectDetected, setAiCorrectDetected] = useState<boolean>(false);
+
   const [eggCount, setEggCount] = useState(10);
   const [aiAnswer, setAiAnswer] = useState<string>('');
   const [aiImages] = useState<string[]>([
@@ -325,6 +327,85 @@ const Game: React.FC = () => {
     setIsDrawing(false);
     setHasCompleted(true);
   }, []);
+
+  useEffect(() => {
+    // AI가 정답을 맞췄을 경우
+    if (predictions.correct) {
+      // AI 정답 감지 상태 설정
+      setAiCorrectDetected(true);
+    }
+  }, [predictions])
+
+  useEffect(() => {
+    // AI 정답이 감지되고, roomId와 sessionId가 있을 때
+    if (aiCorrectDetected && roomId && sessionId) {
+      try {
+        // 현재 활성화된 플레이어의 ID 사용
+        const drawingMemberId = activePlayerId;
+        
+        // AI의 고정된 멤버 ID (예: -1 또는 특정 값)
+        const aiMemberId = -1;
+        
+        // 현재 그림 그리는 순서
+        const drawingOrder = activeDrawerIndex + 1;
+        
+        // 정답 정보 전송
+        correctAnswerService.sendCorrectAnswer(
+          roomId,
+          sessionId,
+          drawingMemberId,
+          aiMemberId,
+          drawingOrder,
+          (roundResult) => {
+            console.log('AI 정답 전송 후 라운드 결과:', roundResult);
+          }
+        );
+        
+        // 상태 초기화
+        setAiCorrectDetected(false);
+      } catch (error) {
+        console.error('AI 정답 전송 중 오류:', error);
+        setAiCorrectDetected(false);
+      }
+    }
+  }, [aiCorrectDetected, roomId, sessionId, activePlayerId, activeDrawerIndex]);
+
+  useEffect(() => {
+    // AI 정답이 감지되고, roomId와 sessionId가 있을 때
+    if (aiCorrectDetected && roomId && sessionId) {
+      try {
+        // 현재 활성화된 플레이어의 ID 사용
+        const drawingMemberId = activePlayerId;
+        
+        // AI의 고정된 멤버 ID (예: -1 또는 특정 값)
+        const aiMemberId = -1;
+        
+        // 현재 그림 그리는 순서
+        const drawingOrder = activeDrawerIndex + 1;
+        
+        // 정답 정보 전송
+        correctAnswerService.sendCorrectAnswer(
+          roomId,
+          sessionId,
+          drawingMemberId,
+          aiMemberId,
+          drawingOrder,
+          (roundResult) => {
+            console.log('AI 정답 전송 후 라운드 결과:', roundResult);
+          }
+        );
+    
+        // AI 승리 신호 전송 (라운드 전환을 위한 신호)
+        correctAnswerService.sendAIWinSignal(roomId, sessionId);
+        
+        // 상태 초기화
+        setAiCorrectDetected(false);
+      } catch (error) {
+        console.error('AI 정답 전송 중 오류:', error);
+        setAiCorrectDetected(false);
+      }
+    }
+  }, [aiCorrectDetected, roomId, sessionId, activePlayerId, activeDrawerIndex]);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('currentUser');
@@ -925,8 +1006,7 @@ const handleGuessSubmit = async (e: React.FormEvent) => {
   }
 
   if (!guess || guess.trim() === '') {
-    console.log('빈 입력값 감지됨');
-    setIsEmptyGuess(true);
+    alert('정답을 입력해주세요!');
     return;
   }
   
@@ -981,7 +1061,6 @@ const handleGuessSubmit = async (e: React.FormEvent) => {
     if (guess.trim().toLowerCase() === quizWord.toLowerCase()) {
       // 플레이어 정답 처리
       handlePlayerCorrectAnswer();
-      setIsHumanCorrect(true);
       
       // 데이터 계산 및 로깅 (STOMP 연결 여부와 상관없이 항상 실행)
       if (roomId && sessionId) {
@@ -1012,8 +1091,8 @@ const handleGuessSubmit = async (e: React.FormEvent) => {
         }
       }
     } else {
-      setIsWrongGuess(true);
-      setAiAnswer('틀렸습니다! 다시 시도해보세요.');
+      // 오답 처리
+      alert('틀렸습니다! 다시 시도해보세요.');
     }
   }
   
@@ -1027,14 +1106,17 @@ useEffect(() => {
 
     // 팀 점수 업데이트
     if (roundResult.isWin) {
+      // 사람 팀 승리 (true)
       setHumanRoundWinCount(prev => prev + 1);
       console.log(`라운드 ${roundResult.round}에서 사람 팀 승리!`);
     } else {
+      // AI 팀 승리 (false)
       setAIRoundWinCount(prev => prev + 1);
       console.log(`라운드 ${roundResult.round}에서 AI 팀 승리!`);
     }
 
     // 라운드 전환 함수 호출
+    // 사람이든 AI든 라운드 전환 로직은 동일하게 처리
     transitionToNextRound();
 
     // 라운드 결과 상태 초기화 (무한 루프 방지)
@@ -1215,11 +1297,6 @@ const handlePass = () => {
       // AI가 정답을 맞췄다면 처리
       if (response.data.correct) {
         handleAICorrectAnswer();
-        
-        // 라운드 전환
-        setTimeout(() => {
-          transitionToNextRound();
-        }, 1500);
       }
   
       return { result: response.data.result, correct: response.data.correct };
