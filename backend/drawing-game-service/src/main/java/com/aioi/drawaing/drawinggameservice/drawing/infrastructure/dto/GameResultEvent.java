@@ -1,4 +1,4 @@
-package com.aioi.drawaing.drawinggameservice.drawing.application.dto;
+package com.aioi.drawaing.drawinggameservice.drawing.infrastructure.dto;
 
 public record GameResultEvent(
         Long memberId,

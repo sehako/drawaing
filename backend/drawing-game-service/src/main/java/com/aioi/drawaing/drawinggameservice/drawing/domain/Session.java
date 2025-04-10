@@ -1,19 +1,23 @@
 package com.aioi.drawaing.drawinggameservice.drawing.domain;
 
 
-import com.aioi.drawaing.drawinggameservice.drawing.application.dto.GameResultEvent;
+import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.dto.GameResultEvent;
+import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.dto.GameResultEventList;
 import com.aioi.drawaing.drawinggameservice.drawing.presentation.dto.ParticipantScoreInfo;
 import com.aioi.drawaing.drawinggameservice.drawing.presentation.dto.WinParticipantInfo;
 import com.aioi.drawaing.drawinggameservice.room.application.dto.AddRoomParticipantInfo;
-import lombok.*;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 @Builder
 @Getter
@@ -69,7 +73,7 @@ public class Session {
         this.participants.get(userId).decrementChanceCount();
     }
 
-    public List<GameResultEvent> getGameResults(){
+    public GameResultEventList getGameResults() {
         return participants.entrySet().stream()
                 .map(entry -> {
                     Long memberId = entry.getKey();
@@ -77,7 +81,7 @@ public class Session {
                     int score = calculateScore(participant);
                     return new GameResultEvent(memberId, getStatus(), score, calculateExp(), getPoint(score));
                 })
-                .toList();
+                .collect(Collectors.toCollection(GameResultEventList::new)); // 래퍼 클래스로 수집
     }
 
     public Map<Long, ParticipantScoreInfo> toParticipantScoreInfo(){

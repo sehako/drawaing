@@ -1,6 +1,8 @@
 package com.aioi.drawaing.drawinggameservice.common.kafka;
 
-import com.aioi.drawaing.drawinggameservice.drawing.application.dto.GameResultEvent;
+import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.dto.GameResultEventList;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,10 +13,6 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.core.ProducerFactory;
 import org.springframework.kafka.support.serializer.JsonSerializer;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 @Configuration
 public class KafkaProducerConfig {
 
@@ -22,17 +20,17 @@ public class KafkaProducerConfig {
     private String bootstrapServers;
 
     @Bean
-    public ProducerFactory<String, List<GameResultEvent>> gameEventProducerFactory() {
+    public ProducerFactory<String, GameResultEventList> gameEventProducerFactory() {
         Map<String, Object> config = new HashMap<>();
         config.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         config.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class); // 직렬화 설정
         config.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class); // 직렬화 설정
-
+        //config.put(JsonSerializer.ADD_TYPE_INFO_HEADERS, true); // 타입 헤더 활성화
         return new DefaultKafkaProducerFactory<>(config);
     }
 
     @Bean
-    public KafkaTemplate<String, List<GameResultEvent>> gameEventKafkaTemplate() {
+    public KafkaTemplate<String, GameResultEventList> gameEventKafkaTemplate() {
         return new KafkaTemplate<>(gameEventProducerFactory());
     }
 
