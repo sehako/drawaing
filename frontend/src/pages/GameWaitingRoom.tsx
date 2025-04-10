@@ -98,7 +98,7 @@ const GameWaitingRoom: React.FC = () => {
       unsubscribe();
     };
   }, [actualRoomId, sessionId]);
-  
+
   useEffect(() => {
     if (currentUser) {
       // currentUser를 JSON 문자열로 변환하여 로컬 스토리지에 저장
@@ -433,10 +433,10 @@ useEffect(() => {
 
   
   // 디버깅을 위한 로그 추가
-  console.log('현재 플레이어 수:', players.length);
-  console.log('모든 플레이어 준비 상태:', allPlayersReady);
-  console.log('플레이어 목록:', players);
-  console.log('방장 여부(isLocalHost):', isLocalHost);
+  // console.log('현재 플레이어 수:', players.length);
+  // console.log('모든 플레이어 준비 상태:', allPlayersReady);
+  // console.log('플레이어 목록:', players);
+  // console.log('방장 여부(isLocalHost):', isLocalHost);
 
   // 준비 상태 토글 - 웹소켓 메시지 전송
   const toggleReady = () => {
@@ -528,9 +528,9 @@ useEffect(() => {
   const currentTime = new Date();
   const timeUntilStart = startTime.getTime() - currentTime.getTime();
   
-  console.log('서버 시작 시간:', startTime.toISOString());
-  console.log('현재 시간:', currentTime.toISOString());
-  console.log(`게임 시작까지 ${timeUntilStart}ms (${timeUntilStart/1000}초) 남음`);
+  // console.log('서버 시작 시간:', startTime.toISOString());
+  // console.log('현재 시간:', currentTime.toISOString());
+  // console.log(`게임 시작까지 ${timeUntilStart}ms (${timeUntilStart/1000}초) 남음`);
   
   // 이미 시작 시간이 지났거나 음수인 경우 즉시 게임 화면으로 이동
   if (timeUntilStart <= 0) {
@@ -573,7 +573,7 @@ useEffect(() => {
   // 정확한 시작 시간에 게임 화면으로 이동하는 백업 타이머
   const exactStartTimer = setTimeout(() => {
     clearInterval(countdownInterval);
-    console.log('정확한 시작 시간에 도달 - 게임 화면으로 이동');
+    // console.log('정확한 시작 시간에 도달 - 게임 화면으로 이동');
     navigate(`/game/${actualRoomId}`);
   }, timeUntilStart);
   
@@ -610,14 +610,14 @@ useEffect(() => {
             actualRoomId
           );
           
-          console.log('방 퇴장 메시지 전송 완료');
+          // console.log('방 퇴장 메시지 전송 완료');
           
           // 구독 취소 추가
           try {
             stompClient.unsubscribe(`/topic/room/${actualRoomId}`);
             stompClient.unsubscribe(`/topic/room/${actualRoomId}/chat`);
             stompClient.unsubscribe(`/topic/room.wait/${actualRoomId}`); // 새로 추가된 구독 취소
-            console.log('구독 취소 완료');
+            // console.log('구독 취소 완료');
           } catch (error) {
             console.error('구독 취소 중 오류:', error);
           }

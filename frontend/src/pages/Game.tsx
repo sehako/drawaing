@@ -197,7 +197,8 @@ const Game: React.FC = () => {
   const [drawOrder, setDrawOrder] = useState<number[]>([]);
   const [sessionInfoData, setSessionInfoData] = useState<any>(null); // 전체 세션 데이터를 저장할 변수
   // const [lastPoint, setLastPoint] = useState<{ x: number; y: number } | null>(null);
-  
+  const wordListIndexRef = useRef(0);
+
   const [storedSessionId, setStoredSessionId] = useState<string | null>(null);
   const [playerPermissions, setPlayerPermissions] = useState<PlayerPermissions>({
     canDraw: false,
@@ -447,87 +448,35 @@ const Game: React.FC = () => {
 
 
 useEffect(() => {
-  // 현재 roomId와 sessionId를 가져옴
   const currentRoomId = roomId || localStorage.getItem('roomId');
   const currentSessionId = sessionId || localStorage.getItem('sessionId');
   
-  // roomId나 sessionId가 없으면 구독하지 않음
   if (!currentRoomId || !currentSessionId) {
-    console.log('세션 정보 구독에 필요한 정보가 없음:', { 
-      currentRoomId, 
-      currentSessionId,
-      'roomId 상태값': roomId,
-      'sessionId 상태값': sessionId
-    });
+    console.log('세션 정보 구독에 필요한 정보가 없음');
     return;
   }
   
-  console.log('세션 정보 구독 시작:', { currentRoomId, currentSessionId });
-  
-  // 이전에 동일한 파라미터로 구독한 적이 있는지 확인하기 위한 플래그
-  const subscriptionKey = `${currentRoomId}:${currentSessionId}`;
-  const hasSubscribedBefore = localStorage.getItem('subscription') === subscriptionKey;
-  
-  if (hasSubscribedBefore) {
-    console.log('이미 동일한 파라미터로 구독 시도한 적이 있음:', subscriptionKey);
-    // 하지만 다시 구독해야 할 수도 있으므로 계속 진행
-  }
-  
-  // 현재 구독 정보 저장
-  localStorage.setItem('subscription', subscriptionKey);
-  
-  // 구독 시작
   const unsubscribe = sessionInfoService.subscribeToSessionInfo(
     currentRoomId,
     currentSessionId,
     (data) => {
-      console.log('세션 데이터 수신됨:', data);
-      
-      // 전체 세션 데이터 저장
-      setSessionInfoData(data);
-      
-      // 단어 목록 처리
-      if (data.word && Array.isArray(data.word)) {
-        console.log('단어 목록 수신:', data.word);
-        
-        // 단어 목록 상태 업데이트
-        setWordList(data.word);
-        
-        // 랜덤 단어 선택 (필요한 경우)
-        if (data.word.length > 0) {
-          const randomIndex = Math.floor(Math.random() * data.word.length);
-          const selectedWord = data.word[randomIndex];
-          console.log('선택된 단어:', selectedWord);
-          
-          // 퀴즈 단어 상태 업데이트
-          setQuizWord(selectedWord);
-        }
-      }
-      
-      // 그리기 순서 처리
-      if (data.drawOrder && Array.isArray(data.drawOrder)) {
-        console.log('그리기 순서 수신:', data.drawOrder);
-        
-        // 그리기 순서 상태 업데이트
-        setDrawOrder(data.drawOrder);
-        
-        // 현재 그리기 순서 처리 로직 (필요한 경우)
-        if (data.drawOrder.length > 0) {
-          console.log('첫 번째 그리기 순서:', data.drawOrder[0]);
-        }
-      }
+      sessionInfoService.processSessionData(data, {
+        setSessionInfoData,
+        setWordList,
+        setQuizWord,
+        setDrawOrder,
+        currentRound,
+        wordListIndexRef // ref 전달
+      });
     }
   );
   
-  // 컴포넌트 언마운트 시 구독 해제
   return () => {
     console.log('세션 정보 구독 해제');
     unsubscribe();
-    
-    // 구독 정보 초기화 (선택사항)
-    // localStorage.removeItem('subscription');
   };
-}, [roomId, sessionId]); // roomId와 sessionId가 변경될 때만 다시 구독
+}, [roomId, sessionId, currentRound, wordListIndexRef]);
+
 
 
   useEffect(() => {
@@ -584,6 +533,7 @@ useEffect(() => {
       console.log(`플레이어 번호 ${currentNumber} 확정`);
     }
   }, [isConnected, playerConnections, roomId, sendMessage]);
+
 
   // 캔버스 초기화
   useEffect(() => {
@@ -690,9 +640,22 @@ const transitionToNextRound = () => {
       context.fillRect(0, 0, canvasRef.current.width, canvasRef.current.height);
     }
 
-    // 새 퀴즈 단어 설정
-    const newWords = ['사과', '자동차', '컴퓨터', '강아지', '고양이', '비행기', '꽃', '커피'];
-    setQuizWord(newWords[Math.floor(Math.random() * newWords.length)]);
+    // 웹소켓으로 받아온 wordList 사용
+    if (wordList.length > 0) {
+      // 현재 라운드에 맞는 인덱스 계산 (0부터 시작)
+      const wordIndex = currentRound;
+      
+      if (wordIndex >= 0 && wordIndex < wordList.length) {
+        setQuizWord(wordList[wordIndex]);
+        console.log(`라운드 ${currentRound}의 선택된 단어:`, wordList[wordIndex]);
+      } else {
+        // 단어 리스트를 초과하는 경우 처리 (예: 랜덤 단어 선택 또는 기본값)
+        console.warn(`단어 리스트 인덱스 초과: ${wordIndex}`);
+        setQuizWord(wordList[0]); // 기본적으로 첫 번째 단어로 돌아감
+      }
+    } else {
+      console.warn('단어 리스트가 비어있습니다.');
+    }
     
     // 상태 초기화
     setHasCompleted(false);
