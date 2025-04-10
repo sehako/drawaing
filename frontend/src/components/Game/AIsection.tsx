@@ -26,7 +26,7 @@ interface AISectionProps {
   maxGuessSubmitCount?: number; // 추가: 최대 제출 가능 횟수
   canAnswer?: boolean;
   onSubmitMessage: (id: number, message: string) => void; // 추가
-
+  playerMessages?: Record<number | string, string>; // playerMessages 속성 추가 (선택적으로)
 }
 
 const AISection: React.FC<AISectionProps> = ({
