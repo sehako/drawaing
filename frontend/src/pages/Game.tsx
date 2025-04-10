@@ -49,6 +49,10 @@ const Game: React.FC = () => {
   const [paredUser, setParedUser] = useState<any>(null);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const [sessionResultData, setSessionResultData] = useState<SessionResultData | null>(null);
+  const [isResultDataReady, setIsResultDataReady] = useState<boolean>(false);
+
   
   // ReadyButton과 일관된 방식으로 roomId 초기화 및 업데이트
   useEffect(() => {
@@ -292,6 +296,27 @@ const [playerMessages, setPlayerMessages] = useState<Record<string | number, str
       return <div>???</div>; // 제시어 숨기기
     }
   };
+
+  useEffect(() => {
+    if (!roomId || !sessionId || !isConnected) return;
+    
+    const setupResultSubscription = async () => {
+      // STOMP 클라이언트 초기화 및 구독 설정
+      await sessionResultService.initializeClient(roomId, sessionId);
+      const unsubscribe = sessionResultService.subscribeToSessionResult(
+        roomId, sessionId, 
+        (resultData) => {
+          setSessionResultData(resultData);
+          localStorage.setItem('sessionResultData', JSON.stringify(resultData));
+          setIsResultDataReady(true);
+        }
+      );
+      return () => unsubscribe();
+    };
+    
+    setupResultSubscription();
+  }, [roomId, sessionId, isConnected]);
+  
 
   const handleGameOver = useCallback(() => {
     console.log('게임 타이머 종료, 게임 종료 처리');
@@ -1079,7 +1104,7 @@ const handleGuessSubmit = async (e: React.FormEvent) => {
       }
     } else {
       // 오답 처리
-      alert('틀렸습니다! 다시 시도해보세요.');
+      setIsWrongGuess(true);
     }
   }
   
@@ -1238,7 +1263,7 @@ const handlePass = () => {
     formData.append("quizWord", quizWord);
   
     try {
-      const response = await axios.post("http://34.64.180.197:8000/predict", formData, {
+      const response = await axios.post("https://34.64.180.197.sslip.io/predict", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       console.log("전체 응답 데이터:", response.data);
