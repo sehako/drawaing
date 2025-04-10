@@ -121,9 +121,19 @@ const ShopPage: React.FC = () => {
             <div className="flex items-center gap-4">
               {/* 사용자 잔액 표시 */}
               <div className="bg-amber-700 w-40 h-24 flex flex-col items-center justify-center rounded-xl border-4 border-amber-900 shadow-[6px_6px_0_0_rgba(0,0,0,0.3)]">
-                <h2 className="text-base font-bold text-white">내 포인트</h2>
-                <p className="text-lg font-bold text-white">{userPoint} 🪙</p>
+                <h2 className="text-base font-bold text-white">내 달걀</h2>
+                <div className="flex items-center justify-center">
+                  <p className="text-[24px] font-bold text-white flex items-center ml-[10px]">
+                    {userPoint}
+                    <img
+                      src="src/assets/Game/egg_point.png"
+                      alt="Egg Icon"
+                      className="inline-block w-[40px] h-[40px] ml-2"
+                    />
+                  </p>
+                </div>
               </div>
+
 
               {/* 인벤토리로 이동 버튼 */}
               <button
@@ -158,7 +168,17 @@ const ShopPage: React.FC = () => {
               {/* 아이템 이름 */}
               <h3 className="text-xs font-bold mb-1 text-center">{item.name}</h3>
               {/* 아이템 가격 */}
-              <p className="text-xm font-bold text-gray-500 mb-2">{item.price} 🪙</p>
+              <div className="flex items-center justify-center mb-2">
+                  <p className="text-lg font-bold text-gray-500 flex items-center ml-[5px]">
+                    {item.price}
+                    <img
+                      src="src/assets/Game/egg_point.png"
+                      alt="Egg Icon"
+                      className="inline-block w-[25px] h-[25px] ml-1"
+                    />
+                  </p>
+                </div>
+              
               {/* 구매 버튼 */}
               <button
                 onClick={() => handlePurchase(item.id, item.price)}
