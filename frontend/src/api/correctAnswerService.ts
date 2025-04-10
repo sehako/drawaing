@@ -237,6 +237,42 @@ const correctAnswerService = {
     }
   },
 
+  sendAIWinSignal: (
+    roomId: string,
+    sessionId: string
+  ): boolean => {
+    console.group('🤖 AI 승리 신호 전송');
+    console.log('방 ID:', roomId);
+    console.log('세션 ID:', sessionId);
+    
+    if (!stompClient || !stompClient.connected) {
+      console.error('❌ STOMP 클라이언트가 연결되지 않았습니다');
+      console.groupEnd();
+      return false;
+    }
+  
+    try { 
+      const destination = `/app/session.lose/${roomId}/${sessionId}`;
+      const payload = 1; // true 값 전송
+  
+      console.log('전송 대상 경로:', destination);
+      console.log('📦 전송 데이터: ', payload);
+      
+      stompClient.publish({
+        destination,
+        body: JSON.stringify(payload)
+      });
+  
+      console.log('✅ AI 승리 신호 전송 성공');
+      console.groupEnd();
+      return true;
+    } catch (error) {
+      console.error('❌ AI 승리 신호 전송 오류:', error);
+      console.groupEnd();
+      return false;
+    }
+  },
+
   disconnect: () => {
     console.log('🔌 STOMP 클라이언트 연결 종료 시도');
     if (stompClient && stompClient.connected) {
