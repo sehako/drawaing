@@ -1401,16 +1401,16 @@ useEffect(() => {
             <div className="text-2xl mb-6">
               <p className="mb-4">최종 점수</p>
               <div className="flex justify-center items-center gap-8 bg-white p-4 rounded-lg border-4 border-amber-400 shadow-inner">
-                <div className="text-blue-700 font-bold text-3xl">사람: {humanRoundWinCount}</div>
+                <div className="text-blue-700 font-bold text-3xl">병아리: {humanRoundWinCount}</div>
                 <div className="text-2xl">VS</div>
-                <div className="text-red-700 font-bold text-3xl">AI: {aiRoundWinCount}</div>
+                <div className="text-red-700 font-bold text-3xl">담비(AI): {aiRoundWinCount}</div>
               </div>
             </div>
             <p className="text-lg mt-6">
               {humanRoundWinCount > aiRoundWinCount 
-                ? '축하합니다! 사람팀이 이겼습니다!' 
+                ? '축하합니다! 병아리리팀이 이겼습니다!' 
                 : humanRoundWinCount < aiRoundWinCount 
-                  ? 'AI팀이 이겼습니다. 다음 기회에...' 
+                  ? '담비(AI)가가 이겼습니다. 다음 기회에...' 
                   : '동점입니다! 좋은 승부였습니다!'}
             </p>
 
@@ -1558,7 +1558,7 @@ useEffect(() => {
     
     <div className="flex items-center space-x-4">
       <div className="text-right text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-blue-600">
-        사람 {humanRoundWinCount}
+        병아리 {humanRoundWinCount}
       </div>
       
       {/* 나무 판자 배경 */}
@@ -1595,7 +1595,7 @@ useEffect(() => {
       </div>
       
       <div className="text-left text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-red-600">
-        {aiRoundWinCount} AI
+        {aiRoundWinCount} 담비
       </div>
     </div>
     
