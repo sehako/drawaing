@@ -1,18 +1,23 @@
 package com.aioi.drawaing.drawinggameservice.drawing.domain;
 
 
+import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.dto.GameResultEvent;
+import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.dto.GameResultEventList;
 import com.aioi.drawaing.drawinggameservice.drawing.presentation.dto.ParticipantScoreInfo;
 import com.aioi.drawaing.drawinggameservice.drawing.presentation.dto.WinParticipantInfo;
 import com.aioi.drawaing.drawinggameservice.room.application.dto.AddRoomParticipantInfo;
-import lombok.*;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 @Builder
 @Getter
@@ -68,27 +73,44 @@ public class Session {
         this.participants.get(userId).decrementChanceCount();
     }
 
+    public GameResultEventList getGameResults() {
+        return participants.entrySet().stream()
+                .map(entry -> {
+                    Long memberId = entry.getKey();
+                    Participant participant = entry.getValue();
+                    int score = calculateScore(participant);
+                    return new GameResultEvent(memberId, getStatus(), score, calculateExp(), getPoint(score));
+                })
+                .collect(Collectors.toCollection(GameResultEventList::new)); // 래퍼 클래스로 수집
+    }
+
     public Map<Long, ParticipantScoreInfo> toParticipantScoreInfo(){
         return participants.entrySet().stream()
                 .collect(Collectors.toMap(
                         Map.Entry::getKey, // 기존 Long 키 유지
                         entry -> {
-                            int score = calculateScore(entry);
-                            return new ParticipantScoreInfo(this.humanWin, score, Math.max(10, score), calculateExp()); // 값 변환
+                            int score = calculateScore(entry.getValue());
+                            return new ParticipantScoreInfo(this.humanWin, score, getPoint(score), calculateExp()); // 값 변환
                         }
                 ));
     }
 
+    private int getPoint(int score){ return Math.max(10, score); }
+
     private int calculateExp(){
-        return 10+(isHumanWin()?10:0)+this.humanWin;
+        return 10+(getStatus().equals("WIN")?10:0)+this.humanWin;
     }
 
-    private boolean isHumanWin(){
-        return this.humanWin > this.roundCount-this.humanWin;
+    private String getStatus(){
+        int loseCnt=this.roundCount-this.humanWin;
+
+        if(this.humanWin==loseCnt) return "DRAW";
+        else if(this.humanWin>loseCnt) return "WIN";
+        return "LOSE";
     }
 
-    private int calculateScore(Map.Entry<Long, Participant> entry){
-        return this.humanWin*2-(this.roundCount-this.humanWin)*2+entry.getValue().getBonusPointsDrawing()+entry.getValue().getBonusPointsGuessing();
+    private int calculateScore(Participant participant){
+        return this.humanWin*2-(this.roundCount-this.humanWin)*2+participant.getBonusPointsDrawing()+participant.getBonusPointsGuessing();
     }
 
     public void win(WinParticipantInfo winParticipantInfo, int correctScore, int drawScore){
