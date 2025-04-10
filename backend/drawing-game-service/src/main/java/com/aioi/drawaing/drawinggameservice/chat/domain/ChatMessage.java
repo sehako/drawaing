@@ -31,7 +31,7 @@ public class ChatMessage {
 
     public static ChatMessage createMessage(String sessionId, ChatMessageDto messageDto) {
         return ChatMessage.builder()
-                .senderId(messageDto.userId())
+                .senderId(messageDto.senderId())
                 .sessionId(sessionId)
                 .message(messageDto.message())
                 .build();
