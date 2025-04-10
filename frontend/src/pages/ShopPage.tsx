@@ -3,7 +3,7 @@ import axios from 'axios';
 import CategoryTabs from '../components/Shop/CategoryTabs';
 import Pagination from '../components/Ranking/Pagination';
 import { useNavigate } from 'react-router-dom';
-
+import egg_point from '../assets/Game/egg_point.png';
 
 interface Item {
     id: number; // 아이템 ID
@@ -126,7 +126,7 @@ const ShopPage: React.FC = () => {
                   <p className="text-[24px] font-bold text-white flex items-center ml-[10px]">
                     {userPoint}
                     <img
-                      src="src/assets/Game/egg_point.png"
+                      src={egg_point}
                       alt="Egg Icon"
                       className="inline-block w-[40px] h-[40px] ml-2"
                     />
@@ -172,7 +172,7 @@ const ShopPage: React.FC = () => {
                   <p className="text-lg font-bold text-gray-500 flex items-center ml-[5px]">
                     {item.price}
                     <img
-                      src="src/assets/Game/egg_point.png"
+                      src={egg_point}
                       alt="Egg Icon"
                       className="inline-block w-[25px] h-[25px] ml-1"
                     />
