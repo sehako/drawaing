@@ -303,9 +303,14 @@ const PlayerSection: React.FC<PlayerSectionProps> = ({
     }
   }, [currentRound, activeDrawerIndex, paredUser, playerArray, currentPositions, currentUserId, onPlayerRoleChange]);
 
-  // ID로 플레이어 메시지 찾기
-  const getPlayerMessageById = (playerId: number | null): string | undefined => {
+  // ID로 플레이어 메시지 찾기 (AI 메시지 처리 추가)
+    const getPlayerMessageById = (playerId: number | null): string | undefined => {
     if (playerId === null) return undefined;
+    
+    // AI 메시지 확인
+    if (playerId === -1 && playerMessages['ai'] !== undefined) {
+      return playerMessages['ai'];
+    }
     
     // ID 값으로 메시지 찾기 (숫자형)
     if (playerMessages[playerId] !== undefined) {
@@ -338,6 +343,9 @@ const PlayerSection: React.FC<PlayerSectionProps> = ({
     // 포지션별 ID로 메시지 찾기
     const positionId = positionIds[position];
     const playerMessage = getPlayerMessageById(positionId);
+
+    // AI 메시지 확인 (playerMessages에 'ai' 키가 있는지 확인)
+    const aiMessage = playerMessages['ai'];
 
     return (
         <div
@@ -435,8 +443,24 @@ const PlayerSection: React.FC<PlayerSectionProps> = ({
       {renderPlayerCard("순서1", activeDrawerIndex === 0)}
       {renderPlayerCard("순서2", activeDrawerIndex === 1)}
       {renderPlayerCard("순서3", activeDrawerIndex === 2, true)}
-    </div>
-  );
-}
+       {/* AI 메시지 표시 - 오른쪽 하단에 고정 */}
+    {playerMessages['ai'] && (
+      <div className="absolute bottom-4 right-4 w-[140px] z-50">
+        <div className="bg-blue-100 p-2 rounded-lg shadow-lg border-2 border-blue-600 relative">
+          <div className="text-xs font-bold text-blue-800 mb-1">담비(AI)</div>
+          <p className="text-sm text-blue-800 font-bold break-words">{playerMessages['ai']}</p>
+          {/* AI 말풍선 화살표 */}
+          <div className="absolute top-1/2 left-[-10px] transform -translate-y-1/2">
+            <div className="w-0 h-0 
+                          border-t-[8px] border-t-transparent 
+                          border-r-[10px] border-r-blue-600 
+                          border-b-[8px] border-b-transparent"></div>
+          </div>
+        </div>
+      </div>
+)}
+</div>
+);
+};
 
 export default PlayerSection;

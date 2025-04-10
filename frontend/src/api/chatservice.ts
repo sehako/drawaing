@@ -3,7 +3,7 @@ import WebSocketService from '../hooks/WebSocketService';
 
 // 채팅 메시지 인터페이스
 export interface ChatMessage {
-  userId: number;
+  senderId: number;
   message: string;
   createdAt?: string;
 }
@@ -98,7 +98,7 @@ public subscribeToMessages(
           
           const chatMessage: ChatMessage = JSON.parse(message.body);
           console.log('파싱된 데이터:', chatMessage);
-          console.log('userId:', chatMessage.userId);
+          console.log('userId:', chatMessage.senderId);
           console.log('message:', chatMessage.message);
           console.log('createdAt:', chatMessage.createdAt);
           console.groupEnd();
@@ -136,7 +136,7 @@ public subscribeToMessages(
 public sendMessage(
   roomId: string, 
   sessionId: string, 
-  userId: number,
+  senderId: number,
   message: string
 ): boolean {
   if (!this.stompClient || !this.stompClient.connected) {
@@ -147,10 +147,15 @@ public sendMessage(
   try {
     // 예시와 동일한 형식의 객체 생성
     const chatMessage: ChatMessage = {
-      userId: userId,
+      senderId: senderId,
       message: message,
       createdAt: new Date().toISOString()
     };
+
+    // AI 메시지인 경우 로그에 표시
+    if (senderId === -1) {
+      console.log('AI 메시지 전송:', message);
+    }
     
     // 형식에 맞게 로깅 (예시 이미지와 동일하게)
     const formattedMessage = JSON.stringify(chatMessage, null, 2);
@@ -158,7 +163,7 @@ public sendMessage(
     
     // 또는 객체 형태로 직접 출력
     console.log({
-      "userId": userId,
+      "userId": senderId,
       "message": message,
       "createdAt": chatMessage.createdAt
     });
