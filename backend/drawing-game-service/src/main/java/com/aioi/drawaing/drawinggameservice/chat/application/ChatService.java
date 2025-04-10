@@ -27,6 +27,11 @@ public class ChatService {
     public void publishChat(String roomId, String sessionId, ChatMessageDto messageDto){
         log.info("{}: {}", sessionId, messageDto.toString());
 
+        if(messageDto.senderId()==-1){
+            chatMessagePublisher.publishChat("/topic/chat.message/" + roomId +"/"+sessionId, messageDto);
+            return;
+        }
+
         if(decrementParticipantChanceCount(sessionId, messageDto)){
             ChatMessage chatMessage = ChatMessage.createMessage(sessionId, messageDto);
             log.info("{}: {}", sessionId, chatMessage);
@@ -41,10 +46,10 @@ public class ChatService {
     private boolean decrementParticipantChanceCount(String sessionId, ChatMessageDto messageDto) {
         Session session = drawingService.findSession(sessionId);
 
-        log.info("decrementParticipantChanceCount: {}: {}", sessionId, session.getChanceCount(messageDto.userId()));
+        log.info("decrementParticipantChanceCount: {}: {}", sessionId, session.getChanceCount(messageDto.senderId()));
 
-        if(session.getChanceCount(messageDto.userId())>0){
-            session.decrementParticipantChanceCount(messageDto.userId());
+        if(session.getChanceCount(messageDto.senderId())>0){
+            session.decrementParticipantChanceCount(messageDto.senderId());
             mongoTemplate.save(session);
             return true;
         }
