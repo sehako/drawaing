@@ -1715,29 +1715,35 @@ useEffect(() => {
           <div className="w-1/5">
             <div className="bg-amber-100 h-[600px] rounded-xl border-4 border-amber-600 shadow-[4px_4px_0_0_rgba(0,0,0,0.3)] p-4">
             <AISection 
-              aiImages={aiImages}
-              aiAnswer={aiAnswer}
-              guess={guess}
-              setGuess={setGuess}
-              handleGuessSubmit={handleGuessSubmit}
-              handlePass={handlePass}
-              eggCount={eggCount}
-              onAICorrectAnswer={handleAICorrectAnswer}
-              quizWord={quizWord}
-              predictions={predictions}
-              canPass={activeDrawerIndex === 2 && passCount < MAX_PASS_COUNT}
-              passCount={passCount}
-              isHumanCorrect={isHumanCorrect}
-              setIsHumanCorrect={setIsHumanCorrect}
-              isEmptyGuess={isEmptyGuess}
-              setIsEmptyGuess={setIsEmptyGuess}
-              isWrongGuess={isWrongGuess}
-              setIsWrongGuess={setIsWrongGuess}
-              guessSubmitCount={guessSubmitCount}
-              maxGuessSubmitCount={MAX_GUESS_SUBMIT_COUNT}
-              canAnswer={playerPermissions.canAnswer}
-              playerMessages={playerMessages} // AI 메시지 표시를 위해 추가
-            />
+  aiImages={aiImages}
+  aiAnswer={aiAnswer}
+  guess={guess}
+  setGuess={setGuess}
+  handleGuessSubmit={handleGuessSubmit}
+  handlePass={handlePass}
+  eggCount={eggCount}
+  onAICorrectAnswer={handleAICorrectAnswer}
+  quizWord={quizWord}
+  predictions={predictions}
+  canPass={activeDrawerIndex === 2 && passCount < MAX_PASS_COUNT}
+  passCount={passCount}
+  isHumanCorrect={isHumanCorrect}
+  setIsHumanCorrect={setIsHumanCorrect}
+  isEmptyGuess={isEmptyGuess}
+  setIsEmptyGuess={setIsEmptyGuess}
+  isWrongGuess={isWrongGuess}
+  setIsWrongGuess={setIsWrongGuess}
+  guessSubmitCount={guessSubmitCount}
+  maxGuessSubmitCount={MAX_GUESS_SUBMIT_COUNT}
+  canAnswer={playerPermissions.canAnswer}
+  playerMessages={playerMessages}
+  onSubmitMessage={(id, message) => {
+    // 채팅 메시지 전송 로직
+    if (roomId && sessionId) {
+      chatService.sendMessage(roomId, sessionId, id, message);
+    }
+  }}
+/>
             </div>
           </div>
         </div>
