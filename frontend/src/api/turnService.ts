@@ -97,6 +97,33 @@ class TurnService {
       console.log('턴 종료 서비스 연결 종료');
     }
   }
+  public subscribeToTurnEvents(
+    roomId: string,
+    sessionId: string,
+    callback: (turnData: any) => void
+  ): () => void {
+    if (!this.stompClient || !this.stompClient.connected) {
+      console.warn('STOMP 클라이언트가 연결되지 않았습니다.');
+      return () => {};
+    }
+  
+    const subscription = this.stompClient.subscribe(
+      `/app/session.end/${roomId}/${sessionId}`,
+      (message) => {
+        try {
+          const turnData = JSON.parse(message.body);
+          callback(turnData);
+        } catch (error) {
+          console.error('턴 이벤트 메시지 처리 중 오류:', error);
+        }
+      }
+    );
+  
+    return () => {
+      subscription.unsubscribe();
+      console.log('턴 이벤트 구독 해제');
+    };
+  }
 }
 
 export default TurnService.getInstance();

@@ -49,11 +49,6 @@ const Game: React.FC = () => {
   const [paredUser, setParedUser] = useState<any>(null);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
-
-  const [sessionResultData, setSessionResultData] = useState<SessionResultData | null>(null);
-  const [isResultDataReady, setIsResultDataReady] = useState<boolean>(false);
-
-  
   
   // ReadyButton과 일관된 방식으로 roomId 초기화 및 업데이트
   useEffect(() => {
@@ -298,28 +293,6 @@ const [playerMessages, setPlayerMessages] = useState<Record<string | number, str
     }
   };
 
-
-
-  useEffect(() => {
-    if (!roomId || !sessionId || !isConnected) return;
-    
-    const setupResultSubscription = async () => {
-      // STOMP 클라이언트 초기화 및 구독 설정
-      await sessionResultService.initializeClient(roomId, sessionId);
-      const unsubscribe = sessionResultService.subscribeToSessionResult(
-        roomId, sessionId, 
-        (resultData) => {
-          setSessionResultData(resultData);
-          localStorage.setItem('sessionResultData', JSON.stringify(resultData));
-          setIsResultDataReady(true);
-        }
-      );
-      return () => unsubscribe();
-    };
-    
-    setupResultSubscription();
-  }, [roomId, sessionId, isConnected]);
-  
   const handleGameOver = useCallback(() => {
     console.log('게임 타이머 종료, 게임 종료 처리');
     setIsGameOver(true);
@@ -371,42 +344,45 @@ const [playerMessages, setPlayerMessages] = useState<Record<string | number, str
     }
   }, [aiCorrectDetected, roomId, sessionId, activePlayerId, activeDrawerIndex]);
 
-  useEffect(() => {
-    // AI 정답이 감지되고, roomId와 sessionId가 있을 때
-    if (aiCorrectDetected && roomId && sessionId) {
-      try {
-        // 현재 활성화된 플레이어의 ID 사용
-        const drawingMemberId = activePlayerId;
-        
-        // AI의 고정된 멤버 ID (예: -1 또는 특정 값)
-        const aiMemberId = -1;
-        
-        // 현재 그림 그리는 순서
-        const drawingOrder = activeDrawerIndex + 1;
-        
-        // 정답 정보 전송
-        correctAnswerService.sendCorrectAnswer(
-          roomId,
-          sessionId,
-          drawingMemberId,
-          aiMemberId,
-          drawingOrder,
-          (roundResult) => {
-            console.log('AI 정답 전송 후 라운드 결과:', roundResult);
-          }
-        );
-    
-        // AI 승리 신호 전송 (라운드 전환을 위한 신호)
-        correctAnswerService.sendAIWinSignal(roomId, sessionId);
-        
-        // 상태 초기화
-        setAiCorrectDetected(false);
-      } catch (error) {
-        console.error('AI 정답 전송 중 오류:', error);
-        setAiCorrectDetected(false);
-      }
+// 수정된 코드
+useEffect(() => {
+  // AI 정답이 감지되고, roomId와 sessionId가 있을 때
+  if (aiCorrectDetected && roomId && sessionId) {
+    try {
+      // 현재 활성화된 플레이어의 ID 사용
+      const drawingMemberId = activePlayerId;
+      
+      // AI의 고정된 멤버 ID (예: -1 또는 특정 값)
+      const aiMemberId = -1;
+      
+      // 현재 그림 그리는 순서
+      const drawingOrder = activeDrawerIndex + 1;
+      
+      // 정답 정보 전송
+      correctAnswerService.sendCorrectAnswer(
+        roomId,
+        sessionId,
+        drawingMemberId,
+        aiMemberId,
+        drawingOrder,
+        (roundResult) => {
+          console.log('AI 정답 전송 후 라운드 결과:', roundResult);
+        }
+      );
+  
+      // AI 승리 신호 전송 (라운드 전환을 위한 신호)
+      correctAnswerService.sendAIWinSignal(roomId, sessionId);
+      
+      // 상태 초기화
+      setAiCorrectDetected(false);
+
+      // AI 정답 처리 로직 제거 (handleAICorrectAnswer() 호출 삭제)
+    } catch (error) {
+      console.error('AI 정답 전송 중 오류:', error);
+      setAiCorrectDetected(false);
     }
-  }, [aiCorrectDetected, roomId, sessionId, activePlayerId, activeDrawerIndex]);
+  }
+}, [aiCorrectDetected, roomId, sessionId, activePlayerId, activeDrawerIndex]);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('currentUser');
@@ -782,15 +758,25 @@ useEffect(() => {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     setContext(ctx);
   }, []);
- 
-  const handlePlayerCorrectAnswer = () => {
-    setEggCount(prev => prev + 1);
-  };
+const handlePlayerCorrectAnswer = () => {
+  // 여기서는 계란 개수를 직접 변경하지 않고 웹소켓 응답(isWin)에 의해 처리되도록 함
+  // setEggCount(prev => prev + 1); // 이 부분 제거
   
-  const handleAICorrectAnswer = () => {
-    setEggCount(prev => Math.max(0, prev - 1));
-    setAIRoundWinCount(prev => prev + 1);
-  };
+  // 오직 UI 반응과 필요한 신호만 처리
+  setIsHumanCorrect(true);
+  
+  // 일정 시간 후 UI 반응 초기화
+  setTimeout(() => {
+    setIsHumanCorrect(false);
+  }, 2000);
+};
+  
+const handleAICorrectAnswer = () => {
+  // AI 정답 감지 초기화만 유지
+  setAiCorrectDetected(false);
+  
+  // 나머지 상태 업데이트는 웹소켓 이벤트로 처리
+};
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -1109,11 +1095,15 @@ useEffect(() => {
     if (roundResult.isWin) {
       // 사람 팀 승리 (true)
       setHumanRoundWinCount(prev => prev + 1);
-      console.log(`라운드 ${roundResult.round}에서 사람 팀 승리!`);
+      // 계란 +1
+      setEggCount(prev => prev + 1);
+      console.log(`라운드 ${roundResult.round}에서 사람 팀 승리! 계란 +1`);
     } else {
       // AI 팀 승리 (false)
       setAIRoundWinCount(prev => prev + 1);
-      console.log(`라운드 ${roundResult.round}에서 AI 팀 승리!`);
+      // 계란 -1
+      setEggCount(prev => Math.max(0, prev - 1));
+      console.log(`라운드 ${roundResult.round}에서 AI 팀 승리! 계란 -1`);
     }
 
     // 라운드 전환 함수 호출
@@ -1255,21 +1245,21 @@ const handlePass = () => {
   
       const aiMessage = response.data.result;
       
-      // AI 메시지 객체 생성 (플레이어 메시지와 동일한 형식)
+      // AI 메시지 객체 생성
       const aiMessageObj = {
         "userId": -1, // AI의 고정된 userId
         "message": aiMessage,
         "createdAt": new Date().toISOString()
       };
       
-      // 메시지 객체를 JSON 문자열로 로깅 (플레이어 메시지와 동일한 형식)
+      // 메시지 객체를 JSON 문자열로 로깅
       console.log(JSON.stringify(aiMessageObj, null, 2));
       
       // 웹소켓으로 AI 메시지 전송
       if (roomId && sessionId) {
         chatService.sendMessage(roomId, sessionId, -1, aiMessage);
         
-        // AI 메시지 상태 업데이트 (플레이어 메시지와 유사한 방식)
+        // AI 메시지 상태 업데이트
         setPlayerMessages(prev => {
           const updated = {
             ...prev,
@@ -1297,8 +1287,14 @@ const handlePass = () => {
   
       // AI가 정답을 맞췄다면 처리
       if (response.data.correct) {
+        // AI 정답 감지 상태 설정 - 별도의 useEffect에서 처리됨
+        setAiCorrectDetected(true);
+        
+        // AI 정답 처리 로직 별도 실행
         handleAICorrectAnswer();
-      }
+      } 
+      // 오답일 경우 아무 작업도 하지 않음 - 턴 전환 로직 제거
+      // 타이머가 모두 소진될 때까지 기다림
   
       return { result: response.data.result, correct: response.data.correct };
     } catch (error) {
@@ -1306,6 +1302,56 @@ const handlePass = () => {
       throw error;
     }
   };
+
+useEffect(() => {
+  // roomId와 sessionId가 있고, 웹소켓 연결이 완료되었을 때만 실행
+  if (!roomId || !sessionId || !isConnected) return;
+
+  let unsubscribeTurn: (() => void) | null = null;
+
+  const subscribeTurnEvents = async () => {
+    try {
+      // 턴 서비스 클라이언트 초기화
+      await turnService.initializeClient(roomId, sessionId);
+      
+      // 턴 종료 이벤트 구독
+      unsubscribeTurn = turnService.subscribeToTurnEvents(
+        roomId,
+        sessionId,
+        (turnData) => {
+          console.log('턴 이벤트 수신:', turnData);
+          
+          // 다음 드로어 인덱스로 업데이트
+          if (turnData.nextDrawerIndex !== undefined) {
+            console.log(`턴 전환: ${turnData.currentDrawerIndex} -> ${turnData.nextDrawerIndex}`);
+            
+            if (turnData.nextDrawerIndex === 0) {
+              // 세 번째 턴이 끝나고 첫 번째 턴으로 돌아가는 경우 라운드 전환
+              transitionToNextRound();
+            } else {
+              // 그 외의 경우 다음 턴으로 전환
+              setActiveDrawerIndex(turnData.nextDrawerIndex);
+              // 타이머 초기화
+              resumeTimer();
+              resetTimer(20);
+            }
+          }
+        }
+      );
+    } catch (error) {
+      console.error('턴 이벤트 구독 중 오류:', error);
+    }
+  };
+
+  subscribeTurnEvents();
+
+  return () => {
+    if (unsubscribeTurn) {
+      unsubscribeTurn();
+    }
+  };
+}, [roomId, sessionId, isConnected]);
+
 
 // 그림 그리기 타이머 효과 - 개선된 버전
 useEffect(() => {
@@ -1402,16 +1448,16 @@ useEffect(() => {
             <div className="text-2xl mb-6">
               <p className="mb-4">최종 점수</p>
               <div className="flex justify-center items-center gap-8 bg-white p-4 rounded-lg border-4 border-amber-400 shadow-inner">
-                <div className="text-blue-700 font-bold text-3xl">병아리: {humanRoundWinCount}</div>
+                <div className="text-blue-700 font-bold text-3xl">사람: {humanRoundWinCount}</div>
                 <div className="text-2xl">VS</div>
-                <div className="text-red-700 font-bold text-3xl">담비(AI): {aiRoundWinCount}</div>
+                <div className="text-red-700 font-bold text-3xl">AI: {aiRoundWinCount}</div>
               </div>
             </div>
             <p className="text-lg mt-6">
               {humanRoundWinCount > aiRoundWinCount 
-                ? '축하합니다! 병아리리팀이 이겼습니다!' 
+                ? '축하합니다! 사람팀이 이겼습니다!' 
                 : humanRoundWinCount < aiRoundWinCount 
-                  ? '담비(AI)가가 이겼습니다. 다음 기회에...' 
+                  ? 'AI팀이 이겼습니다. 다음 기회에...' 
                   : '동점입니다! 좋은 승부였습니다!'}
             </p>
 
@@ -1559,7 +1605,7 @@ useEffect(() => {
     
     <div className="flex items-center space-x-4">
       <div className="text-right text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-blue-600">
-        병아리 {humanRoundWinCount}
+        사람 {humanRoundWinCount}
       </div>
       
       {/* 나무 판자 배경 */}
@@ -1596,7 +1642,7 @@ useEffect(() => {
       </div>
       
       <div className="text-left text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-red-600">
-        {aiRoundWinCount} 담비
+        {aiRoundWinCount} AI
       </div>
     </div>
     
