@@ -1649,9 +1649,9 @@ useEffect(() => {
         {/* 제시어 텍스트 */}
         <div className="flex flex-col items-center justify-center">
           <h1 className="text-6xl sm:text-6xl md:text-4xl font-bold text-[#f5f5dc] drop-shadow-[2px_2px_0_rgba(0,0,0,0.5)] text-center">
-            {/* {playerPermissions.canSeeWord ? quizWord : '???'}
-             */}
-             {quizWord}
+            {playerPermissions.canSeeWord ? quizWord : '???'}
+            
+             {/* {quizWord} */}
           </h1>
         </div>
         
