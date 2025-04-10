@@ -7,6 +7,7 @@ import com.aioi.drawaing.drawinggameservice.drawing.domain.*;
 import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.KafkaProvider;
 import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.KeywordRepository;
 import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.SessionRepository;
+import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.dto.GameResultEvent;
 import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.feign.AuthServiceClient;
 import com.aioi.drawaing.drawinggameservice.drawing.presentation.DrawMessagePublisher;
 import com.aioi.drawaing.drawinggameservice.drawing.presentation.dto.AddSessionParticipantInfo;
@@ -127,6 +128,10 @@ public class DrawingService {
 
     private void endSession(String roomId, String sessionId){
         Session session = findSession(sessionId);
+        for (GameResultEvent gameResult : session.getGameResults()) {
+            log.info("gameResult: {}", gameResult);
+        }
+
         kafkaProvider.sendGameEvent("game-result-events", session.getGameResults());
         log.info("endSession: {}", sessionId);
 
