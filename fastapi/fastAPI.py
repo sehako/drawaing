@@ -11,7 +11,6 @@ import os
 from fastapi import Form
 
 from fastapi.middleware.cors import CORSMiddleware
-import asyncio  # 딜레이를 주는 라이브러리
 
 origins = [
     "https://www.drawaing.site",
@@ -84,14 +83,17 @@ def save_image(image_bytes, filename="image.png"):
 async def predict(file: UploadFile = File(...), quizWord: str = Form(...)):
     image_bytes = await file.read()
 
+    # 이미지를 서버에 저장
+    # save_image(image_bytes, filename="image.png")
+    
     # 이미지 변환
     image_tensor = transform_image(image_bytes, save_transformed_image=True).to(device)
 
     with torch.no_grad():
         outputs = model(image_tensor)
         print("Raw outputs:", outputs)
-        probabilities = torch.nn.functional.softmax(outputs, dim=1)
-        top_probs, top_indices = torch.topk(probabilities, 5, dim=1)
+        probabilities = torch.nn.functional.softmax(outputs, dim=1)  # 확률 변환
+        top_probs, top_indices = torch.topk(probabilities, 5, dim=1)  # 상위 5개 예측
 
     # 예측 결과
     top_predictions = [
@@ -99,9 +101,11 @@ async def predict(file: UploadFile = File(...), quizWord: str = Form(...)):
         for idx, prob in zip(top_indices[0], top_probs[0])
     ]
 
+    # quizWord와 비교하여 결과 결정
     result = ""
     correct = False
 
+    # quizWord가 예측 목록에 있는지 확인
     for prediction in top_predictions:
         if prediction["class"] == quizWord:
             result = quizWord
@@ -109,12 +113,11 @@ async def predict(file: UploadFile = File(...), quizWord: str = Form(...)):
             break
 
     if not correct:
+        # quizWord와 일치하지 않으면 가장 확률이 높은 예측을 result로 설정
         result = top_predictions[0]["class"]
         correct = False
 
-    # ⏳ 여기서 2초 대기
-    await asyncio.sleep(2)
-
+    # 결과 반환
     return {
         "result": result,
         "correct": correct
