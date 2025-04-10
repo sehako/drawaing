@@ -244,7 +244,10 @@ const Game: React.FC = () => {
     // console.log('Game.tsx - 받은 플레이어 권한:', roleInfo.playerPermissions);
   };
 
-  const [predictions, setPredictions] = useState<{ class: string; probability: number }[]>([]);
+  const [predictions, setPredictions] = useState<{ result: string; correct: boolean }>({
+    result: "", 
+    correct: false, 
+  });
   
   // 웹소켓 훅 사용 - roomId가 null일 때도 빈 문자열로 처리하도록 수정
   const { isConnected, playerConnections, sessionId, sendMessage } = useGameWebSocket({
@@ -953,20 +956,29 @@ const handlePass = () => {
   const handleCanvasSubmit = async (blob: Blob) => {
     const formData = new FormData();
     formData.append("file", blob, "drawing.png");
+    formData.append("quizWord", quizWord);
   
     try {
-      const response = await axios.post("http://localhost:8000/predict", formData, {
+      const response = await axios.post("http://34.64.180.197:8000/predict", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-  
-      setPredictions(response.data.predictions);
-      return response.data.predictions;
+      console.log("전체 응답 데이터:", response.data);
+      // 서버 응답에서 `result` (예: 예측된 단어)와 `correct` (boolean: 예측이 맞았는지 여부) 값을 받아옴
+      setPredictions({
+        result: response.data.result,  // 예: "바나나"
+        correct: response.data.correct,  // 예: true 또는 false
+      });
+      
+      console.log("예측 결과:", response.data.result);  // 예: "바나나"
+      console.log("정답이 맞나요? :", response.data.correct);  // 예: true 또는 false
+
+      return { result: response.data.result, correct: response.data.correct };
     } catch (error) {
       console.error("예측 요청 실패:", error);
       throw error;
     }
   };
-  
+
 // 그림 그리기 타이머 효과 - 개선된 버전
 useEffect(() => {
   // 게임이 종료됐거나 라운드 전환 중이면 타이머를 멈춤
