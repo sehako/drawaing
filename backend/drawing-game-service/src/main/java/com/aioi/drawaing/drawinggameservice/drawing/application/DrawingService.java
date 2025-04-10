@@ -4,7 +4,7 @@ import com.aioi.drawaing.drawinggameservice.drawing.application.dto.RoundInfo;
 import com.aioi.drawaing.drawinggameservice.drawing.application.dto.RoundResult;
 import com.aioi.drawaing.drawinggameservice.drawing.application.dto.Timer;
 import com.aioi.drawaing.drawinggameservice.drawing.domain.*;
-import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.KafkaService;
+import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.KafkaProvider;
 import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.KeywordRepository;
 import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.SessionRepository;
 import com.aioi.drawaing.drawinggameservice.drawing.infrastructure.feign.AuthServiceClient;
@@ -34,7 +34,7 @@ public class DrawingService {
     private final ScheduledExecutorService schedule;
     private final KeywordRepository keywordRepository;
     private final SessionRepository sessionRepository;
-    private final KafkaService kafkaService;
+    private final KafkaProvider kafkaProvider;
     private final AuthServiceClient authServiceClient;
     private final int DEFAULT_WORD_COUNT = 30;
     private final int DEFAULT_SESSION_TIMER = 10; //600;
@@ -127,7 +127,7 @@ public class DrawingService {
 
     private void endSession(String roomId, String sessionId){
         Session session = findSession(sessionId);
-        kafkaService.sendGameEvent("game-result-events", session.getGameResults());
+        kafkaProvider.sendGameEvent("game-result-events", session.getGameResults());
         log.info("endSession: {}", sessionId);
 
 //        try {
