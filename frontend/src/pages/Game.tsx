@@ -17,7 +17,7 @@ import { DrawPoint } from '../api/drawingService';
 import { PlayerPermissions, PlayerRole, PositionMap } from '../components/Game/PlayerSection'; // 경로는 실제 PlayerSection 컴포넌트 위치에 맞게 조정
 import sessionInfoService from '../api/sessionInfoService';
 import turnService from '../api/turnService'; // 서비스 import 추가
-
+import sessionResultService from '../api/sessionResultService'; // 세션 결과 서비스 import 추가
 
 interface Player {
   id: number;
@@ -49,6 +49,11 @@ const Game: React.FC = () => {
   const [paredUser, setParedUser] = useState<any>(null);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const [sessionResultData, setSessionResultData] = useState<SessionResultData | null>(null);
+  const [isResultDataReady, setIsResultDataReady] = useState<boolean>(false);
+
+  
   
   // ReadyButton과 일관된 방식으로 roomId 초기화 및 업데이트
   useEffect(() => {
@@ -290,6 +295,28 @@ const Game: React.FC = () => {
     }
   };
 
+
+
+  useEffect(() => {
+    if (!roomId || !sessionId || !isConnected) return;
+    
+    const setupResultSubscription = async () => {
+      // STOMP 클라이언트 초기화 및 구독 설정
+      await sessionResultService.initializeClient(roomId, sessionId);
+      const unsubscribe = sessionResultService.subscribeToSessionResult(
+        roomId, sessionId, 
+        (resultData) => {
+          setSessionResultData(resultData);
+          localStorage.setItem('sessionResultData', JSON.stringify(resultData));
+          setIsResultDataReady(true);
+        }
+      );
+      return () => unsubscribe();
+    };
+    
+    setupResultSubscription();
+  }, [roomId, sessionId, isConnected]);
+  
   const handleGameOver = useCallback(() => {
     console.log('게임 타이머 종료, 게임 종료 처리');
     setIsGameOver(true);
