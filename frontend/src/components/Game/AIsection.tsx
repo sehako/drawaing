@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import dambi from '../../assets/Game/dambi.png';
 import egg from '../../assets/Game/egg.png';
-import { PassConfirmModal, CorrectAnswerModal, EmptyGuessModal, WrongGuessModal } from './GameModals';
+import { PassConfirmModal, EmptyGuessModal, WrongGuessModal } from './GameModals';
 
 // AI 말풍선 컴포넌트 추가
 const AI말풍선 = ({ playerMessages }: { playerMessages?: Record<number | string, string> }) => {
@@ -234,13 +234,6 @@ const AISection: React.FC<AISectionProps> = ({
         isOpen={isPassModalOpen} 
         onClose={closePassModal} 
         onConfirm={handleConfirmPass} 
-      />
-      
-      <CorrectAnswerModal 
-        isOpen={isCorrectModalOpen} 
-        onClose={closeCorrectModal}
-        quizWord={quizWord}
-        isHumanTeam={true}
       />
 
       <EmptyGuessModal 
