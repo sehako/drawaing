@@ -2,7 +2,7 @@
 import { Client, IMessage, StompSubscription } from '@stomp/stompjs';
 
 // 결과 데이터 인터페이스 정의
-interface SessionResultData {
+export interface SessionResultData {
   [memberId: string]: {
     winCnt: number;
     point: number;

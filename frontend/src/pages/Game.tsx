@@ -17,7 +17,7 @@ import { DrawPoint } from '../api/drawingService';
 import { PlayerPermissions, PlayerRole, PositionMap } from '../components/Game/PlayerSection'; // 경로는 실제 PlayerSection 컴포넌트 위치에 맞게 조정
 import sessionInfoService from '../api/sessionInfoService';
 import turnService from '../api/turnService'; // 서비스 import 추가
-import sessionResultService from '../api/sessionResultService'; // 세션 결과 서비스 import 추가
+import sessionResultService, { SessionResultData } from '../api/sessionResultService'; // SessionResultData 타입도 함께 import
 
 interface Player {
   id: number;
@@ -194,7 +194,8 @@ const Game: React.FC = () => {
   const [isEraser, setIsEraser] = useState<boolean>(false);
   const [lastPoint, setLastPoint] = useState<DrawPoint | null>(null);
 
-  const [playerMessages, setPlayerMessages] = useState<Record<number, string>>({});
+  // 이렇게 변경
+const [playerMessages, setPlayerMessages] = useState<Record<string | number, string>>({});
 
 
   const [currentPlayerRole, setCurrentPlayerRole] = useState<PlayerRole | null>(null);
