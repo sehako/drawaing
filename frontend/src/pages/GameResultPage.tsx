@@ -383,9 +383,9 @@ const GameResultPage: React.FC = () => {
                 <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-amber-100 drop-shadow-[2px_2px_0_rgba(0,0,0,0.5)]">
                   {roomName} - 게임 결과
                 </h1>
-                <div className="text-amber-200 text-sm sm:text-base">
+                {/* <div className="text-amber-200 text-sm sm:text-base">
                   사람 {totalHumanWins}승 vs AI {totalAIWins}승
-                </div>
+                </div> */}
               </div>
               
               {/* 나무 판자 못 효과 */}

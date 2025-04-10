@@ -10,70 +10,6 @@ export interface SessionData {
 // 수신된 메시지를 저장할 리스트
 export const receivedMessages: SessionData[] = [];
 
-<<<<<<< HEAD
-  private constructor() {
-    // 싱글톤 패턴
-  }
-
-  static getInstance(): SessionInfoService {
-    if (!SessionInfoService.instance) {
-      SessionInfoService.instance = new SessionInfoService();
-    }
-    return SessionInfoService.instance;
-  }
-
-  async initializeClient(roomId: string, sessionId: string): Promise<void> {
-    if (this.stompClient && this.stompClient.connected) {
-      console.log('STOMP 클라이언트가 이미 연결되어 있습니다.');
-      return;
-    }
-
-    return new Promise((resolve, reject) => {
-      try {
-        // STOMP 클라이언트 설정 (SockJS 없이 직접 WebSocket 사용)
-        this.stompClient = new Client({
-          // WebSocket 엔드포인트 URL (ws:// 또는 wss://)
-          brokerURL: `${API_URL.replace('http://', 'ws://').replace('https://', 'wss://')}/ws`,
-          
-          // 디버그 로깅
-          debug: (str) => {
-            if (process.env.NODE_ENV !== 'production') {
-              console.debug('[STOMP DEBUG]', str);
-            }
-          },
-          
-          // 추가 설정
-          reconnectDelay: 5000,
-          heartbeatIncoming: 30000,
-          heartbeatOutgoing: 30000,
-          
-          // 필요한 헤더가 있으면 추가
-          connectHeaders: {
-            roomId,
-            sessionId
-          }
-        });
-
-        // 연결 설정
-        this.stompClient.onConnect = () => {
-          console.log('STOMP 클라이언트 연결됨');
-          resolve();
-        };
-
-        this.stompClient.onStompError = (frame) => {
-          console.error('STOMP 오류:', frame);
-          reject(new Error(`STOMP 오류: ${frame.headers.message}`));
-        };
-
-        // 연결 시작
-        this.stompClient.activate();
-      } catch (error) {
-        console.error('STOMP 클라이언트 초기화 오류:', error);
-        reject(error);
-      }
-    });
-  }
-=======
 /**
  * 세션 정보를 관리하는 서비스
  */
@@ -90,7 +26,6 @@ const sessionInfoService = {
   getReceivedMessages(): SessionData[] {
     return receivedMessages;
   },
->>>>>>> ad83c2a2b37703b3155fbba18820b6062df4c41f
 
   /**
    * 세션 정보 구독
