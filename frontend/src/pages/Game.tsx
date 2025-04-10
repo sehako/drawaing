@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import PlayerSection from '../components/Game/PlayerSection';
 import CanvasSection from '../components/Game/CanvasSection';
@@ -163,7 +163,7 @@ const Game: React.FC = () => {
   
   
   const [currentRound, setCurrentRound] = useState<number>(1);
-  const [quizWord, setQuizWord] = useState<string>('바나나');
+  const [quizWord, setQuizWord] = useState<string>('');
   const [activeDrawerIndex, setActiveDrawerIndex] = useState<number>(0);
   const [guesserIndex, setGuesserIndex] = useState<number>(3);
   const [isDrawing, setIsDrawing] = useState<boolean>(false);
@@ -258,7 +258,10 @@ const Game: React.FC = () => {
     }
   };
 
-  const [predictions, setPredictions] = useState<{ class: string; probability: number }[]>([]);
+  const [predictions, setPredictions] = useState<{ result: string; correct: boolean }>({
+    result: "", 
+    correct: false, 
+  });
   
   // 웹소켓 훅 사용 - roomId가 null일 때도 빈 문자열로 처리하도록 수정
   const { isConnected, playerConnections, sessionId, sendMessage } = useGameWebSocket({
@@ -282,6 +285,15 @@ const Game: React.FC = () => {
       return <div>???</div>; // 제시어 숨기기
     }
   };
+
+  const handleGameOver = useCallback(() => {
+    console.log('게임 타이머 종료, 게임 종료 처리');
+    setIsGameOver(true);
+    
+    // 게임 종료 시 필요한 추가 상태 리셋 로직이 있다면 여기에 추가
+    setIsDrawing(false);
+    setHasCompleted(true);
+  }, []);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('currentUser');
@@ -413,9 +425,10 @@ const Game: React.FC = () => {
     isLoading: isTimerLoading,
     error: timerError
   } = useGameTimer({
-    roomId: roomId ?? "", // null이면 빈 문자열로 변환
+    roomId: roomId ?? "",
     sessionId: sessionId || '0',
-    isGameOver
+    isGameOver,
+    onTimerEnd: handleGameOver
   });
 
   
@@ -1023,11 +1036,14 @@ useEffect(() => {
           // console.group('🎮 게임 메시지 처리');
           // console.log('수신된 메시지:', message);
           
-          // 메시지를 그대로 플레이어 메시지에 추가
+          // AI 메시지 확인 (userId가 -1인 경우)
+          const isAIMessage = message.senderId === -1;
+          
+          // 메시지를 플레이어 메시지에 추가 (AI 메시지는 특별히 처리)
           setPlayerMessages(prev => {
             const updated = {
               ...prev,
-              [message.userId]: message.message
+              [isAIMessage ? 'ai' : message.senderId]: message.message
             };
             // console.log('업데이트된 playerMessages:', updated);
             return updated;
@@ -1037,7 +1053,7 @@ useEffect(() => {
           setTimeout(() => {
             setPlayerMessages(prev => {
               const updatedMessages = { ...prev };
-              delete updatedMessages[message.userId];
+              delete updatedMessages[isAIMessage ? 'ai' : message.senderId];
               return updatedMessages;
             });
           }, 5000);
@@ -1120,20 +1136,73 @@ const handlePass = () => {
   const handleCanvasSubmit = async (blob: Blob) => {
     const formData = new FormData();
     formData.append("file", blob, "drawing.png");
+    formData.append("quizWord", quizWord);
   
     try {
-      const response = await axios.post("http://localhost:8000/predict", formData, {
+      const response = await axios.post("http://34.64.180.197:8000/predict", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
+      console.log("전체 응답 데이터:", response.data);
   
-      setPredictions(response.data.predictions);
-      return response.data.predictions;
+      const aiMessage = response.data.result;
+      
+      // AI 메시지 객체 생성 (플레이어 메시지와 동일한 형식)
+      const aiMessageObj = {
+        "userId": -1, // AI의 고정된 userId
+        "message": aiMessage,
+        "createdAt": new Date().toISOString()
+      };
+      
+      // 메시지 객체를 JSON 문자열로 로깅 (플레이어 메시지와 동일한 형식)
+      console.log(JSON.stringify(aiMessageObj, null, 2));
+      
+      // 웹소켓으로 AI 메시지 전송
+      if (roomId && sessionId) {
+        chatService.sendMessage(roomId, sessionId, -1, aiMessage);
+        
+        // AI 메시지 상태 업데이트 (플레이어 메시지와 유사한 방식)
+        setPlayerMessages(prev => {
+          const updated = {
+            ...prev,
+            'ai': aiMessage
+          };
+          console.log('업데이트된 AI playerMessages:', updated);
+          return updated;
+        });
+        
+        // 5초 후 AI 메시지 자동 제거
+        setTimeout(() => {
+          setPlayerMessages(prev => {
+            const updated = { ...prev };
+            delete updated['ai'];
+            return updated;
+          });
+        }, 5000);
+      }
+  
+      // 기존 예측 상태 업데이트
+      setPredictions({
+        result: response.data.result,
+        correct: response.data.correct,
+      });
+  
+      // AI가 정답을 맞췄다면 처리
+      if (response.data.correct) {
+        handleAICorrectAnswer();
+        
+        // 라운드 전환
+        setTimeout(() => {
+          transitionToNextRound();
+        }, 1500);
+      }
+  
+      return { result: response.data.result, correct: response.data.correct };
     } catch (error) {
       console.error("예측 요청 실패:", error);
       throw error;
     }
   };
-  
+
 // 그림 그리기 타이머 효과 - 개선된 버전
 useEffect(() => {
   // 게임이 종료됐거나 라운드 전환 중이거나 타이머가 일시정지 상태면 타이머 작동 안 함
@@ -1203,7 +1272,7 @@ useEffect(() => {
             </p>
 
             <button 
-              onClick={() => navigate('/game-record')} 
+              onClick={() => navigate(`/result/${roomId}`)} 
               className="mt-6 w-full py-3 bg-red-500 rounded-full border-4 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] hover:shadow-none hover:translate-y-1 hover:translate-x-1 text-white font-bold transition-all duration-200"
             >
               게임 종료
@@ -1455,29 +1524,30 @@ useEffect(() => {
           {/* AI 컴포넌트 - 우측 */}
           <div className="w-1/5">
             <div className="bg-amber-100 h-[600px] rounded-xl border-4 border-amber-600 shadow-[4px_4px_0_0_rgba(0,0,0,0.3)] p-4">
-              <AISection 
-                aiImages={aiImages}
-                aiAnswer={aiAnswer}
-                guess={guess}
-                setGuess={setGuess}
-                handleGuessSubmit={handleGuessSubmit}
-                handlePass={handlePass}
-                eggCount={eggCount}
-                onAICorrectAnswer={handleAICorrectAnswer}
-                quizWord={quizWord}
-                predictions={predictions}
-                canPass={activeDrawerIndex === 2 && passCount < MAX_PASS_COUNT}
-                passCount={passCount}
-                isHumanCorrect={isHumanCorrect}
-                setIsHumanCorrect={setIsHumanCorrect}
-                isEmptyGuess={isEmptyGuess}
-                setIsEmptyGuess={setIsEmptyGuess}
-                isWrongGuess={isWrongGuess}
-                setIsWrongGuess={setIsWrongGuess}
-                guessSubmitCount={guessSubmitCount}
-                maxGuessSubmitCount={MAX_GUESS_SUBMIT_COUNT}
-                canAnswer={playerPermissions.canAnswer}
-              />
+            <AISection 
+              aiImages={aiImages}
+              aiAnswer={aiAnswer}
+              guess={guess}
+              setGuess={setGuess}
+              handleGuessSubmit={handleGuessSubmit}
+              handlePass={handlePass}
+              eggCount={eggCount}
+              onAICorrectAnswer={handleAICorrectAnswer}
+              quizWord={quizWord}
+              predictions={predictions}
+              canPass={activeDrawerIndex === 2 && passCount < MAX_PASS_COUNT}
+              passCount={passCount}
+              isHumanCorrect={isHumanCorrect}
+              setIsHumanCorrect={setIsHumanCorrect}
+              isEmptyGuess={isEmptyGuess}
+              setIsEmptyGuess={setIsEmptyGuess}
+              isWrongGuess={isWrongGuess}
+              setIsWrongGuess={setIsWrongGuess}
+              guessSubmitCount={guessSubmitCount}
+              maxGuessSubmitCount={MAX_GUESS_SUBMIT_COUNT}
+              canAnswer={playerPermissions.canAnswer}
+              playerMessages={playerMessages} // AI 메시지 표시를 위해 추가
+            />
             </div>
           </div>
         </div>
@@ -1485,5 +1555,7 @@ useEffect(() => {
     </div>
   );
 };
+
+
 
 export default Game;

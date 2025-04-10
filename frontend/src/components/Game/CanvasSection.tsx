@@ -35,7 +35,7 @@ interface CanvasSectionProps {
   handlePass: () => void;
   activeDrawerIndex: number;
   handleCanvasSubmit: (blob: Blob) => Promise<any>;
-  setPredictions: React.Dispatch<React.SetStateAction<{ class: string; probability: number; }[]>>;
+  setPredictions: React.Dispatch<React.SetStateAction<{ result: string; correct: boolean }>>;
   roomId: string;
   sessionId: string;
   canDraw?: boolean;
@@ -399,7 +399,7 @@ const sendDrawingData = useCallback(() => {
       try {
         const predictions = await handleCanvasSubmit(blob);
         setPredictions(predictions); // 예측값을 state로 저장
-        // console.log("캔버스세션: ",predictions)
+        console.log("캔버스세션: ",predictions)
       } catch (error) {
         // console.error("예측값 받아오기 실패:", error);
       }

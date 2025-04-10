@@ -13,7 +13,7 @@ interface AISectionProps {
   eggCount: number;
   onAICorrectAnswer: () => void;
   quizWord: string;
-  predictions: { class: string; probability: number }[];  // 예측 데이터
+  predictions: { result: string; correct: boolean };  // 예측 데이터
   canPass?: boolean; // PASS 가능 여부
   passCount?: number; // 현재 PASS 횟수
   isHumanCorrect?: boolean;
@@ -26,7 +26,7 @@ interface AISectionProps {
   maxGuessSubmitCount?: number; // 추가: 최대 제출 가능 횟수
   canAnswer?: boolean;
   onSubmitMessage: (id: number, message: string) => void; // 추가
-
+  playerMessages?: Record<number | string, string>; // playerMessages 속성 추가 (선택적으로)
 }
 
 const AISection: React.FC<AISectionProps> = ({
