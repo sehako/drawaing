@@ -11,7 +11,7 @@ import GameResultPage from './pages/GameResultPage.tsx';
 import Bgm from './components/Music/Bgm.tsx';
 import BlockNavigation from './utils/block.tsx';
 import axios from 'axios';
-import HardcodedGameResultPage from './pages/HardcodeGameResultPage.tsx';
+// import HardcodedGameResultPage from './pages/HardcodeGameResultPage.tsx';
 import RankingPage from './pages/RankingPage.tsx';
 import OAuthRedirectHandler from './pages/OAuthRedirectHandler.tsx';
 import ShopPage from './pages/ShopPage.tsx';
