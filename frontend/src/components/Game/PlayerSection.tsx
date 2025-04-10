@@ -36,6 +36,7 @@ interface PlayerSectionProps {
     currentPositions: PositionMap;
     playerPermissions: PlayerPermissions;
   }) => void;
+  onActivePlayerChange?: (activePlayerId: number) => void; // 추가: 활성 플레이어 변경 콜백
 }
 
 interface Player {
@@ -85,7 +86,8 @@ const PlayerSection: React.FC<PlayerSectionProps> = ({
   playerMessages = {},
   storedPlayersList = [], // 기본값 빈 배열 제공
   paredUser,
-  onPlayerRoleChange
+  onPlayerRoleChange,
+  onActivePlayerChange 
 }) => {
   // 각 플레이어 포지션별 ID를 저장하는 상태
   const [positionIds, setPositionIds] = useState<{[position: string]: number | null}>({
@@ -149,36 +151,7 @@ const PlayerSection: React.FC<PlayerSectionProps> = ({
   const currentPositions = roundPositions[normalizedRound] || roundPositions[1];
 
   // 각 포지션에 해당하는 플레이어 ID 업데이트
-  useEffect(() => {
-    // 의존성 배열에 문제가 있으므로 ref로 최적화합니다
-    const updatedPositionIds: {[position: string]: number | null} = {
-      "정답자": null,
-      "순서1": null,
-      "순서2": null,
-      "순서3": null
-    };
-
-    // 현재 라운드에 맞는 포지션 직접 계산 (의존성 줄이기)
-    const normalizedRound = ((currentRound - 1) % 4) + 1;
-    const positions = roundPositions[normalizedRound] || roundPositions[1];
-
-    // 각 포지션에 해당하는 플레이어 ID 찾기
-    for (const position in positions) {
-      const playerName = positions[position as keyof PositionMap];
-      const player = playerArray.find(p => p.name === playerName);
-      if (player) {
-        updatedPositionIds[position] = player.id;
-      }
-    }
-
-    // JSON 문자열 비교로 깊은 비교 구현
-    const currentStr = JSON.stringify(positionIds);
-    const updatedStr = JSON.stringify(updatedPositionIds);
-    
-    if (currentStr !== updatedStr) {
-      setPositionIds(updatedPositionIds);
-    }
-  }, [currentRound, roundPositions, playerArray]); // currentPositions 의존성 제거
+  
 
   // 문자열로 된 avatar가 들어왔을 때 실제 이미지로 변환
   const getAvatarImage = (avatarStr: string | undefined): string => {
@@ -234,7 +207,48 @@ const PlayerSection: React.FC<PlayerSectionProps> = ({
 
   // 역할 및 권한 변경시 부모 컴포넌트에 전달 - useRef로 최적화
   const lastRoleInfoRef = React.useRef<any>(null);
+  useEffect(() => {
+    // 의존성 배열에 문제가 있으므로 ref로 최적화합니다
+    const updatedPositionIds: {[position: string]: number | null} = {
+      "정답자": null,
+      "순서1": null,
+      "순서2": null,
+      "순서3": null
+    };
   
+    // 현재 라운드에 맞는 포지션 직접 계산 (의존성 줄이기)
+    const normalizedRound = ((currentRound - 1) % 4) + 1;
+    const positions = roundPositions[normalizedRound] || roundPositions[1];
+  
+    // 각 포지션에 해당하는 플레이어 ID 찾기
+    for (const position in positions) {
+      const playerName = positions[position as keyof PositionMap];
+      const player = playerArray.find(p => p.name === playerName);
+      if (player) {
+        updatedPositionIds[position] = player.id;
+      }
+    }
+  
+    // JSON 문자열 비교로 깊은 비교 구현
+    const currentStr = JSON.stringify(positionIds);
+    const updatedStr = JSON.stringify(updatedPositionIds);
+    
+    if (currentStr !== updatedStr) {
+      setPositionIds(updatedPositionIds);
+    }
+  
+    // 현재 활성 드로어 인덱스에 해당하는 플레이어 찾기
+    if (activeDrawerIndex >= 0 && activeDrawerIndex < 3) {
+      const position = `순서${activeDrawerIndex + 1}` as keyof PositionMap;
+      const playerName = currentPositions[position];
+      const activePlayer = playerArray.find(p => p.name === playerName);
+      
+      if (activePlayer && onActivePlayerChange) {
+        console.log(`활성 플레이어 변경 감지: ${activePlayer.name} (ID: ${activePlayer.id})`);
+        onActivePlayerChange(activePlayer.id);
+      }
+    }
+  }, [currentRound, roundPositions, playerArray, activeDrawerIndex, currentPositions, onActivePlayerChange]);
   useEffect(() => {
     // 포지션에서 현재 사용자의 역할 직접 찾기
     let currentRole: PlayerRole | null = null;
