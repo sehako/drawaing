@@ -24,7 +24,7 @@ class WebSocketService {
         this.currentRoomId === roomId && 
         this.currentSessionId === sessionId) {
       this.connectionCount++;
-      console.log(`이미 ${roomId}/${sessionId}에 연결됨. 연결 카운트: ${this.connectionCount}`);
+      // console.log(`이미 ${roomId}/${sessionId}에 연결됨. 연결 카운트: ${this.connectionCount}`);
       return Promise.resolve();
     }
 
@@ -48,7 +48,7 @@ class WebSocketService {
         },
         debug: (str) => {
           if (process.env.NODE_ENV !== 'production') {
-            console.log(`[WebSocket:${roomId}:${sessionId}]`, str);
+            // console.log(`[WebSocket:${roomId}:${sessionId}]`, str);
           }
         },
         reconnectDelay: 5000,
