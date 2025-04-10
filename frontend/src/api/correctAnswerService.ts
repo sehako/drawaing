@@ -148,16 +148,37 @@ const correctAnswerService = {
     const destination = `/topic/session.round-result/${roomId}/${sessionId}`;
     
     const subscription = stompClient.subscribe(destination, (message) => {
+      console.log('📬 전체 수신 메시지:', message);
+      console.log('📬 메시지 본문 (원시):', message.body);
+  
       try {
-        const roundResult: { isWin: boolean, round: number } = JSON.parse(message.body);
-        console.log('🎲 라운드 결과 수신:', roundResult);
+        // JSON 파싱 전 원시 데이터 확인
+        const rawData = message.body;
+        console.log('📝 원시 JSON 문자열:', rawData);
+  
+        const roundResult = JSON.parse(rawData);
+        console.log('🎲 파싱된 라운드 결과:', roundResult);
+  
+        // 데이터 구조 상세 검증
+        console.log('🔍 데이터 타입 검증:');
+        console.log('전체 수신 객체:', roundResult);
+        console.log('Object.keys:', Object.keys(roundResult));
         
-        // 간단한 타입 검증
-        if (typeof roundResult.isWin === 'boolean' && typeof roundResult.round === 'number') {
-          callback(roundResult);
-        } else {
-          console.error('❌ 잘못된 라운드 결과 데이터 형식:', roundResult);
+        // 가능한 모든 키 출력
+        for (const key in roundResult) {
+          console.log(`${key}: ${roundResult[key]} (타입: ${typeof roundResult[key]})`);
         }
+  
+        // 정확한 형식 검증 및 유연한 처리
+        const processedResult = {
+          isWin: roundResult.isWin ?? roundResult.win ?? false,
+          round: roundResult.round ?? roundResult.currentRound ?? 0
+        };
+  
+        console.log('✅ 처리된 라운드 결과:', processedResult);
+        
+        // 콜백 호출
+        callback(processedResult);
       } catch (error) {
         console.error('❌ 라운드 결과 파싱 오류:', error);
       }
@@ -172,7 +193,6 @@ const correctAnswerService = {
       subscription.unsubscribe();
     };
   },
-
   // 라운드 결과 전송 메서드 추가
   sendRoundResult: (
     roomId: string,
