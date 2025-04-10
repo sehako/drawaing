@@ -69,11 +69,11 @@ def transform_image(image_bytes, save_transformed_image=True):
     image_tensor = transform(image).unsqueeze(0)
     print(f"Transformed Image Tensor Shape: {image_tensor.shape}")  # 변환된 텐서 크기 확인
 
-    if save_transformed_image:
-        # 텐서를 PIL 이미지로 변환하여 저장
-        transformed_image = transforms.ToPILImage()(image_tensor.squeeze(0))
-        transformed_image.save("transformed_image.png")
-        print("Transformed image saved as 'transformed_image.png'")
+    #if save_transformed_image:
+    #    # 텐서를 PIL 이미지로 변환하여 저장
+    #    transformed_image = transforms.ToPILImage()(image_tensor.squeeze(0))
+    #    transformed_image.save("transformed_image.png")
+    #    print("Transformed image saved as 'transformed_image.png'")
 
     return image_tensor
 
