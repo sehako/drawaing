@@ -996,7 +996,7 @@ const handleMouseEnter = (e: React.MouseEvent<HTMLCanvasElement>) => {
           {/* 이미 그림을 그렸음을 알리는 오버레이 */}
           {hasCurrentPlayerDrawn && (
             <div className="absolute top-2 left-1/2 transform -translate-x-1/2 bg-yellow-700 text-white px-4 py-1 rounded-full text-sm font-medium">
-              이미 그림을 그렸습니다. 순서를 넘기세요!
+              이미 그림을 그렸습니다.
             </div>
           )}
         </div>
@@ -1057,14 +1057,14 @@ const handleMouseEnter = (e: React.MouseEvent<HTMLCanvasElement>) => {
           </div>
 
           
-          {/* 다음 플레이어 버튼 */}
+          {/* 다음 플레이어 버튼
           <button
             onClick={handleNextPlayerWithSave}
             disabled={isNextButtonDisabled}
             className={`bg-blue-500 text-white rounded px-3 py-1 text-sm ${isNextButtonDisabled && 'opacity-50 cursor-not-allowed'}`}
           >
             순서 넘기기
-          </button>
+          </button> */}
         </div>
       </div>
       
