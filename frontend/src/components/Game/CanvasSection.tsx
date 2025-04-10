@@ -35,7 +35,7 @@ interface CanvasSectionProps {
   handlePass: () => void;
   activeDrawerIndex: number;
   handleCanvasSubmit: (blob: Blob) => Promise<any>;
-  setPredictions: React.Dispatch<React.SetStateAction<{ class: string; probability: number; }[]>>;
+  setPredictions: React.Dispatch<React.SetStateAction<{ result: string; correct: boolean }>>;
   roomId: string;
   sessionId: string;
   canDraw?: boolean;
@@ -399,7 +399,7 @@ const sendDrawingData = useCallback(() => {
       try {
         const predictions = await handleCanvasSubmit(blob);
         setPredictions(predictions); // 예측값을 state로 저장
-        // console.log("캔버스세션: ",predictions)
+        console.log("캔버스세션: ",predictions)
       } catch (error) {
         // console.error("예측값 받아오기 실패:", error);
       }
@@ -932,7 +932,7 @@ const handleMouseEnter = (e: React.MouseEvent<HTMLCanvasElement>) => {
   }, []);
   
   return (
-    <div className="h-[580px] flex flex-col bg-gray-300">
+    <div className="h-full flex flex-col bg-gray-300">
       {/* 타이머 바 */}
       <div className="w-full h-5 bg-gray-200 relative">
           <span className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-black font-bold text-xs z-10">
