@@ -206,7 +206,11 @@ const Game: React.FC = () => {
     canSeeWord: false,
     canAnswer: false
   });
-  
+  const [roundResult, setRoundResult] = useState<{ 
+    isWin: boolean, 
+    round: number 
+  } | null>(null);
+
   const [eggCount, setEggCount] = useState(10);
   const [aiAnswer, setAiAnswer] = useState<string>('');
   const [aiImages] = useState<string[]>([
@@ -511,7 +515,7 @@ const Game: React.FC = () => {
     return () => clearInterval(timer);
   }, [timeLeft, isGameOver, isRoundTransitioning, timerPaused]);
 
-
+  
   useEffect(() => {
     // console.log('현재 타이머 상태:', {
     //   totalTime,
@@ -945,76 +949,71 @@ const handleGuessSubmit = async (e: React.FormEvent) => {
         return updated;
       });
     }, 5000);
-  }
 
-  // 로컬에서 정답 여부 확인
-  if (guess.trim().toLowerCase() === quizWord.toLowerCase()) {
-    // 플레이어 정답 처리
-    handlePlayerCorrectAnswer();
-    setIsHumanCorrect(true);
-    setHumanRoundWinCount(prev => prev + 1);
-    
-    // 데이터 계산 및 로깅 (STOMP 연결 여부와 상관없이 항상 실행)
-    if (roomId && sessionId) {
-      // 현재 활성화된(초록색 테두리) 플레이어의 ID 사용
-      const drawingMemberId = activePlayerId;
-      console.log("현재 활성화된 플레이어 ID(drawingMemberId):", drawingMemberId);
+    // 로컬에서 정답 여부 확인
+    if (guess.trim().toLowerCase() === quizWord.toLowerCase()) {
+      // 플레이어 정답 처리
+      handlePlayerCorrectAnswer();
+      setIsHumanCorrect(true);
       
-      // 정답을 맞춘 사람의 ID
-      const answerMemberId = userId;
-      
-      // 현재 그림 그리는 순서 (1, 2, 3 중 하나)
-      const drawingOrder = activeDrawerIndex + 1; // activeDrawerIndex는 0부터 시작하므로 +1
-      
-      // 전송할 데이터 객체 생성
-      const correctAnswerData = {
-        drawingMemberId,
-        answerMemberId,
-        drawingOrder
-      };
-      
-      // 데이터를 항상 로깅 (STOMP 연결 여부와 상관없이)
-      console.log('=====================================================');
-      console.log('📌 정답 맞춤 정보 (STOMP 전송 성공 여부와 무관)');
-      console.log('-----------------------------------------------------');
-      console.log(`방 ID: ${roomId}`);
-      console.log(`세션 ID: ${sessionId}`);
-      console.log(`전송 경로: /app/session.correct-answer/${roomId}/${sessionId}`);
-      console.log('-----------------------------------------------------');
-      console.log('📦 데이터 내용:');
-      console.log(JSON.stringify(correctAnswerData, null, 2));
-      console.log('=====================================================');
-      
-      // 이제 STOMP로 전송 시도
-      try {
-        // STOMP 클라이언트 초기화 시도 (연결되어 있지 않을 경우)
-        await correctAnswerService.initializeClient(roomId, sessionId);
+      // 데이터 계산 및 로깅 (STOMP 연결 여부와 상관없이 항상 실행)
+      if (roomId && sessionId) {
+        // 현재 활성화된(초록색 테두리) 플레이어의 ID 사용
+        const drawingMemberId = activePlayerId;
         
-        // 정답 정보 전송
-        const success = correctAnswerService.sendCorrectAnswer(
-          roomId,
-          sessionId,
-          drawingMemberId,
-          answerMemberId,
-          drawingOrder
-        );
+        // 정답을 맞춘 사람의 ID
+        const answerMemberId = userId;
         
-        // console.log('정답 정보 전송 결과:', success ? '성공' : '실패');
-      } catch (error) {
-        // console.error('정답 정보 전송 중 오류:', error);
+        // 현재 그림 그리는 순서 (1, 2, 3 중 하나)
+        const drawingOrder = activeDrawerIndex + 1;
+        
+        // 이제 STOMP로 전송 시도
+        try {
+          // STOMP 클라이언트 초기화 시도 (연결되어 있지 않을 경우)
+          await correctAnswerService.initializeClient(roomId, sessionId);
+          
+          // 정답 정보 전송
+          const success = correctAnswerService.sendCorrectAnswer(
+            roomId,
+            sessionId,
+            drawingMemberId,
+            answerMemberId,
+            drawingOrder
+          );
+        } catch (error) {
+          console.error('정답 정보 전송 중 오류:', error);
+        }
       }
+    } else {
+      setIsWrongGuess(true);
+      setAiAnswer('틀렸습니다! 다시 시도해보세요.');
     }
-    
-    // 라운드 전환 함수 호출
-    transitionToNextRound();
-  } else {
-    setIsWrongGuess(true);
-    setAiAnswer('틀렸습니다! 다시 시도해보세요.');
   }
   
   setGuess('');
 };
 
+useEffect(() => {
+  // roundResult가 존재하고, 게임이 진행 중일 때만 처리
+  if (roundResult && !isGameOver && !isRoundTransitioning) {
+    console.log('라운드 결과에 따른 라운드 전환 시도:', roundResult);
+
+    // 팀 점수 업데이트
+    if (roundResult.isWin) {
+      setHumanRoundWinCount(prev => prev + 1);
+      console.log(`라운드 ${roundResult.round}에서 사람 팀 승리!`);
+    } else {
+      setAIRoundWinCount(prev => prev + 1);
+      console.log(`라운드 ${roundResult.round}에서 AI 팀 승리!`);
+    }
+
+    // 라운드 전환 함수 호출
+    transitionToNextRound();
+
+    // 라운드 결과 상태 초기화 (무한 루프 방지)
+    setRoundResult(null);
+  }
+}, [roundResult, isGameOver, isRoundTransitioning]);
 
 useEffect(() => {
   // 웹소켓이 연결되고 세션 ID가 있을 때만 실행
@@ -1224,6 +1223,46 @@ useEffect(() => {
   
   return () => clearInterval(timer);
 }, [timeLeft, isGameOver, isRoundTransitioning, timerPaused]);
+
+useEffect(() => {
+  // roomId와 sessionId가 있고, 웹소켓 연결이 완료되었을 때만 실행
+  if (!roomId || !sessionId || !isConnected) return;
+
+  // 구독 취소 함수를 저장할 변수
+  let unsubscribeFunc: (() => void) | null = null;
+
+  // 클라이언트 초기화 먼저 시도
+  const initializeAndSubscribe = async () => {
+    try {
+      // 클라이언트 초기화 
+      await correctAnswerService.initializeClient(roomId, sessionId);
+
+      // 라운드 결과 구독 설정
+      unsubscribeFunc = correctAnswerService.subscribeToRoundResult(
+        roomId, 
+        sessionId, 
+        (result) => {
+          console.log('라운드 결과 수신:', result);
+          
+          // 라운드 결과 상태 업데이트
+          setRoundResult(result);
+        }
+      );
+    } catch (error) {
+      console.error('라운드 결과 구독 초기화 중 오류:', error);
+    }
+  };
+
+  // 비동기 함수 호출
+  initializeAndSubscribe();
+
+  // 클린업 함수 반환
+  return () => {
+    if (unsubscribeFunc) {
+      unsubscribeFunc();
+    }
+  };
+}, [roomId, sessionId, isConnected]);
 
 useEffect(() => {
   if (isConnected && sessionId) {
