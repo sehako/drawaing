@@ -443,22 +443,11 @@ const PlayerSection: React.FC<PlayerSectionProps> = ({
       {renderPlayerCard("순서1", activeDrawerIndex === 0)}
       {renderPlayerCard("순서2", activeDrawerIndex === 1)}
       {renderPlayerCard("순서3", activeDrawerIndex === 2, true)}
-       {/* AI 메시지 표시 - 오른쪽 하단에 고정 */}
-    {playerMessages['ai'] && (
-      <div className="absolute bottom-4 right-4 w-[140px] z-50">
-        <div className="bg-blue-100 p-2 rounded-lg shadow-lg border-2 border-blue-600 relative">
-          <div className="text-xs font-bold text-blue-800 mb-1">담비(AI)</div>
-          <p className="text-sm text-blue-800 font-bold break-words">{playerMessages['ai']}</p>
-          {/* AI 말풍선 화살표 */}
-          <div className="absolute top-1/2 left-[-10px] transform -translate-y-1/2">
-            <div className="w-0 h-0 
-                          border-t-[8px] border-t-transparent 
-                          border-r-[10px] border-r-blue-600 
-                          border-b-[8px] border-b-transparent"></div>
-          </div>
-        </div>
-      </div>
-)}
+       
+          
+    
+      
+
 </div>
 );
 };
