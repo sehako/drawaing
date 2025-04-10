@@ -39,7 +39,7 @@ public class DrawingService {
     private final AuthServiceClient authServiceClient;
     private final int DEFAULT_WORD_COUNT = 30;
     private final int DEFAULT_SESSION_TIMER = 70; //600;
-    private final int DEFAULT_DRAW_TIMER = 10;
+    private final int DEFAULT_DRAW_TIMER = 20;
     private final int MAX_PARTICIPANT_NUMBER = 4;
 
     //세션 시작
