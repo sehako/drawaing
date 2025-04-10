@@ -17,7 +17,7 @@ import { DrawPoint } from '../api/drawingService';
 import { PlayerPermissions, PlayerRole, PositionMap } from '../components/Game/PlayerSection'; // 경로는 실제 PlayerSection 컴포넌트 위치에 맞게 조정
 import sessionInfoService from '../api/sessionInfoService';
 import turnService from '../api/turnService'; // 서비스 import 추가
-
+import sessionResultService from '../api/sessionResultService'; // 세션 결과 서비스 import 추가
 
 interface Player {
   id: number;
@@ -49,6 +49,11 @@ const Game: React.FC = () => {
   const [paredUser, setParedUser] = useState<any>(null);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const [sessionResultData, setSessionResultData] = useState<SessionResultData | null>(null);
+  const [isResultDataReady, setIsResultDataReady] = useState<boolean>(false);
+
+  
   
   // ReadyButton과 일관된 방식으로 roomId 초기화 및 업데이트
   useEffect(() => {
@@ -292,6 +297,28 @@ const Game: React.FC = () => {
     }
   };
 
+
+
+  useEffect(() => {
+    if (!roomId || !sessionId || !isConnected) return;
+    
+    const setupResultSubscription = async () => {
+      // STOMP 클라이언트 초기화 및 구독 설정
+      await sessionResultService.initializeClient(roomId, sessionId);
+      const unsubscribe = sessionResultService.subscribeToSessionResult(
+        roomId, sessionId, 
+        (resultData) => {
+          setSessionResultData(resultData);
+          localStorage.setItem('sessionResultData', JSON.stringify(resultData));
+          setIsResultDataReady(true);
+        }
+      );
+      return () => unsubscribe();
+    };
+    
+    setupResultSubscription();
+  }, [roomId, sessionId, isConnected]);
+  
   const handleGameOver = useCallback(() => {
     console.log('게임 타이머 종료, 게임 종료 처리');
     setIsGameOver(true);
@@ -1374,16 +1401,16 @@ useEffect(() => {
             <div className="text-2xl mb-6">
               <p className="mb-4">최종 점수</p>
               <div className="flex justify-center items-center gap-8 bg-white p-4 rounded-lg border-4 border-amber-400 shadow-inner">
-                <div className="text-blue-700 font-bold text-3xl">사람: {humanRoundWinCount}</div>
+                <div className="text-blue-700 font-bold text-3xl">병아리: {humanRoundWinCount}</div>
                 <div className="text-2xl">VS</div>
-                <div className="text-red-700 font-bold text-3xl">AI: {aiRoundWinCount}</div>
+                <div className="text-red-700 font-bold text-3xl">담비(AI): {aiRoundWinCount}</div>
               </div>
             </div>
             <p className="text-lg mt-6">
               {humanRoundWinCount > aiRoundWinCount 
-                ? '축하합니다! 사람팀이 이겼습니다!' 
+                ? '축하합니다! 병아리리팀이 이겼습니다!' 
                 : humanRoundWinCount < aiRoundWinCount 
-                  ? 'AI팀이 이겼습니다. 다음 기회에...' 
+                  ? '담비(AI)가가 이겼습니다. 다음 기회에...' 
                   : '동점입니다! 좋은 승부였습니다!'}
             </p>
 
@@ -1531,7 +1558,7 @@ useEffect(() => {
     
     <div className="flex items-center space-x-4">
       <div className="text-right text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-blue-600">
-        사람 {humanRoundWinCount}
+        병아리 {humanRoundWinCount}
       </div>
       
       {/* 나무 판자 배경 */}
@@ -1568,7 +1595,7 @@ useEffect(() => {
       </div>
       
       <div className="text-left text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-red-600">
-        {aiRoundWinCount} AI
+        {aiRoundWinCount} 담비
       </div>
     </div>
     
