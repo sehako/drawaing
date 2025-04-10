@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 #root {
   max-width: 1280px;
   margin: 0 auto;
@@ -39,4 +43,24 @@
 
 .read-the-docs {
   color: #888;
+}
+
+body, html, #root {
+  cursor: url('/images/default-cursor.png') 16 16, auto !important;
+}
+
+/* 버튼, 링크 등에 마우스 올렸을 때의 커서 */
+button, a, [role="button"], .btn, input[type="button"], input[type="submit"] {
+  cursor: url('/images/default-cursor.png') 16 16, auto !important;
+}
+
+button:hover, a:hover, [role="button"]:hover, .btn:hover, 
+input[type="button"]:hover, input[type="submit"]:hover {
+  cursor: url('/images/default-cursor.png') 7 0, pointer !important;
+}
+
+/* 텍스트 입력 영역의 커서 */
+input[type="text"], input[type="email"], input[type="password"], 
+textarea, [contenteditable="true"] {
+  cursor: url('/images/default-cursor.png') 16 16, text !important;
 }
