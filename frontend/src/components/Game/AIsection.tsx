@@ -193,7 +193,7 @@ const AISection: React.FC<AISectionProps> = ({
         
         {/* 버튼 영역 */}
         <div className="flex flex-col space-y-2 mx-2 mb-2">
-          <button 
+        {/* <button 
             onClick={openPassModal}
             disabled={!canPass}
             className={`h-[52px] w-full text-white font-medium rounded-[10px] 
@@ -205,7 +205,7 @@ const AISection: React.FC<AISectionProps> = ({
             {canPass 
               ? `PASS (${3 - passCount}회)` 
               : '패스'}
-          </button>
+          </button> */}
           <button 
             onClick={(e) => {
               e.preventDefault();
