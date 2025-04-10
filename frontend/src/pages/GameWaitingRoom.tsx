@@ -9,6 +9,7 @@ import PlayerSlot from '../components/Game/PlayerSlot';
 import GameRoomHeader from '../components/Game/GameRoomHeader';
 import ChatArea from '../components/Game/ChatArea';
 import ReadyButton from '../components/Game/ReadyButton';
+import sessionInfoService from '../api/sessionInfoService';
 
 const GameWaitingRoom: React.FC = () => {
   const navigate = useNavigate();
@@ -30,6 +31,7 @@ const GameWaitingRoom: React.FC = () => {
   
   // 방장 상태 관리 개선
   const [isLocalHost, setIsLocalHost] = useState<boolean>(location.state?.isHost || false);
+  const [sessionData, setSessionData] = useState<any>(null);
 
   // MusicContext 가져오기
   const { setPlaying } = useMusic();
@@ -53,6 +55,50 @@ const GameWaitingRoom: React.FC = () => {
     isAuthenticated,
     isLoading
   });
+
+  useEffect(() => {
+    // actualRoomId와 sessionId가 모두 존재할 때만 구독
+    if (!actualRoomId || !sessionId) {
+      console.log('세션 정보 구독에 필요한 정보 부족:', { 
+        actualRoomId, 
+        sessionId 
+      });
+      return;
+    }
+
+    console.log('세션 정보 구독 시작:', { 
+      roomId: actualRoomId, 
+      sessionId 
+    });
+
+    // 세션 정보 구독
+    const unsubscribe = sessionInfoService.subscribeToSessionInfo(
+      actualRoomId, 
+      sessionId, 
+      (data) => {
+        console.log('세션 정보 수신:', data);
+        
+        // 세션 데이터 상태 업데이트
+        setSessionData(data);
+
+        // 필요한 경우 추가 처리
+        if (data.word) {
+          console.log('수신된 단어 목록:', data.word);
+        }
+
+        if (data.drawOrder) {
+          console.log('수신된 그리기 순서:', data.drawOrder);
+        }
+      }
+    );
+
+    // 컴포넌트 언마운트 시 구독 해제
+    return () => {
+      console.log('세션 정보 구독 해제');
+      unsubscribe();
+    };
+  }, [actualRoomId, sessionId]);
+
   useEffect(() => {
     if (currentUser) {
       // currentUser를 JSON 문자열로 변환하여 로컬 스토리지에 저장
@@ -387,10 +433,10 @@ useEffect(() => {
 
   
   // 디버깅을 위한 로그 추가
-  console.log('현재 플레이어 수:', players.length);
-  console.log('모든 플레이어 준비 상태:', allPlayersReady);
-  console.log('플레이어 목록:', players);
-  console.log('방장 여부(isLocalHost):', isLocalHost);
+  // console.log('현재 플레이어 수:', players.length);
+  // console.log('모든 플레이어 준비 상태:', allPlayersReady);
+  // console.log('플레이어 목록:', players);
+  // console.log('방장 여부(isLocalHost):', isLocalHost);
 
   // 준비 상태 토글 - 웹소켓 메시지 전송
   const toggleReady = () => {
@@ -482,9 +528,9 @@ useEffect(() => {
   const currentTime = new Date();
   const timeUntilStart = startTime.getTime() - currentTime.getTime();
   
-  console.log('서버 시작 시간:', startTime.toISOString());
-  console.log('현재 시간:', currentTime.toISOString());
-  console.log(`게임 시작까지 ${timeUntilStart}ms (${timeUntilStart/1000}초) 남음`);
+  // console.log('서버 시작 시간:', startTime.toISOString());
+  // console.log('현재 시간:', currentTime.toISOString());
+  // console.log(`게임 시작까지 ${timeUntilStart}ms (${timeUntilStart/1000}초) 남음`);
   
   // 이미 시작 시간이 지났거나 음수인 경우 즉시 게임 화면으로 이동
   if (timeUntilStart <= 0) {
@@ -527,7 +573,7 @@ useEffect(() => {
   // 정확한 시작 시간에 게임 화면으로 이동하는 백업 타이머
   const exactStartTimer = setTimeout(() => {
     clearInterval(countdownInterval);
-    console.log('정확한 시작 시간에 도달 - 게임 화면으로 이동');
+    // console.log('정확한 시작 시간에 도달 - 게임 화면으로 이동');
     navigate(`/game/${actualRoomId}`);
   }, timeUntilStart);
   
@@ -564,14 +610,14 @@ useEffect(() => {
             actualRoomId
           );
           
-          console.log('방 퇴장 메시지 전송 완료');
+          // console.log('방 퇴장 메시지 전송 완료');
           
           // 구독 취소 추가
           try {
             stompClient.unsubscribe(`/topic/room/${actualRoomId}`);
             stompClient.unsubscribe(`/topic/room/${actualRoomId}/chat`);
             stompClient.unsubscribe(`/topic/room.wait/${actualRoomId}`); // 새로 추가된 구독 취소
-            console.log('구독 취소 완료');
+            // console.log('구독 취소 완료');
           } catch (error) {
             console.error('구독 취소 중 오류:', error);
           }

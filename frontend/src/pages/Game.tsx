@@ -163,7 +163,7 @@ const Game: React.FC = () => {
   
   
   const [currentRound, setCurrentRound] = useState<number>(1);
-  const [quizWord, setQuizWord] = useState<string>('바나나');
+  const [quizWord, setQuizWord] = useState<string>('');
   const [activeDrawerIndex, setActiveDrawerIndex] = useState<number>(0);
   const [guesserIndex, setGuesserIndex] = useState<number>(3);
   const [isDrawing, setIsDrawing] = useState<boolean>(false);
@@ -197,7 +197,8 @@ const Game: React.FC = () => {
   const [drawOrder, setDrawOrder] = useState<number[]>([]);
   const [sessionInfoData, setSessionInfoData] = useState<any>(null); // 전체 세션 데이터를 저장할 변수
   // const [lastPoint, setLastPoint] = useState<{ x: number; y: number } | null>(null);
-  
+  const wordListIndexRef = useRef(0);
+
   const [storedSessionId, setStoredSessionId] = useState<string | null>(null);
   const [playerPermissions, setPlayerPermissions] = useState<PlayerPermissions>({
     canDraw: false,
@@ -243,7 +244,10 @@ const Game: React.FC = () => {
     // console.log('Game.tsx - 받은 플레이어 권한:', roleInfo.playerPermissions);
   };
 
-  const [predictions, setPredictions] = useState<{ class: string; probability: number }[]>([]);
+  const [predictions, setPredictions] = useState<{ result: string; correct: boolean }>({
+    result: "", 
+    correct: false, 
+  });
   
   // 웹소켓 훅 사용 - roomId가 null일 때도 빈 문자열로 처리하도록 수정
   const { isConnected, playerConnections, sessionId, sendMessage } = useGameWebSocket({
@@ -455,65 +459,37 @@ const Game: React.FC = () => {
   }
 }, [drawTime]);
 
+
 useEffect(() => {
-  if (!sessionId || !roomId) {
-    console.log('세션 ID 또는 방 ID가 없음:', { sessionId, roomId });
+  const currentRoomId = roomId || localStorage.getItem('roomId');
+  const currentSessionId = sessionId || localStorage.getItem('sessionId');
+  
+  if (!currentRoomId || !currentSessionId) {
+    console.log('세션 정보 구독에 필요한 정보가 없음');
     return;
   }
   
-  console.log('세션 정보 구독 시작:', { roomId, sessionId });
-  
   const unsubscribe = sessionInfoService.subscribeToSessionInfo(
-    roomId,
-    sessionId,
+    currentRoomId,
+    currentSessionId,
     (data) => {
-      console.log('세션 데이터 수신됨:', data);
-      
-      // 전체 세션 데이터 저장
-      setSessionInfoData(data);
-      
-      // 단어 목록 처리
-      if (data.word && Array.isArray(data.word)) {
-        console.log('단어 목록 수신:', data.word);
-        
-        // 단어 목록 상태 업데이트
-        setWordList(data.word);
-        
-        // 랜덤 단어 선택 (필요한 경우)
-        if (data.word.length > 0) {
-          const randomIndex = Math.floor(Math.random() * data.word.length);
-          const selectedWord = data.word[randomIndex];
-          console.log('선택된 단어:', selectedWord);
-          
-          // 퀴즈 단어 상태 업데이트
-          setQuizWord(selectedWord);
-        }
-      }
-      
-      // 그리기 순서 처리
-      if (data.drawOrder && Array.isArray(data.drawOrder)) {
-        console.log('그리기 순서 수신:', data.drawOrder);
-        
-        // 그리기 순서 상태 업데이트
-        setDrawOrder(data.drawOrder);
-        
-        // 현재 그리기 순서 처리 로직 (필요한 경우)
-        if (data.drawOrder.length > 0) {
-          console.log('첫 번째 그리기 순서:', data.drawOrder[0]);
-          
-          // 그리기 순서 관련 상태 업데이트 예시
-          // setActiveDrawerIndex(0); // 첫 번째 그리는 사람으로 설정
-        }
-      }
+      sessionInfoService.processSessionData(data, {
+        setSessionInfoData,
+        setWordList,
+        setQuizWord,
+        setDrawOrder,
+        currentRound,
+        wordListIndexRef // ref 전달
+      });
     }
   );
   
-  // 컴포넌트 언마운트 시 구독 해제
   return () => {
     console.log('세션 정보 구독 해제');
     unsubscribe();
   };
-}, [roomId, sessionId]);
+}, [roomId, sessionId, currentRound, wordListIndexRef]);
+
 
 
   useEffect(() => {
@@ -570,6 +546,7 @@ useEffect(() => {
       console.log(`플레이어 번호 ${currentNumber} 확정`);
     }
   }, [isConnected, playerConnections, roomId, sendMessage]);
+
 
   // 캔버스 초기화
   useEffect(() => {
@@ -676,9 +653,22 @@ const transitionToNextRound = () => {
       context.fillRect(0, 0, canvasRef.current.width, canvasRef.current.height);
     }
 
-    // 새 퀴즈 단어 설정
-    const newWords = ['사과', '자동차', '컴퓨터', '강아지', '고양이', '비행기', '꽃', '커피'];
-    setQuizWord(newWords[Math.floor(Math.random() * newWords.length)]);
+    // 웹소켓으로 받아온 wordList 사용
+    if (wordList.length > 0) {
+      // 현재 라운드에 맞는 인덱스 계산 (0부터 시작)
+      const wordIndex = currentRound;
+      
+      if (wordIndex >= 0 && wordIndex < wordList.length) {
+        setQuizWord(wordList[wordIndex]);
+        console.log(`라운드 ${currentRound}의 선택된 단어:`, wordList[wordIndex]);
+      } else {
+        // 단어 리스트를 초과하는 경우 처리 (예: 랜덤 단어 선택 또는 기본값)
+        console.warn(`단어 리스트 인덱스 초과: ${wordIndex}`);
+        setQuizWord(wordList[0]); // 기본적으로 첫 번째 단어로 돌아감
+      }
+    } else {
+      console.warn('단어 리스트가 비어있습니다.');
+    }
     
     // 상태 초기화
     setHasCompleted(false);
@@ -976,20 +966,29 @@ const handlePass = () => {
   const handleCanvasSubmit = async (blob: Blob) => {
     const formData = new FormData();
     formData.append("file", blob, "drawing.png");
+    formData.append("quizWord", quizWord);
   
     try {
-      const response = await axios.post("http://localhost:8000/predict", formData, {
+      const response = await axios.post("http://34.64.180.197:8000/predict", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-  
-      setPredictions(response.data.predictions);
-      return response.data.predictions;
+      console.log("전체 응답 데이터:", response.data);
+      // 서버 응답에서 `result` (예: 예측된 단어)와 `correct` (boolean: 예측이 맞았는지 여부) 값을 받아옴
+      setPredictions({
+        result: response.data.result,  // 예: "바나나"
+        correct: response.data.correct,  // 예: true 또는 false
+      });
+      
+      console.log("예측 결과:", response.data.result);  // 예: "바나나"
+      console.log("정답이 맞나요? :", response.data.correct);  // 예: true 또는 false
+
+      return { result: response.data.result, correct: response.data.correct };
     } catch (error) {
       console.error("예측 요청 실패:", error);
       throw error;
     }
   };
-  
+
 // 그림 그리기 타이머 효과 - 개선된 버전
 useEffect(() => {
   // 게임이 종료됐거나 라운드 전환 중이면 타이머를 멈춤
