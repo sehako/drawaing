@@ -729,7 +729,7 @@ useEffect(() => {
   </div>
 )}
 
-// 기존 카운트다운 모달 유지 (조건문 수정 - isEnteringGame이 아닐 때만 표시)
+{/* // 기존 카운트다운 모달 유지 (조건문 수정 - isEnteringGame이 아닐 때만 표시) */}
 {!isEnteringGame && gameStartCountdown !== null && (
   <div className="fixed inset-0 flex items-center justify-center z-50">
     <div className="absolute inset-0 bg-black bg-opacity-50"></div>
