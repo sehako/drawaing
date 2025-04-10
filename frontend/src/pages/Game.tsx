@@ -1455,9 +1455,9 @@ useEffect(() => {
             </div>
             <p className="text-lg mt-6">
               {humanRoundWinCount > aiRoundWinCount 
-                ? '축하합니다! 사람팀이 이겼습니다!' 
+                ? '축하합니다! 병아리팀이 이겼습니다!' 
                 : humanRoundWinCount < aiRoundWinCount 
-                  ? 'AI팀이 이겼습니다. 다음 기회에...' 
+                  ? '담비가 이겼습니다. 다음 기회에...' 
                   : '동점입니다! 좋은 승부였습니다!'}
             </p>
 
@@ -1605,7 +1605,7 @@ useEffect(() => {
     
     <div className="flex items-center space-x-4">
       <div className="text-right text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-blue-600">
-        사람 {humanRoundWinCount}
+        병아리 {humanRoundWinCount}
       </div>
       
       {/* 나무 판자 배경 */}
@@ -1642,7 +1642,7 @@ useEffect(() => {
       </div>
       
       <div className="text-left text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-red-600">
-        {aiRoundWinCount} AI
+        {aiRoundWinCount} 담비
       </div>
     </div>
     
