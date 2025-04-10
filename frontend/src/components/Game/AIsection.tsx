@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import dambi from '../../assets/Game/dambi.png';
 import egg from '../../assets/Game/egg.png';
-import { PassConfirmModal, CorrectAnswerModal, EmptyGuessModal, WrongGuessModal } from './GameModals';
+import { PassConfirmModal, EmptyGuessModal, WrongGuessModal } from './GameModals';
 
 interface AISectionProps {
   aiImages: string[];
@@ -215,13 +215,6 @@ useEffect(() => {
         isOpen={isPassModalOpen} 
         onClose={closePassModal} 
         onConfirm={handleConfirmPass} 
-      />
-      
-      <CorrectAnswerModal 
-        isOpen={isCorrectModalOpen} 
-        onClose={closeCorrectModal}
-        quizWord={quizWord}
-        isHumanTeam={true} // Add this prop to specify it's the human team
       />
 
       <EmptyGuessModal 

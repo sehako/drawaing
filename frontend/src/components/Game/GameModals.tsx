@@ -42,43 +42,43 @@ export const PassConfirmModal = ({
 };
 
 // 공통 정답 모달 (정답을 맞추면 이 모달만 사용)
-export const CorrectAnswerModal = ({ 
-  isOpen, 
-  onClose, 
-  quizWord,
-  isHumanTeam = true
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  quizWord: string;
-  isHumanTeam?: boolean;
-}) => {
-  return (
-    <CustomModal 
-      key="correct-modal"
-      isOpen={isOpen}
-      onClose={onClose}
-      title="정답입니다!" 
-      media={{ 
-        type: 'gif',
-        src: chick,
-        alt: '축하 GIF' 
-      }} 
-      actionButtons={{ 
-        confirmText: "계속하기", 
-        onConfirm: onClose
-      }} 
-    >
-      <div className="text-center">
-        <p className="mb-4 text-gray-700">
-          {isHumanTeam 
-            ? "축하합니다! 정답을 맞추셨습니다." 
-            : "AI가 정답을 맞췄습니다."}
-        </p>
-      </div>
-    </CustomModal>
-  );
-};
+// export const CorrectAnswerModal = ({ 
+//   isOpen, 
+//   onClose, 
+//   quizWord,
+//   isHumanTeam = true
+// }: {
+//   isOpen: boolean;
+//   onClose: () => void;
+//   quizWord: string;
+//   isHumanTeam?: boolean;
+// }) => {
+//   return (
+//     <CustomModal 
+//       key="correct-modal"
+//       isOpen={isOpen}
+//       onClose={onClose}
+//       title="정답입니다!" 
+//       media={{ 
+//         type: 'gif',
+//         src: chick,
+//         alt: '축하 GIF' 
+//       }} 
+//       actionButtons={{ 
+//         confirmText: "계속하기", 
+//         onConfirm: onClose
+//       }} 
+//     >
+//       <div className="text-center">
+//         <p className="mb-4 text-gray-700">
+//           {isHumanTeam 
+//             ? "축하합니다! 정답을 맞추셨습니다." 
+//             : "AI가 정답을 맞췄습니다."}
+//         </p>
+//       </div>
+//     </CustomModal>
+//   );
+// };
 
 // 빈 입력 모달 (입력 없이 제출 시)
 export const EmptyGuessModal = ({ 
