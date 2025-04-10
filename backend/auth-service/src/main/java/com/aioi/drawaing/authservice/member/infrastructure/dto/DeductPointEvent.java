@@ -1,4 +1,4 @@
-package com.aioi.drawaing.authservice.member.domain;
+package com.aioi.drawaing.authservice.member.infrastructure.dto;
 
 import lombok.Builder;
 
