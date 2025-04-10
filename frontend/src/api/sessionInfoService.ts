@@ -39,8 +39,8 @@ const sessionInfoService = {
     sessionId: string, 
     callback: (data: SessionData) => void
   ): () => void {
-    console.group('🔍 세션 정보 서비스 - 구독 시도');
-    console.log('구독 파라미터:', { roomId, sessionId });
+    // console.group('🔍 세션 정보 서비스 - 구독 시도');
+    // console.log('구독 파라미터:', { roomId, sessionId });
     
     // 기존 연결 처리
     if (this.activeClient && this.activeClient.connected) {
@@ -49,7 +49,7 @@ const sessionInfoService = {
       this.activeSubscription = null;
     }
     
-    console.log(`새 STOMP 연결 생성: ${roomId}/${sessionId}`);
+    // console.log(`새 STOMP 연결 생성: ${roomId}/${sessionId}`);
     
     // STOMP 클라이언트 생성
     const client = new Client({
@@ -59,7 +59,7 @@ const sessionInfoService = {
         sessionId
       },
       debug: (str) => {
-        console.log('STOMP DEBUG:', str);
+        // console.log('STOMP DEBUG:', str);
       },
       reconnectDelay: 5000,
       heartbeatIncoming: 4000,
@@ -71,49 +71,49 @@ const sessionInfoService = {
     this.activeSubscription = { roomId, sessionId };
     
     client.onConnect = (frame) => {
-      console.log('STOMP 연결 상태:', client.connected);
-      console.log('STOMP 세션 정보 서비스 연결 성공:', frame);
+      // console.log('STOMP 연결 상태:', client.connected);
+      // console.log('STOMP 세션 정보 서비스 연결 성공:', frame);
       
       // 정확한 세션 정보 토픽 구독
       const topic = `/topic/session.info/${roomId}/${sessionId}`;
-      console.log(`구독 시작: ${topic}`);
+      // console.log(`구독 시작: ${topic}`);
       
       const subscription = client.subscribe(topic, (message) => {
-        console.group('🔄 메시지 수신');
+        // console.group('🔄 메시지 수신');
         try {
-          console.log('원본 메시지:', message);
-          console.log('메시지 body:', message.body);
+          // console.log('원본 메시지:', message);
+          // console.log('메시지 body:', message.body);
 
           // body가 문자열인지 확인
           if (typeof message.body === 'string') {
             const data = JSON.parse(message.body);
-            console.log('파싱된 데이터:', data);
+            // console.log('파싱된 데이터:', data);
 
             // 특정 필드 존재 여부 확인
             if (data.word && Array.isArray(data.word) && data.drawOrder && Array.isArray(data.drawOrder)) {
-              console.log('✅ 유효한 세션 데이터');
+              // console.log('✅ 유효한 세션 데이터');
               callback(data);
             } else {
-              console.warn('❌ 데이터 형식 불일치:', data);
+              // console.warn('❌ 데이터 형식 불일치:', data);
             }
           } else {
-            console.warn('❌ body가 문자열이 아닙니다.');
+            // console.warn('❌ body가 문자열이 아닙니다.');
           }
         } catch (error) {
-          console.error('❌ 메시지 처리 중 오류:', error);
+          // console.error('❌ 메시지 처리 중 오류:', error);
         }
-        console.groupEnd();
+        // console.groupEnd();
       });
       
-      console.log(`${topic} 구독 완료, 구독 ID:`, subscription.id);
+      // console.log(`${topic} 구독 완료, 구독 ID:`, subscription.id);
     };
     
     client.onStompError = (frame) => {
-      console.error('STOMP 오류:', frame);
+      // console.error('STOMP 오류:', frame);
     };
     
     client.onWebSocketClose = (event) => {
-      console.log('WebSocket 연결 종료:', event.code, event.reason);
+      // console.log('WebSocket 연결 종료:', event.code, event.reason);
       if (this.activeClient === client) {
         this.activeClient = null;
         this.activeSubscription = null;
@@ -121,12 +121,12 @@ const sessionInfoService = {
     };
     
     client.onWebSocketError = (error) => {
-      console.error('WebSocket 오류:', error);
+      // console.error('WebSocket 오류:', error);
     };
     
     // 연결 시작
     client.activate();
-    console.log('STOMP 세션 정보 서비스 연결 시도...');
+    // console.log('STOMP 세션 정보 서비스 연결 시도...');
     
     // 구독 해제 함수 반환
     return () => {
@@ -142,7 +142,7 @@ const sessionInfoService = {
       }
     };
     
-    console.groupEnd();
+    // console.groupEnd();
   },
 
   /**
@@ -157,43 +157,45 @@ const sessionInfoService = {
       setWordList?: (words: string[]) => void;
       setQuizWord?: (word: string) => void;
       setDrawOrder?: (order: number[]) => void;
+      currentRound?: number;
+      wordListIndexRef?: React.MutableRefObject<number>; 
     }
   ) {
-    console.log('세션 데이터 수신됨:', data);
+    // console.log('세션 데이터 수신됨:', data);
     
-    // 전체 세션 데이터 저장
-    if (callbacks.setSessionInfoData) {
-      callbacks.setSessionInfoData(data);
-    }
-    
-    // 단어 목록 처리
     if (data.word && Array.isArray(data.word) && callbacks.setWordList) {
       console.log('단어 목록 수신:', data.word);
       
-      // 단어 목록 상태 업데이트
       callbacks.setWordList(data.word);
       
-      // 랜덤 단어 선택
-      if (data.word.length > 0 && callbacks.setQuizWord) {
-        const randomIndex = Math.floor(Math.random() * data.word.length);
-        const selectedWord = data.word[randomIndex];
-        console.log('선택된 단어:', selectedWord);
+      if (data.word.length > 0 && callbacks.setQuizWord && 
+          callbacks.currentRound !== undefined) {
         
-        // 퀴즈 단어 상태 업데이트
-        callbacks.setQuizWord(selectedWord);
+        // 라운드 번호에 맞춰 정확히 인덱스 계산 
+        // 1라운드 -> 0, 2라운드 -> 1, 3라운드 -> 2
+        const roundIndex = callbacks.currentRound - 1;
+        
+        if (roundIndex >= 0 && roundIndex < data.word.length) {
+          const selectedWord = data.word[roundIndex];
+          // console.log(`라운드 ${callbacks.currentRound}의 선택된 단어:`, selectedWord);
+          
+          callbacks.setQuizWord(selectedWord);
+        } else {
+          // console.warn(`유효하지 않은 라운드 인덱스: ${roundIndex}`);
+        }
       }
     }
     
     // 그리기 순서 처리
     if (data.drawOrder && Array.isArray(data.drawOrder) && callbacks.setDrawOrder) {
-      console.log('그리기 순서 수신:', data.drawOrder);
+      // console.log('그리기 순서 수신:', data.drawOrder);
       
       // 그리기 순서 상태 업데이트
       callbacks.setDrawOrder(data.drawOrder);
       
       // 현재 그리기 순서 처리 로직
       if (data.drawOrder.length > 0) {
-        console.log('첫 번째 그리기 순서:', data.drawOrder[0]);
+        // console.log('첫 번째 그리기 순서:', data.drawOrder[0]);
       }
     }
   }
