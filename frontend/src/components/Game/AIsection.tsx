@@ -13,7 +13,7 @@ interface AISectionProps {
   eggCount: number;
   onAICorrectAnswer: () => void;
   quizWord: string;
-  predictions: { class: string; probability: number }[];  // 예측 데이터
+  predictions: { result: string; correct: boolean };  // 예측 데이터
   canPass?: boolean; // PASS 가능 여부
   passCount?: number; // 현재 PASS 횟수
   isHumanCorrect?: boolean;
