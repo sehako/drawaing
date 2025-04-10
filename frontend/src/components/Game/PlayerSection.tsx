@@ -411,7 +411,7 @@ const PlayerSection: React.FC<PlayerSectionProps> = ({
         </div>
 
         {/* 오른쪽 말풍선 형태로 표시 (고정 크기) */}
-        {process.env.NODE_ENV === 'development' && playerMessage && (
+        {playerMessage && (
           <div className="absolute bottom-[20px] right-[10px] w-[120px] z-10">
             <div className="relative bg-yellow-100 p-2 rounded-lg shadow-md border border-gray-300 w-full min-h-[60px] flex items-center justify-center">
               <p className="text-xm text-black break-words overflow-hidden text-center">{playerMessage}</p>
