@@ -34,7 +34,7 @@ AI의 인식을 피해 사람만 이해할 수 있는 그림을 그려 정답을
 ## 세부 기능
 
 ## 아키텍처 설계
-
+![image](/uploads/1ce9e8d18416c4ca085dbb20777f0192/image.png)
 
 # 팀원 소개
 | Profile | Name | Role | GitHub | Main Tasks |
