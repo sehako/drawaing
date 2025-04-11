@@ -1,7 +1,6 @@
-package com.aioi.drawaing.shopservice.inventory.application;
+package com.aioi.drawaing.shopservice.inventory.infrastructure.repository;
 
 import com.aioi.drawaing.shopservice.inventory.domain.Inventory;
-import com.aioi.drawaing.shopservice.inventory.infrastructure.repository.InventoryRepository;
 import com.aioi.drawaing.shopservice.item.domain.Item;
 import com.aioi.drawaing.shopservice.item.infrastructure.repository.ItemRepository;
 import com.aioi.drawaing.shopservice.store.domain.PurchaseEvent;

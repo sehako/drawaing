@@ -24,11 +24,8 @@ public class KafkaProducerConfig {
     public ProducerFactory<String, PurchaseEvent> purchaseEventProducerFactory() {
         Map<String, Object> config = new HashMap<>();
         config.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-        config.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class); // 직렬화 설정
-        config.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class); // 직렬화 설정
-        // DTO 매핑
-//        config.put(JsonSerializer.TYPE_MAPPINGS,
-//                "PurchaseEvent:com.aioi.drawaing.shopservice.store.domain.PurchaseEvent");
+        config.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+        config.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
 
         return new DefaultKafkaProducerFactory<>(config);
     }
@@ -39,8 +36,6 @@ public class KafkaProducerConfig {
         config.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         config.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         config.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
-//        config.put(JsonSerializer.TYPE_MAPPINGS,
-//                "DeductPointEvent:com.aioi.drawaing.shopservice.store.domain.DeductPointEvent");
 
         return new DefaultKafkaProducerFactory<>(config);
     }

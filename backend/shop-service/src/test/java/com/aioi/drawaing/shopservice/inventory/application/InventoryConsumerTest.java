@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.aioi.drawaing.shopservice.inventory.domain.Inventory;
+import com.aioi.drawaing.shopservice.inventory.infrastructure.repository.InventoryConsumer;
 import com.aioi.drawaing.shopservice.inventory.infrastructure.repository.InventoryRepository;
 import com.aioi.drawaing.shopservice.item.domain.Item;
 import com.aioi.drawaing.shopservice.item.infrastructure.repository.ItemRepository;
