@@ -5,6 +5,10 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
+C:\Users\SSAFY\IdeaProjects\S12P21A101\backend\drawing-game-service\src\main\resources\application-dev.yml
+C:\Users\SSAFY\IdeaProjects\S12P21A101\backend\drawing-game-service\src\main\resources\application-secret.yml
+C:\Users\SSAFY\IdeaProjects\S12P21A101\backend\drawing-game-service\src\main\resources\application-test.yml
+
 ### STS ###
 .apt_generated
 .classpath
@@ -35,8 +39,4 @@ out/
 
 ### VS Code ###
 .vscode/
-
-node_modules
-.vite
-.env
-
+/src/main/resources/application-dev.yml
