@@ -44,4 +44,4 @@ AI의 인식을 피해 사람만 이해할 수 있는 그림을 그려 정답을
 | |노진원|FE| | |
 |<img src="https://avatars.githubusercontent.com/beegle98" width="100">|차정문|BE|[@beegle98](https://github.com/beegle98)| |
 | |오세학|INFRA| | |
-| |김률아|BE|[@ryulkim](https://github.com/ryulkim)| |
+|![image](/uploads/b5445120209d17c7cb76eb7c7613613f/image.png)|김률아|BE|[@ryulkim](https://github.com/ryulkim)| |
