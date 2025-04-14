@@ -46,7 +46,7 @@ AI의 인식을 피해 사람만 이해할 수 있는 그림을 그려 정답을
 | |김예훈|AI| | |
 | |문상혁|FE| | |
 | |노진원|FE| | |
-|<img src="https://avatars.githubusercontent.com/beegle98" width="100">|차정문|BE|[@beegle98](https://github.com/beegle98)| |
+|<img src="https://avatars.githubusercontent.com/beegle98" width="100">|차정문|BE|[@beegle98](https://github.com/beegle98)| 인증/인가, 웹소켓 방만들기/채팅 API, 랭킹, 상점, 로그인/회원가입 서비스 개발|
 | |오세학|INFRA| | |
 |<img src="/uploads/b5445120209d17c7cb76eb7c7613613f/image.png" width="100">|김률아|BE|[@ryulkim](https://github.com/ryulkim)| |
 
