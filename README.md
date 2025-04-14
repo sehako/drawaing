@@ -31,12 +31,15 @@ AI의 인식을 피해 사람만 이해할 수 있는 그림을 그려 정답을
 ## 세부 기능
 
 **1. 경험치(레벨) 시스템**
+
     1. 레벨별 필요 경험치 테이블에 맞춰 레벨업하는 시스템
 
 **2. 로그인/회원가입 시스템**
+
     1. 보안을 위해 JWT 토큰 사용
     2. 유저 접근성을 위해 게스트 로그인 구현
     3. 로컬 로그인 뿐만 아니라 다양한 소셜 로그인 제공
+
 **3. 랭킹 시스템**  
 
     1. 게임에서 최종적으로 승리하게 되면 포인트 획득
@@ -49,6 +52,7 @@ AI의 인식을 피해 사람만 이해할 수 있는 그림을 그려 정답을
 
     1. 캐릭터, 이모티콘 등 아이템 구매 기능
       1-1. 한정 수량, 레벨 제한
+      1-2. 캐릭터 이미지는 생성형 AI 활용하여 제작
     2. 유저 인벤토리 기능
       2-1. 아이템 사용 기능 (캐릭터 변경)
 
@@ -68,12 +72,12 @@ AI의 인식을 피해 사람만 이해할 수 있는 그림을 그려 정답을
 # 팀원 소개
 | Profile | Name | Role | GitHub | Main Tasks |
 |:---:|:---:|:---:|:---:|:----|
-| |김예훈|AI| | |
-| |문상혁|FE| | |
-| |노진원|FE| | |
-|<img src="https://avatars.githubusercontent.com/beegle98" width="100">|차정문|BE|[@beegle98](https://github.com/beegle98)| 인증/인가(JWT, Spring Security), 웹소켓 방만들기/채팅 API, (랭킹, 상점, 로그인/회원가입) 서비스 개발, (랭킹,상점,인벤토리) 페이지 구현|
-| |오세학|INFRA| | |
-|<img src="/uploads/b5445120209d17c7cb76eb7c7613613f/image.png" width="100">|김률아|BE|[@ryulkim](https://github.com/ryulkim)| |
+|![alt text](images/김예훈.png)|김예훈|AI| | |
+|![alt text](images/문상혁.png)|문상혁|FE| | |
+|![alt text](images/노진원.png)|노진원|FE| | |
+|![alt text](images/차정문.png)|차정문|BE|[@beegle98](https://github.com/beegle98)| 인증/인가(JWT, Spring Security), 웹소켓 방만들기/채팅 API, (랭킹, 상점, 로그인/회원가입) 서비스 개발, (랭킹,상점,인벤토리) 페이지 구현|
+|![alt text](images/오세학.png)|오세학|INFRA| | |
+|![alt text](images/김률아.png)|김률아|BE|[@ryulkim](https://github.com/ryulkim)| |
 
 
 
@@ -123,13 +127,15 @@ AI의 인식을 피해 사람만 이해할 수 있는 그림을 그려 정답을
   - 게임 내 포인트로 아이템을 구매할 수 있는 페이지
   - 게임을 통해 얻는 재화(계란)을 통해 다양한 아이템 구매 가능
     ![alt text](images/image11.png)
+- 인벤토리 페이지
+  - 내가 가진 아이템 조회 페이지
+  - 아이템 사용 기능 (캐릭터 변경)
+    ![alt text](images/image-13.png)
 - 랭킹 페이지
   - 랭킹 점수, 포인트, 레벨, 플레이 횟수 별 랭킹 제공 페이지
   - 각 분야별 1,2,3등 표시
   - 내 랭킹 표시
     ![alt text](images/image-12.png)
-- 인벤토리 페이지
-  - 내가 가진 아이템 조회 페이지
-    ![alt text](images/image-13.png)
+
 
 ## 팀 회고
