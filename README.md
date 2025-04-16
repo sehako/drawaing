@@ -72,6 +72,12 @@ AI의 인식을 피해 사람만 이해할 수 있는 그림을 그려 정답을
 
 **1. 웹소켓**
 
+## AI 기술적 고민과 해결 과정
+
+**1. 정확도 증대**
+
+**2. 분류 처리 속도**
+
 ## 기술 스택
 
 ### 프론트엔드
@@ -118,12 +124,13 @@ AI의 인식을 피해 사람만 이해할 수 있는 그림을 그려 정답을
 
 | Profile | Name | Role | GitHub | Main Tasks |
 |:---:|:---:|:---:|:---:|:----|
-|![김예훈](images/김예훈.png)|김예훈|AI| | |
+|![alt text](images/김예훈.png)|김예훈|AI|[@yehoon-already-have](https://github.com/yehoon-already-have)| AI 모델 설계, fastAPI 서버 구현 및 연결 |
 |![문상혁](images/문상혁.png)|문상혁|FE| | |
 |![노진원](images/노진원.png)|노진원|FE| | |
 |![차정문](images/차정문.png)|차정문|BE|[@beegle98](https://github.com/beegle98)| 인증/인가(JWT, Spring Security), 웹소켓 방만들기/채팅 API, (랭킹, 상점, 로그인/회원가입) 서비스 개발, (랭킹,상점,인벤토리) 페이지 구현|
 |![오세학](images/오세학.png)|오세학|INFRA|[@sehako](https://github.com/sehako)|마이크로 서비스 아키텍처 구축 및 도커 컴포즈를 활용한 배포 및 CI/CD 환경 구축|
 |![김률아](images/김률아.png)|김률아|BE|[@ryulkim](https://github.com/ryulkim)| |
+
 
 (다음 사이트에서 사진 제작: [whisk](https://labs.google/fx/ko/tools/whisk))
 
