@@ -66,13 +66,17 @@ AI의 인식을 피해 사람만 이해할 수 있는 그림을 그려 정답을
 ## FRONT_END 기술적 고민과 해결 과정
 **1. 웹소켓**
 
+## AI 기술적 고민
+**1. 정확도 증대**
+**2. 분류 처리 속도**
+
 ## 아키텍처 설계
 <img src="/uploads/1ce9e8d18416c4ca085dbb20777f0192/image.png" width="1000">
 
 # 팀원 소개
 | Profile | Name | Role | GitHub | Main Tasks |
 |:---:|:---:|:---:|:---:|:----|
-|![alt text](images/김예훈.png)|김예훈|AI| | |
+|![alt text](images/김예훈.png)|김예훈|AI|[@yehoon-already-have](https://github.com/yehoon-already-have)| AI 모델 설계, fastAPI 서버 구현 및 연결 |
 |![alt text](images/문상혁.png)|문상혁|FE| | |
 |![alt text](images/노진원.png)|노진원|FE| | |
 |![alt text](images/차정문.png)|차정문|BE|[@beegle98](https://github.com/beegle98)| 인증/인가(JWT, Spring Security), 웹소켓 방만들기/채팅 API, (랭킹, 상점, 로그인/회원가입) 서비스 개발, (랭킹,상점,인벤토리) 페이지 구현|
