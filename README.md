@@ -98,6 +98,7 @@ AI의 인식을 피해 사람만 이해할 수 있는 그림을 그려 정답을
   <img src ="https://img.shields.io/badge/Spring Cloud-6DB33F.svg?&style=flat-square&logo=icloud&logoColor=white"/>
   <img src="https://img.shields.io/badge/Hibernate-59666C?style=flat-square&logo=hibernate&logoColor=white">
   <img src="https://img.shields.io/badge/MySQL-4479A1?style=flat-square&logo=MySQL&logoColor=white"> 
+  <img src="https://img.shields.io/badge/MongoDB-47A248?style=flat-square&logo=mongodb&logoColor=white"> 
   <img src="https://img.shields.io/badge/Redis-DC382D?style=flat-square&logo=Redis&logoColor=white"> 
   <img src="https://img.shields.io/badge/Apache Kafka-231F20?style=flat-square&logo=Apache Kafka&logoColor=white"> 
 </p>
@@ -105,6 +106,7 @@ AI의 인식을 피해 사람만 이해할 수 있는 그림을 그려 정답을
 ### Infrastructure
 <p>
   <img src="https://img.shields.io/badge/Amazon EC2-FF9900?style=flat-square&logo=amazonec2&logoColor=white">
+  <img src ="https://img.shields.io/badge/Google Cloud Compute Engine-4285F4.svg?&style=flat-square&logo=googlecloud&logoColor=white"/>
   <img src="https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=Docker&logoColor=white">
   <img src="https://img.shields.io/badge/Jenkins-D24939?style=flat-square&logo=Jenkins&logoColor=white">
 </p>
@@ -125,11 +127,12 @@ AI의 인식을 피해 사람만 이해할 수 있는 그림을 그려 정답을
 | Profile | Name | Role | GitHub | Main Tasks |
 |:---:|:---:|:---:|:---:|:----|
 |![alt text](images/김예훈.png)|김예훈|AI|[@yehoon-already-have](https://github.com/yehoon-already-have)| AI 모델 설계, fastAPI 서버 구현 및 연결 |
-|![문상혁](images/문상혁.png)|문상혁|FE| | |
-|![노진원](images/노진원.png)|노진원|FE| | |
+|![문상혁](images/문상혁.png)|문상혁|FE|[@Moon-sang-hyeok](https://github.com/Moon-sang-hyeok)|웹소켓을 활용한 실시간 대기방 입장, 퇴장, 레디 상태 동기화 테일윈드를 활용한 페이지 구현|
+|![노진원](images/노진원.png)|노진원|FE|[@nororong](https://github.com/Nororong)|웹소켓을 활용한 실시간 게임 시스템 동기화, 테일윈드를 활용하여 페이지 CSS 구현|
 |![차정문](images/차정문.png)|차정문|BE|[@beegle98](https://github.com/beegle98)| 인증/인가(JWT, Spring Security), 웹소켓 방만들기/채팅 API, (랭킹, 상점, 로그인/회원가입) 서비스 개발, (랭킹,상점,인벤토리) 페이지 구현|
-|![오세학](images/오세학.png)|오세학|INFRA|[@sehako](https://github.com/sehako)|마이크로 서비스 아키텍처 구축 및 도커 컴포즈를 활용한 배포 및 CI/CD 환경 구축|
-|![김률아](images/김률아.png)|김률아|BE|[@ryulkim](https://github.com/ryulkim)| |
+|![오세학](images/오세학.png)|오세학|INFRA|[@sehako](https://github.com/sehako)|마이크로 서비스 아키텍처 구축 및 도커 컴포즈를 활용한 배포 및 CI/CD 환경 구축, AI API 서버 배포|
+|![김률아](images/김률아.png)|김률아|BE|[@ryulkim](https://github.com/ryulkim)|WebSocket, STOMP 기술을 사용한 게임 API 기능(방 되돌아가기, 대기방에서 참여자 정보 전달, 타이머 기능, 정답 맞추기 등)
+Rest API(링크 초대, 방 생성)|
 
 
 (다음 사이트에서 사진 제작: [whisk](https://labs.google/fx/ko/tools/whisk))
@@ -229,4 +232,3 @@ AI의 인식을 피해 사람만 이해할 수 있는 그림을 그려 정답을
 
 각 분야별 1,2,3등 표시 및 로그인한 플레이어의 랭킹 표시
 
-## 팀 회고
