@@ -76,7 +76,12 @@ AI의 인식을 피해 사람만 이해할 수 있는 그림을 그려 정답을
 
 **1. 정확도 증대**
 
+MobileNet, ShuffleNet, Mnasnet, VGC19, Resnet50 등의 모델을 전이학습시켜서 정확도가 가장 높은 모델을 선정.
+자체 제작으로 Residual block, Depthwise Separable Convolution 기법을 통해 일반적인 분류 모델보다 Loss값을 줄이고자 했음.
+
 **2. 분류 처리 속도**
+
+양자화, Pruning 기법 등을 시도해봤으나 정확도를 크게 깎는 문제가 있어서 결국 전이학습과 병행하여 처리했음
 
 ## 기술 스택
 
