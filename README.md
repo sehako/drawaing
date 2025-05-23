@@ -58,7 +58,9 @@ AI의 인식을 피해 사람만 이해할 수 있는 그림을 그려 정답을
     2. 플레이어 인벤토리 기능
       2-1. 아이템 사용 기능 (캐릭터 변경)
 
-## BACK_END 기술적 고민과 해결 과정
+## 기술적 고민과 해결 과정
+
+### 백엔드
 
 **1. MSA**
 
@@ -68,11 +70,11 @@ AI의 인식을 피해 사람만 이해할 수 있는 그림을 그려 정답을
 
 **4. Redis + Kafka를 사용한 상점 서비스 선착순 아이템 대용량 트래픽 해결**
 
-## FRONT_END 기술적 고민과 해결 과정
+## 프론트엔드 
 
 **1. 웹소켓**
 
-## AI 기술적 고민과 해결 과정
+## AI 
 
 **1. 정확도 증대**
 
@@ -105,18 +107,22 @@ MobileNet, ShuffleNet, Mnasnet, VGC19, Resnet50 등의 모델을 전이학습시
   <img src="https://img.shields.io/badge/MySQL-4479A1?style=flat-square&logo=MySQL&logoColor=white"> 
   <img src="https://img.shields.io/badge/MongoDB-47A248?style=flat-square&logo=mongodb&logoColor=white"> 
   <img src="https://img.shields.io/badge/Redis-DC382D?style=flat-square&logo=Redis&logoColor=white"> 
-  <img src="https://img.shields.io/badge/Apache Kafka-231F20?style=flat-square&logo=Apache Kafka&logoColor=white"> 
 </p>
 
-### Infrastructure
+### 인프라 
 <p>
   <img src="https://img.shields.io/badge/Amazon EC2-FF9900?style=flat-square&logo=amazonec2&logoColor=white">
   <img src ="https://img.shields.io/badge/Google Cloud Compute Engine-4285F4.svg?&style=flat-square&logo=googlecloud&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Apache Kafka-231F20?style=flat-square&logo=Apache Kafka&logoColor=white"> 
   <img src="https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=Docker&logoColor=white">
   <img src="https://img.shields.io/badge/Jenkins-D24939?style=flat-square&logo=Jenkins&logoColor=white">
+  <img src="https://img.shields.io/badge/prometheus-E6522C?style=flat-square&logo=prometheus&logoColor=white">  
+  <img src="https://img.shields.io/badge/Grafana-F46800?style=flat-square&logo=grafana&logoColor=white">
+  <img src="https://img.shields.io/badge/Loki-FFA600?style=flat-square&logo=grafana&logoColor=white"> 
+  <img src="https://img.shields.io/badge/Promtail-FFA600?style=flat-square&logo=grafana&logoColor=white"> 
 </p>
 
-### Collaboration
+### 협업 
 
 <p>
   <img src="https://img.shields.io/badge/GitLab-FC6D26?style=flat-square&logo=GitLab&logoColor=white">
