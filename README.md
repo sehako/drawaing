@@ -113,7 +113,7 @@ MobileNet, ShuffleNet, Mnasnet, VGC19, Resnet50 등의 모델을 전이학습시
 <p>
   <img src="https://img.shields.io/badge/Amazon EC2-FF9900?style=flat-square&logo=amazonec2&logoColor=white">
   <img src ="https://img.shields.io/badge/Google Cloud Compute Engine-4285F4.svg?&style=flat-square&logo=googlecloud&logoColor=white"/>
-  <img src="https://img.shields.io/badge/Apache Kafka-231F20?style=flat-square&logo=Apache Kafka&logoColor=white"> 
+  <img src="https://img.shields.io/badge/Apache Kafka-231F20?style=flat-square&logo=ApacheKafka&logoColor=white"> 
   <img src="https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=Docker&logoColor=white">
   <img src="https://img.shields.io/badge/Jenkins-D24939?style=flat-square&logo=Jenkins&logoColor=white">
   <img src="https://img.shields.io/badge/prometheus-E6522C?style=flat-square&logo=prometheus&logoColor=white">  
