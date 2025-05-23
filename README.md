@@ -100,7 +100,7 @@ MobileNet, ShuffleNet, Mnasnet, VGC19, Resnet50 등의 모델을 전이학습시
 
 <p>
   <img src="https://img.shields.io/badge/Java-ED8B00?style=flat-square&logo=openjdk&logoColor=white" /> 
-  <img src="https://img.shields.io/badge/Spring Boot-6DB33F?style=flat-square&logo=Spring Boot&logoColor=white"> 
+  <img src="https://img.shields.io/badge/Spring Boot-6DB33F?style=flat-square&logo=SpringBoot&logoColor=white"> 
   <img src="https://img.shields.io/badge/Spring Security-6DB33F?style=flat-square&logo=springsecurity&logoColor=white"> 
   <img src ="https://img.shields.io/badge/Spring Cloud-6DB33F.svg?&style=flat-square&logo=icloud&logoColor=white"/>
   <img src="https://img.shields.io/badge/Hibernate-59666C?style=flat-square&logo=hibernate&logoColor=white">
