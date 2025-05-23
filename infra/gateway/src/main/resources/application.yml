@@ -1,0 +1,41 @@
+server:
+  port: 8080
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: "${EUREKA_URL:http://127.0.0.1:8761}/eureka"
+  instance:
+    instance-id: ${spring.application.name}:${random.value}
+
+spring:
+  application:
+    name: gateway
+  rabbitmq:
+    host: "${RABBIT_MQ_URL:127.0.0.1}"
+    port: "${RABBIT_MQ_PORT:5672}"
+    # 기본 사용자 이름 및 비밀번호
+    username: gkrdh99
+    password: aioi
+  config:
+    import: "optional:configserver:${CONFIG_SERVER_URL:http://127.0.0.1:8888}"
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+    #    path: /api-docs
+    config-url: /service/v3/api-docs/swagger-config
+    urls:
+      - url: /service/auth/v3/api-docs
+        name: Auth-Docs
+      - url: /service/game/v3/api-docs
+        name: Game-Docs
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: busrefresh, info, metrics, prometheus
